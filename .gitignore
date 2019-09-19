@@ -1,0 +1,10 @@
+# Log file
+*.log
+
+target/
+vendor/
+.gradle
+.idea
+.settings/
+.vscode/
+.project

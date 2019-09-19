@@ -1,0 +1,180 @@
+## Default values for talend-vault-sidecar-injector
+## This is a YAML-formatted file
+## Declare variables to be passed into your templates
+
+## ------------------------------------------------------------------------------------------------------ ##
+## enable/disable dependencies
+## ------------------------------------------------------------------------------------------------------ ##
+
+## ------------------------------------------------------------------------------------------------------ ##
+## defines global values
+## ------------------------------------------------------------------------------------------------------ ##
+
+## ------------------------------------------------------------------------------------------------------ ##
+## defines custom values
+## ------------------------------------------------------------------------------------------------------ ##
+
+registryKey: "talend-registry" # registryKey is a k8s secret for Docker images
+talendImageRegistry: artifactory.datapwn.com/tlnd-docker-dev # talendImageRegistry is Talend's Docker registry host name
+
+replicaCount: 3  # replicaCount defines the number of container replicas running in parallel
+revisionHistoryLimit: 3  # revision history limit in tiller / helm / k8s
+
+## ------------------------------------------------------------------------------------------------------ ##
+## RBAC
+## ------------------------------------------------------------------------------------------------------ ##
+
+rbac:
+  install: true  # create RBAC resources. Must be set for any cluster configured with rbac.
+
+# ----------------------------------------------------------------------------
+# Define image properties
+# ----------------------------------------------------------------------------
+
+image:
+  path: "talend/common/tsbi/k8s/vault-sidecar-injector"  # the Docker image path in the registry
+  ## if tag is not defined it is automatically set to "latest"
+  tag: "1.7.1-20190828131916"  # tag defines the version/tag of the docker image
+  ## default value is IfNotPresent
+  pullPolicy: IfNotPresent  # pullPolicy defines the pull policy for docker images: IfNotPresent or Always
+  port: 443  # service main port exposed by the docker image
+  ## if metrics are not exposed this value needs to be commented out
+  metricsPort: 9000  # metricsPort defines the port exposed by the docker image for metrics collection
+
+  applicationNameLabel: talend-vault-sidecar-injector  # applicationNameLabel represents the Talend Application Name and it must match the label com.talend.application from the docker image
+  serviceNameLabel: talend-vault-sidecar-injector  # serviceNameLabel represents the Talend Service Name and it must match the label com.talend.service from the docker image
+
+# ----------------------------------------------------------------------------
+# Define service properties
+# ----------------------------------------------------------------------------
+
+service:
+  name: talend-vault-sidecar-injector  # service name
+  ## shared services must have a fixed name that can be easily referenced by other services
+  ## for shared services (i.e. tpsvc-iam, tpsvc-config, mongodb, etc...) set this value to false
+  prefixWithHelmRelease: false  # prefixWithHelmRelease defines whether the service name will be prefixed with Helm release name
+  ## for all talend services exposing a rest api this value must be set to 80
+  exposedServicePort: 443  # exposedServicePort is the port exposed by the K8s service
+  ## default value is ClusterIP
+  type: ClusterIP  # type is the Kubernetes service type: ClusterIP, NodePort, LoadBalancer, ExternalName
+
+# ----------------------------------------------------------------------------
+# Define mutating webhook config properties
+# ----------------------------------------------------------------------------
+
+mutatingwebhook:
+  annotations:
+    keyPrefix: sidecar.vault.talend.org  # prefix used for all vault sidecar injector annotations
+    appLabelKey: com.talend.application  # annotation for application's name. Annotation's value used as Vault role by default.
+    appServiceLabelKey: com.talend.service  # annotation for service's name
+  failurePolicy: Ignore # defines how unrecognized errors and timeout errors from the admission webhook are handled. Allowed values are Ignore or Fail 
+  namespaceSelector: # Enable none or only one of the options below
+    boolean: false  # Enable to control, with label "vault-injection=enabled", the namespaces where injection is allowed (if false: all namespaces except _kube-system_ and _kube-public_) 
+    namespaced: false # Enable to control, with label "vault-injection={{ .Release.Namespace }}", the specific namespace where injection is allowed (ie, restrict to namespace where injector is installed)
+
+# ----------------------------------------------------------------------------
+# Define injection config properties
+# ----------------------------------------------------------------------------
+injectconfig:
+  #securityContext:
+    #fsGroup: 61000  # to be able to read /home/vault content using our 'talend' user in consul-template container
+  jobbabysitter:
+    image:
+      path: "talend/common/tsbi/centos-base" # the Docker image path in the registry
+      pullPolicy: IfNotPresent # pullPolicy defines the pull policy for docker images: IfNotPresent or Always
+    resources:
+      limits:
+        cpu: 20m  # Vault sidecar CPU resource limits
+        memory: 25Mi  # Vault sidecar memory resource limits
+      requests:
+        cpu: 15m  # Vault sidecar CPU resource requests
+        memory: 20Mi  # Vault sidecar memory resource requests
+  vault:
+    image:
+      path: "talend/common/tsbi/vault" # the Docker image path in the registry
+      pullPolicy: IfNotPresent # pullPolicy defines the pull policy for docker images: IfNotPresent or Always
+    loglevel: info # Vault log level: trace, debug, info, warn, err
+    resources:
+      limits:
+        cpu: 30m  # Vault sidecar CPU resource limits
+        memory: 25Mi  # Vault sidecar memory resource limits
+      requests:
+        cpu: 30m  # Vault sidecar CPU resource requests
+        memory: 20Mi  # Vault sidecar memory resource requests
+  consultemplate:
+    image:
+      path: "hashicorp/consul-template" # the Docker image path in the registry (including registry name)
+      tag: "0.21.0-alpine" # tag defines the version/tag of the docker image
+      pullPolicy: IfNotPresent # pullPolicy defines the pull policy for docker images: IfNotPresent or Always
+    loglevel: info # Consul Template log level: trace, debug, info, warn, err
+    resources:
+      limits:
+        cpu: 20m  # Consul Template sidecar CPU resource limits
+        memory: 25Mi  # Consul Template sidecar memory resource limits
+      requests:
+        cpu: 10m  # Consul Template sidecar CPU resource requests
+        memory: 15Mi  # Consul Template sidecar memory resource requests
+
+# ----------------------------------------------------------------------------
+# Define Helm Hook properties
+# ----------------------------------------------------------------------------
+
+hook:
+  image:
+    path: "talend/common/tsbi/kube-base"  # the Docker image path in the registry
+    ## default value is IfNotPresent
+    pullPolicy: IfNotPresent  # pullPolicy defines the pull policy for docker images: IfNotPresent or Always
+
+# ----------------------------------------------------------------------------
+# Define resources requests and limits
+# ----------------------------------------------------------------------------
+
+resources:
+  limits:
+    cpu: 250m  # CPU resource limits
+    memory: 256Mi  # Memory resource limits
+  requests:
+    cpu: 100m  # CPU resource requests
+    memory: 128Mi  # Memory resource requests
+
+# ----------------------------------------------------------------------------
+# Define liveness & readiness probes
+# ----------------------------------------------------------------------------
+
+probes:
+  ## Liveness probe when failed trigger a pod restart.
+  ## Several parameters can be changed to achieve the desired effect.
+  ## After an initial delay, the probe will check at every defined period,
+  ## wait for a response until the timeout and expect a certain number
+  ## of succuessful or failed checks to change the liveness status.
+  ## SuccessThreshold is not customizable and is always 1
+  ## In this case, the pod will restart after 60s if not alive (30s+3*10s)
+  liveness:
+    initialDelaySeconds: 2  #  Number of seconds after the container has started before the probe is initiated
+    periodSeconds: 20  #  How often (in seconds) to perform the probe
+    timeoutSeconds: 5  #  Number of seconds after which the probe times out
+    failureThreshold: 3  #  Number of probe failure before restarting the probe
+  ## Readiness probe when successful allow trafic to be sent to the pod.
+  ## Several parameters can be changed to achieve the desired effect.
+  ## After an initial delay, the probe will check at every defined period,
+  ## wait for a response until the timeout and expect a certain number
+  ## of succuessful or failed checks to change the readiness status.
+  readiness:
+    initialDelaySeconds: 2  #  Number of seconds after the container has started before the probe is initiated
+    periodSeconds: 20  #  How often (in seconds) to perform the probe
+    timeoutSeconds: 5  #  Number of seconds after which the probe times out
+    successThreshold: 1  #  Minimum consecutive successes for the probe to be considered successful after having failed
+    failureThreshold: 3  #  Number of probe failure before setting the probe to Unready
+
+# ----------------------------------------------------------------------------
+# Define Vault Server config
+# ----------------------------------------------------------------------------
+
+vault:
+  addr: https://vault:8200  # Address of Vault server
+  authMethods:
+    kubernetes:
+      path: kubernetes  # Path defined for Kubernetes Auth Method
+  ssl:
+    enabled: true  # Enable or disable secure connection with Vault server
+    verify: true  # Enable or disable verification of certificates

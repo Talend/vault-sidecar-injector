@@ -1,0 +1,155 @@
+#securityContext:
+#  fsGroup: 61000
+containers:
+  # This container is only injected in K8S jobs to monitor app job's container termination and send signal to vault and consul template sidecars
+  - name: tvsi-job-babysitter
+    image: artifactory.datapwn.com/tlnd-docker-dev/talend/common/tsbi/centos-base:1.2.1-20190701101124
+    imagePullPolicy: IfNotPresent
+    env:
+      - name: POD_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.name
+    command:
+      - "sh"
+      - "-c"
+      - |
+        podDesc=$(curl -s -X GET -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt https://$KUBERNETES_SERVICE_HOST/api/v1/namespaces/$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)/pods/$POD_NAME?pretty=false)
+        retCode=$(echo $podDesc | jq .code)
+        if [ $retCode = "403" ]; then
+          echo $podDesc | jq .message
+          exit 1
+        fi
+
+        while true; do
+          cntStatus=$(curl -s -X GET -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt https://$KUBERNETES_SERVICE_HOST/api/v1/namespaces/$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)/pods/$POD_NAME?pretty=false | jq -c --raw-output '.status.containerStatuses[] | select(.name == "<APP_JOB_CNT_NAME>").state | keys[0]')
+          #echo $cntStatus
+          if [ $cntStatus = "terminated" ]; then
+            echo "=> job container terminated: send signal"
+            touch /home/vault/vault-sidecars-signal-terminate
+            exit 0
+          fi
+          sleep 2
+        done
+    volumeMounts:
+      - name: vault-token
+        mountPath: /home/vault
+        # This one must be explicitly added since the Service Account Admission Controller will not do it for us
+        # as we are injecting this container in relevant pods by ourself. The name's value will be overridden by the webhook.
+        # See related code in 'addContainer' function (webhook.go).
+      - name: K8S_SA_SECRETS_VOL_NAME
+        mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        readOnly: true
+  - name: tvsi-vault-agent
+    image: vault:1.1.0
+    imagePullPolicy: IfNotPresent
+    env:
+      - name: SKIP_SETCAP
+        value: "true"
+      - name: VAULT_ADDR
+        value: https://vault:8200
+    command:
+      - "sh"
+      - "-c"
+      - |
+        cat <<EOF > vault-agent-config.hcl
+        pid_file = "/home/vault/pidfile"
+
+        auto_auth {
+          method "kubernetes" {
+            mount_path = "auth/kubernetes"
+            config = {
+              role = "<APP_VAULT_ROLE>"
+            }
+          }
+
+          sink "file" {
+            config = {
+              path = "/home/vault/.vault-token"
+            }
+          }
+        }
+        EOF
+        workload_is_job="<APP_JOB>"
+        if [ $workload_is_job = "true" ]; then
+          docker-entrypoint.sh agent -config=vault-agent-config.hcl -log-level=info &
+          while true; do
+            if [ -f "/home/vault/vault-sidecars-signal-terminate" ]; then
+              echo "=> exit (signal received)"
+              export VAULT_TOKEN=$(cat /home/vault/.vault-token);
+              vault token revoke -self;
+              exit 0
+            fi
+            sleep 2
+          done
+        else
+          docker-entrypoint.sh agent -config=vault-agent-config.hcl -log-level=info
+        fi
+    lifecycle:
+      preStop:
+        exec:
+          command:
+            - "sh"
+            - "-c"
+            - >
+              export VAULT_TOKEN=$(cat /home/vault/.vault-token);
+              vault token revoke -self;
+    volumeMounts:
+      - name: vault-token
+        mountPath: /home/vault
+        # This one must be explicitly added since the Service Account Admission Controller will not do it for us
+        # as we are injecting this container in relevant pods by ourself. The name's value will be overridden by the webhook.
+        # See related code in 'addContainer' function (webhook.go).
+      - name: K8S_SA_SECRETS_VOL_NAME
+        mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        readOnly: true
+  - name: tvsi-consul-template
+    image: hashicorp/consul-template:0.20.0-alpine
+    imagePullPolicy: IfNotPresent
+    env:
+      - name: VAULT_ADDR
+        value: https://vault:8200
+    command:
+      - "sh"
+      - "-c"
+      - |
+        cat <<EOF > /consul-template/config/consul-template-config.hcl
+        vault {
+          vault_agent_token_file = "/home/vault/.vault-token"
+          renew_token = false
+          retry {
+            attempts = 10
+            backoff = "2s"
+            max_backoff = "60s"
+          }
+          ssl {
+            enabled = true
+            verify = true
+          }
+        }
+
+        <APPSVC_TEMPLATES>
+        EOF
+        workload_is_job="<APP_JOB>"
+        if [ $workload_is_job = "true" ]; then
+          docker-entrypoint.sh -config=/consul-template/config/consul-template-config.hcl -log-level=info &
+          while true; do
+            if [ -f "/home/vault/vault-sidecars-signal-terminate" ]; then
+              echo "=> exit (signal received)"
+              exit 0
+            fi
+            sleep 2
+          done
+        else
+          docker-entrypoint.sh -config=/consul-template/config/consul-template-config.hcl -log-level=info
+        fi
+    volumeMounts:
+      - name: vault-token
+        mountPath: /home/vault
+        # This volume must be defined in application's manifest (used to share the secrets file(s))
+      - name: secrets
+        mountPath: /opt/talend/secrets
+volumes:
+  - name: vault-token
+    emptyDir:
+      medium: Memory
