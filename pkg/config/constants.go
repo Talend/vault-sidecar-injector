@@ -15,6 +15,6 @@
 package config
 
 const (
-	CertsPath       = "/etc/vaultinjector-webhook/certs"
-	ConfigFilesPath = "/etc/vaultinjector-webhook/config"
+	CertsPath       = "/opt/talend/webhook/certs"
+	ConfigFilesPath = "/opt/talend/webhook/config"
 )

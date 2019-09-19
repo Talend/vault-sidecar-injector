@@ -39,7 +39,7 @@ func main() {
 	var parameters config.WhSvrParameters
 
 	// get command line parameters
-	flag.IntVar(&parameters.Port, "port", 443, "webhook server port")
+	flag.IntVar(&parameters.Port, "port", 8443, "webhook server port")
 	flag.IntVar(&parameters.MetricsPort, "metricsport", 9000, "metrics server port (Prometheus)")
 	flag.StringVar(&parameters.CertFile, "tlscertfile", config.CertsPath+"/cert.pem", "file containing the x509 Certificate for HTTPS")
 	flag.StringVar(&parameters.KeyFile, "tlskeyfile", config.CertsPath+"/key.pem", "file containing the x509 private key to tlscertfile")

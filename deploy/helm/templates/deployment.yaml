@@ -29,26 +29,26 @@ spec:
           image: {{ include "talend-vault-sidecar-injector.image" .Values }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
+            - -port={{ .Values.image.port }}
+            - -metricsport={{ .Values.image.metricsPort }}
             - -annotationKeyPrefix={{ .Values.mutatingwebhook.annotations.keyPrefix }}
             - -appLabelKey={{ .Values.mutatingwebhook.annotations.appLabelKey }}
             - -appServiceLabelKey={{ .Values.mutatingwebhook.annotations.appServiceLabelKey }}
-            - -sidecarcfgfile=/etc/vaultinjector-webhook/config/sidecarconfig.yaml
-            - -cttmplblockfile=/etc/vaultinjector-webhook/config/consultemplatetmplblock.hcl
-            - -cttmpldefaultfile=/etc/vaultinjector-webhook/config/consultemplatetmpldefault.ctmpl
-            - -podlchooksfile=/etc/vaultinjector-webhook/config/podlifecyclehooks.yaml
-            - -tlscertfile=/etc/vaultinjector-webhook/certs/cert.pem
-            - -tlskeyfile=/etc/vaultinjector-webhook/certs/key.pem
+            - -sidecarcfgfile=/opt/talend/webhook/config/sidecarconfig.yaml
+            - -cttmplblockfile=/opt/talend/webhook/config/consultemplatetmplblock.hcl
+            - -cttmpldefaultfile=/opt/talend/webhook/config/consultemplatetmpldefault.ctmpl
+            - -podlchooksfile=/opt/talend/webhook/config/podlifecyclehooks.yaml
+            - -tlscertfile=/opt/talend/webhook/certs/cert.pem
+            - -tlskeyfile=/opt/talend/webhook/certs/key.pem
             - -logtostderr
             - -stderrthreshold=0
             - -v=4
             - 2>&1
           ports:
-            - name: https
+            - name: vaultinjector-webhook-api
               containerPort: {{ .Values.image.port }}
-            {{- if .Values.image.metricsPort }}
             - name: http-metrics
               containerPort: {{ .Values.image.metricsPort }}
-            {{- end }}
           livenessProbe:
             exec:
               command:
@@ -72,10 +72,10 @@ spec:
             failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
           volumeMounts:
             - name: webhook-certs
-              mountPath: /etc/vaultinjector-webhook/certs
+              mountPath: /opt/talend/webhook/certs
               readOnly: true
             - name: webhook-config
-              mountPath: /etc/vaultinjector-webhook/config
+              mountPath: /opt/talend/webhook/config
           {{- if .Values.resources }}
           resources:
 {{ toYaml .Values.resources | indent 12 }}

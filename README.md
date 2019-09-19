@@ -187,7 +187,7 @@ The following tables lists the configurable parameters of the `Talend Vault Side
 | image.applicationNameLabel   | applicationNameLabel represents the Talend Application Name and it must match the label com.talend.application from the docker image | talend-vault-sidecar-injector                                   |
 | image.metricsPort                | metricsPort defines the port exposed by the docker image for metrics collection | 9000 |
 | image.path       | the Docker image path in the registry   | talend/common/tsbi/k8s/vault-sidecar-injector |
-| image.port       | service main port exposed by the docker image   | 443                                                             |
+| image.port       | service main port exposed by the docker image   | 8443                                                             |
 | image.pullPolicy   | pullPolicy defines the pull policy for docker images: IfNotPresent or Always       | IfNotPresent           |
 | image.serviceNameLabel   | serviceNameLabel represents the Talend Service Name and it must match the label com.talend.service from the docker image             | talend-vault-sidecar-injector                                   |
 | image.tag  | tag defines the version/tag of the docker image     | 1.7.1-20190828131916                                           |
@@ -235,7 +235,7 @@ The following tables lists the configurable parameters of the `Talend Vault Side
 | resources.requests.cpu                          | CPU resource requests                                                                                                                | 100m                                                            |
 | resources.requests.memory                       | Memory resource requests                                                                                                             | 128Mi                                                           |
 | revisionHistoryLimit                            | revision history limit in tiller / helm / k8s                                                                                        | 3                                                               |
-| service.exposedServicePort                      | exposedServicePort is the port exposed by the K8s service                                                                            | 443                                                             |
+| service.exposedServicePort                      | exposedServicePort is the port exposed by the K8s service (Kubernetes always assumes port 443 for webhooks)                       | 443                                                             |
 | service.name                                    | service name                                                                                                                         | talend-vault-sidecar-injector                                   |
 | service.prefixWithHelmRelease                   | prefixWithHelmRelease defines whether the service name will be prefixed with Helm release name                                       | false                                                           |
 | service.type                                    | type is the Kubernetes service type: ClusterIP, NodePort, LoadBalancer, ExternalName                                                 | ClusterIP                                                       |
@@ -289,7 +289,7 @@ Following collectors are available:
   - go_memstats_lookups_total
   - ...
 
-![Grafana dashboard](grafana-vault-sidecar-injector.png)
+![Grafana dashboard](doc/grafana-vault-sidecar-injector.png)
 
 ## Annotations
 
