@@ -1,10 +1,15 @@
-FROM artifactory.datapwn.com/tlnd-docker-prod/talend/common/tsbi/centos-base:1.2.3-20190718150644
+FROM centos:7.6.1810
 
-LABEL com.talend.name="Talend Vault Sidecar Injector" \
+ENV TALEND_HOME=/opt/talend
+
+LABEL com.talend.maintainer="Talend <support@talend.com>" \
+      com.talend.url="https://www.talend.com/" \
+      com.talend.vendor="Talend" \
+      com.talend.name="Talend Vault Sidecar Injector" \
       com.talend.application="talend-vault-sidecar-injector" \
       com.talend.service="talend-vault-sidecar-injector" \
       com.talend.description="Kubernetes Webhook Admission Server for Vault sidecar injection"
 
-COPY --chown=talend:talend target/vaultinjector-webhook ${TALEND_HOME}/webhook/vaultinjector-webhook
+COPY target/vaultinjector-webhook ${TALEND_HOME}/webhook/vaultinjector-webhook
 
 ENTRYPOINT ["/opt/talend/webhook/vaultinjector-webhook"]

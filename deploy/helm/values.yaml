@@ -32,7 +32,7 @@ rbac:
 # ----------------------------------------------------------------------------
 
 image:
-  path: "talend/common/tsbi/k8s/vault-sidecar-injector"  # the Docker image path in the registry
+  path: "talend/vault-sidecar-injector"  # the Docker image path in the registry
   ## if tag is not defined it is automatically set to "latest"
   tag: "latest"  # tag defines the version/tag of the docker image
   ## default value is IfNotPresent
