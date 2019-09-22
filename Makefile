@@ -1,9 +1,8 @@
 VERSION:=3.0.0
 
-OWNER=Talend
-REPO=vault-sidecar-injector
-ARTIFACT=vaultinjector-webhook
-TARGET:=target/$(ARTIFACT)
+OWNER:=Talend
+REPO:=vault-sidecar-injector
+TARGET:=target/vaultinjector-webhook
 SRC:=$(shell find . -type f -name '*.go' -not -path "./vendor/*")
 
 # Inject version into code at build time
@@ -29,12 +28,18 @@ test:
 build: clean test
 	echo "Building ..."
 	GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -a -o $(TARGET)
+	cd target && sha512sum vaultinjector-webhook > vaultinjector-webhook.sha512
+
+image: build
+	echo "Build image ..."
+	docker build -t talend/vault-sidecar-injector .
 
 release: build
+	cd target
 	echo "Releasing artifacts ..."
 	read -p "- Github user name to use for release: " username
 	echo "- Creating release"
-	id=$$(curl -u $$username -X POST "https://api.github.com/repos/${OWNER}/${REPO}/releases" -d '{"tag_name": "talend-vault-sidecar-injector-'${VERSION}'", "name": "talend-vault-sidecar-injector-'${VERSION}'", "draft": true, "body": ""}' | jq '.id')
+	id=$$(curl -u $$username -s -X POST "https://api.github.com/repos/${OWNER}/${REPO}/releases" -d '{"tag_name": "v'${VERSION}'", "name": "v'${VERSION}'", "draft": true, "body": ""}' | jq '.id')
 	if [ "$$?" -ne 0 ]; then \
 		echo "Unable to create release"; \
 		echo $$id; \
@@ -42,30 +47,31 @@ release: build
 	fi
 	echo
 	echo "- Publishing release binary"
-	asset_absolute_path=$$(realpath ${TARGET})
-	asset_filename=$$(basename $$asset_absolute_path)
-	curl -u $$username --data-binary @"$$asset_absolute_path" -H "Content-Type: application/octet-stream" "https://uploads.github.com/repos/${OWNER}/${REPO}/releases/$$id/assets?name=$$asset_filename"
-	if [ "$$?" -ne 0 ]; then \
-		echo "Unable to publish binary $$asset_absolute_path"; \
-		exit 1; \
-	fi
+	for asset_file in $(shell ls ./target); do \
+		asset_absolute_path=$$(realpath $$asset_file); \
+		echo "Adding file $$asset_absolute_path"; \
+		echo; \
+		asset_filename=$$(basename $$asset_absolute_path); \
+		curl -u $$username -s --data-binary @"$$asset_absolute_path" -H "Content-Type: application/octet-stream" "https://uploads.github.com/repos/${OWNER}/${REPO}/releases/$$id/assets?name=$$asset_filename"; \
+		if [ "$$?" -ne 0 ]; then \
+			echo "Unable to publish binary $$asset_absolute_path"; \
+			exit 1; \
+		fi; \
+		echo; \
+	done
 	echo
 	echo
 	read -p "- Confirm release ok at https://api.github.com/repos/${OWNER}/${REPO}/releases/$$id (y/[n])? " answer
 	case $$answer in \
 	y|Y ) \
-		curl -u $$username -X PATCH "https://api.github.com/repos/${OWNER}/${REPO}/releases/$$id" -d '{"draft": false}'; \
+		curl -u $$username -s -X PATCH "https://api.github.com/repos/${OWNER}/${REPO}/releases/$$id" -d '{"draft": false}'; \
 		if [ "$$?" -ne 0 ]; then \
 			echo "Unable to finish release"; \
 			exit 1; \
 		fi; \
 	;; \
 	* ) \
-		curl -u $$username -X DELETE "https://api.github.com/repos/${OWNER}/${REPO}/releases/$$id"; \
+		curl -u $$username -s -X DELETE "https://api.github.com/repos/${OWNER}/${REPO}/releases/$$id"; \
 		echo "Aborted"; \
 	;; \
 	esac
-
-image: build
-	echo "Build image ..."
-	docker build -t talend/common/tsbi/k8s/vault-sidecar-injector .

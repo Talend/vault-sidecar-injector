@@ -183,6 +183,7 @@ func (vaultInjector *VaultInjector) computeSidecarsPlaceholders(podContainers []
 	}
 
 	annotationVaultRole := annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationRoleKey]]
+	annotationVaultSATokenPath := annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationSATokenKey]]
 	annotationVaultSecretsPath := strings.Split(annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationSecretsPathKey]], ",")
 	annotationConsulTemplateTemplate := strings.Split(annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationSecretsTemplateKey]], ",")
 	annotationConsulTemplateDest := strings.Split(annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationTemplateDestKey]], ",")
@@ -192,18 +193,19 @@ func (vaultInjector *VaultInjector) computeSidecarsPlaceholders(podContainers []
 	annotationConsulTemplateTemplateNum := len(annotationConsulTemplateTemplate)
 	annotationConsulTemplateDestNum := len(annotationConsulTemplateDest)
 
-	if annotationVaultRole == "" {
-		// If annotation not provided, Vault role set to application label
+	if annotationVaultRole == "" { // If annotation not provided, Vault role set to application label
 		annotationVaultRole = applicationLabel
 	}
 
-	if annotationVaultSecretsPathNum == 1 && annotationVaultSecretsPath[0] == "" {
-		// Build default secrets path: "secret/<application label>/<service label>"
+	if annotationVaultSATokenPath == "" { // Use default
+		annotationVaultSATokenPath = k8sServiceAccountTokenPath
+	}
+
+	if annotationVaultSecretsPathNum == 1 && annotationVaultSecretsPath[0] == "" { // Build default secrets path: "secret/<application label>/<service label>"
 		annotationVaultSecretsPath[0] = vaultDefaultSecretsEnginePath + "/" + applicationLabel + "/" + applicationServiceLabel
 	}
 
-	if annotationConsulTemplateDestNum == 1 && annotationConsulTemplateDest[0] == "" {
-		// Default
+	if annotationConsulTemplateDestNum == 1 && annotationConsulTemplateDest[0] == "" { // Use default
 		annotationConsulTemplateDest[0] = consulTemplateAppSvcDefaultDestination
 	}
 
@@ -249,7 +251,7 @@ func (vaultInjector *VaultInjector) computeSidecarsPlaceholders(podContainers []
 		ctTemplates.WriteString("\n")
 	}
 
-	return &sidecarPlaceholders{k8sSaSecretsVolName, annotationVaultRole, ctTemplates.String()}, nil
+	return &sidecarPlaceholders{k8sSaSecretsVolName, annotationVaultRole, annotationVaultSATokenPath, ctTemplates.String()}, nil
 }
 
 // Deal with both InitContainers & Containers
@@ -302,6 +304,7 @@ func (vaultInjector *VaultInjector) addContainer(podContainers []corev1.Containe
 			}
 			container.Command[commandIdx] = strings.Replace(container.Command[commandIdx], appJobVarPlaceholder, strconv.FormatBool(jobWorkload), -1)
 			container.Command[commandIdx] = strings.Replace(container.Command[commandIdx], vaultRolePlaceholder, placeholders.vaultRole, -1)
+			container.Command[commandIdx] = strings.Replace(container.Command[commandIdx], vaultAppSvcSATokenPathPlaceholder, placeholders.vaultSATokenPath, -1)
 			container.Command[commandIdx] = strings.Replace(container.Command[commandIdx], consulTemplateTemplatesPlaceholder, placeholders.consulTemplateTemplates, -1)
 		}
 

@@ -22,6 +22,7 @@ import (
 var vaultInjectorAnnotationKeys = []string{
 	vaultInjectorAnnotationInjectKey,
 	vaultInjectorAnnotationRoleKey,
+	vaultInjectorAnnotationSATokenKey,
 	vaultInjectorAnnotationSecretsPathKey,
 	vaultInjectorAnnotationSecretsTemplateKey,
 	vaultInjectorAnnotationTemplateDestKey,
@@ -41,6 +42,7 @@ type VaultInjector struct {
 type sidecarPlaceholders struct {
 	serviceAccountTokenVolumeName string
 	vaultRole                     string
+	vaultSATokenPath              string
 	consulTemplateTemplates       string
 }
 

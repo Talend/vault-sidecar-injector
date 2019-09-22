@@ -295,11 +295,12 @@ Following collectors are available:
 
 Following annotations in requesting pods are supported:
 
-| Annotation                                     | (M)andatory / (O)ptional | Default Value        | Supported Values                           | Description |
-|------------------------------------------------|------------------------|--------------------|----------------------------------------------------|-------------|
-| `sidecar.vault.talend.org/inject`              | M                      |         | "true" / "on" / "yes" / "y"    | Ask for sidecar injection to get secrets from Vault    |
-| `sidecar.vault.talend.org/workload`            | O                      |  | "job" | Type of submitted workload |
-| `sidecar.vault.talend.org/role`                | O                      | "\<`com.talend.application` label\>" | Any string    | Vault role associated to requesting pod  |
+| Annotation                            | (M)andatory / (O)ptional | Default Value        | Supported Values               | Description |
+|---------------------------------------|------------------------|--------------------|------------------------------------|-------------|
+| `sidecar.vault.talend.org/inject`     | M                      |         | "true" / "on" / "yes" / "y"    | Ask for sidecar injection to get secrets from Vault    |
+| `sidecar.vault.talend.org/workload`   | O                      |  | "job" | Type of submitted workload |
+| `sidecar.vault.talend.org/role`       | O                      | "\<`com.talend.application` label\>" | Any string    | Vault role associated to requesting pod  |
+| `sidecar.vault.talend.org/sa-token`   | O                      | "/var/run/secrets/kubernetes.io/serviceaccount/token" | Any string | Full path to service account token used for Vault Kubernetes authentication |
 | `sidecar.vault.talend.org/secrets-path`        | O                      | "secret/<`com.talend.application` label>/<`com.talend.service` label>" | Comma-separated strings | List of secrets engines and path      |
 | `sidecar.vault.talend.org/secrets-destination` | O                      | "secrets.properties" | Comma-separated strings  | List of secrets filenames (without path), one per secrets path |
 | `sidecar.vault.talend.org/secrets-hook` | O |  | "true" / "on" / "yes" / "y" | If set, lifecycle hooks will be added to pod's container(s) to wait for secrets files |
