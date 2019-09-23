@@ -241,7 +241,9 @@ The following tables lists the configurable parameters of the `Talend Vault Side
 | service.type                                    | type is the Kubernetes service type: ClusterIP, NodePort, LoadBalancer, ExternalName                                                 | ClusterIP                                                       |
 | talendImageRegistry  | talendImageRegistry is Talend's Docker registry host name | artifactory.datapwn.com/tlnd-docker-dev  |
 | vault.addr                                      | Address of Vault server                                                                                                              | https://vault:8200                                               |
-| vault.authMethods.kubernetes.path               | Path defined for Kubernetes Auth Method            | kubernetes |
+| vault.authMethods.approle.roleid_filename    | Filename for role id    | approle_roleid   |
+| vault.authMethods.approle.secretid_filename  | Filename for secret id  | approle_secretid |
+| vault.authMethods.kubernetes.path      | Path defined for Kubernetes Auth Method            | kubernetes |
 | vault.ssl.enabled              | Enable or disable secure connection with Vault server               | true |
 | vault.ssl.verify               | Enable or disable verification of certificates               | true |
 
@@ -298,6 +300,7 @@ Following annotations in requesting pods are supported:
 | Annotation                            | (M)andatory / (O)ptional | Default Value        | Supported Values               | Description |
 |---------------------------------------|------------------------|--------------------|------------------------------------|-------------|
 | `sidecar.vault.talend.org/inject`     | M                      |         | "true" / "on" / "yes" / "y"    | Ask for sidecar injection to get secrets from Vault    |
+| `sidecar.vault.talend.org/auth`       | O                      | "kubernetes"   | "kubernetes" / "approle" | Vault Auth Method to use |
 | `sidecar.vault.talend.org/workload`   | O                      |  | "job" | Type of submitted workload |
 | `sidecar.vault.talend.org/role`       | O                      | "\<`com.talend.application` label\>" | Any string    | Vault role associated to requesting pod  |
 | `sidecar.vault.talend.org/sa-token`   | O                      | "/var/run/secrets/kubernetes.io/serviceaccount/token" | Any string | Full path to service account token used for Vault Kubernetes authentication |

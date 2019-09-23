@@ -21,6 +21,7 @@ import (
 
 var vaultInjectorAnnotationKeys = []string{
 	vaultInjectorAnnotationInjectKey,
+	vaultInjectorAnnotationAuthMethodKey,
 	vaultInjectorAnnotationRoleKey,
 	vaultInjectorAnnotationSATokenKey,
 	vaultInjectorAnnotationSecretsPathKey,
@@ -42,6 +43,7 @@ type VaultInjector struct {
 type sidecarPlaceholders struct {
 	k8sDefaultSATokenVolumeName    string
 	vaultInjectorSATokenVolumeName string
+	vaultAuthMethod                string
 	vaultRole                      string
 	consulTemplateTemplates        string
 }

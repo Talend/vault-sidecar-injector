@@ -173,6 +173,7 @@ func (vaultInjector *VaultInjector) computeSidecarsPlaceholders(podContainers []
 		return nil, fmt.Errorf("Submitted pod must contain labels %s and %s", vaultInjector.ApplicationLabelKey, vaultInjector.ApplicationServiceLabelKey)
 	}
 
+	annotationVaultAuthMethod := annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationAuthMethodKey]]
 	annotationVaultRole := annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationRoleKey]]
 	annotationVaultSATokenPath := annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationSATokenKey]]
 	annotationVaultSecretsPath := strings.Split(annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationSecretsPathKey]], ",")
@@ -183,6 +184,10 @@ func (vaultInjector *VaultInjector) computeSidecarsPlaceholders(podContainers []
 	annotationVaultSecretsPathNum := len(annotationVaultSecretsPath)
 	annotationConsulTemplateTemplateNum := len(annotationConsulTemplateTemplate)
 	annotationConsulTemplateDestNum := len(annotationConsulTemplateDest)
+
+	if annotationVaultAuthMethod == "" {
+		annotationVaultAuthMethod = vaultDefaultAuthMethod
+	}
 
 	if annotationVaultRole == "" { // If annotation not provided, Vault role set to application label
 		annotationVaultRole = applicationLabel
@@ -255,7 +260,7 @@ func (vaultInjector *VaultInjector) computeSidecarsPlaceholders(podContainers []
 		return nil, err
 	}
 
-	return &sidecarPlaceholders{k8sSaSecretsVolName, vaultInjectorSaSecretsVolName, annotationVaultRole, ctTemplates.String()}, nil
+	return &sidecarPlaceholders{k8sSaSecretsVolName, vaultInjectorSaSecretsVolName, annotationVaultAuthMethod, annotationVaultRole, ctTemplates.String()}, nil
 }
 
 // Deal with both InitContainers & Containers
@@ -307,6 +312,7 @@ func (vaultInjector *VaultInjector) addContainer(podContainers []corev1.Containe
 				container.Command[commandIdx] = strings.Replace(container.Command[commandIdx], appJobContainerNamePlaceholder, podContainers[0].Name, -1)
 			}
 			container.Command[commandIdx] = strings.Replace(container.Command[commandIdx], appJobVarPlaceholder, strconv.FormatBool(jobWorkload), -1)
+			container.Command[commandIdx] = strings.Replace(container.Command[commandIdx], vaultAuthMethodPlaceholder, placeholders.vaultAuthMethod, -1)
 			container.Command[commandIdx] = strings.Replace(container.Command[commandIdx], vaultRolePlaceholder, placeholders.vaultRole, -1)
 			container.Command[commandIdx] = strings.Replace(container.Command[commandIdx], consulTemplateTemplatesPlaceholder, placeholders.consulTemplateTemplates, -1)
 		}
