@@ -34,9 +34,7 @@ containers:
     volumeMounts:
       - name: vault-token
         mountPath: /home/vault
-        # This one must be explicitly added since the Service Account Admission Controller will not do it for us
-        # as we are injecting this container in relevant pods by ourself. The name's value will be overridden by the webhook.
-        # See related code in 'addContainer' function (webhook.go).
+        # The name's value will be overridden by the webhook
       - name: K8S_SA_SECRETS_VOL_NAME
         mountPath: /var/run/secrets/kubernetes.io/serviceaccount
         readOnly: true
@@ -60,6 +58,7 @@ containers:
             mount_path = "auth/kubernetes"
             config = {
               role = "<APP_VAULT_ROLE>"
+              token_path = "/var/run/secrets/talend/vault-sidecar-injector/serviceaccount/token"
             }
           }
 
@@ -97,11 +96,9 @@ containers:
     volumeMounts:
       - name: vault-token
         mountPath: /home/vault
-        # This one must be explicitly added since the Service Account Admission Controller will not do it for us
-        # as we are injecting this container in relevant pods by ourself. The name's value will be overridden by the webhook.
-        # See related code in 'addContainer' function (webhook.go).
-      - name: K8S_SA_SECRETS_VOL_NAME
-        mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        # The name's value will be overridden by the webhook to point to container's service account volume to use for Vault authentication.
+      - name: TVSI_SA_SECRETS_VOL_NAME
+        mountPath: /var/run/secrets/talend/vault-sidecar-injector/serviceaccount
         readOnly: true
   - name: tvsi-consul-template
     image: hashicorp/consul-template:0.20.0-alpine

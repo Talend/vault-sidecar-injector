@@ -189,7 +189,7 @@ func (vaultInjector *VaultInjector) computeSidecarsPlaceholders(podContainers []
 	}
 
 	if annotationVaultSATokenPath == "" { // Use default
-		annotationVaultSATokenPath = k8sServiceAccountTokenPath
+		annotationVaultSATokenPath = k8sDefaultServiceAccountTokenPath
 	}
 
 	if annotationVaultSecretsPathNum == 1 && annotationVaultSecretsPath[0] == "" { // Build default secrets path: "secret/<application label>/<service label>"
@@ -242,17 +242,20 @@ func (vaultInjector *VaultInjector) computeSidecarsPlaceholders(podContainers []
 		ctTemplates.WriteString("\n")
 	}
 
-	// Look after volumeMounts' Name for Service Account's mountPath: '/var/run/secrets/kubernetes.io/serviceaccount' by default
-	// or using custom value provided with 'sa-token' annotation (get rid of ending '/token' if any to have mount path only).
+	// Look after volumeMounts' Names for Service Account's mountPath: '/var/run/secrets/kubernetes.io/serviceaccount' and
+	// possible custom value provided with 'sa-token' annotation (get rid of ending '/token' if any to have mount path only).
 	//
 	// To be done since Service Account Admission Controller does not automatically add volumeSource for our injected containers.
-	// Vault Agent needs to retrieve service account's JWT token there to perform Vault K8S Auth.
-	k8sSaSecretsVolName, err := getServiceAccountTokenVolumeName(podContainers, strings.TrimSuffix(annotationVaultSATokenPath, "/token"))
+	k8sSaSecretsVolName, err := getServiceAccountTokenVolumeName(podContainers, k8sDefaultSATokenVolMountPath)
+	if err != nil {
+		return nil, err
+	}
+	vaultInjectorSaSecretsVolName, err := getServiceAccountTokenVolumeName(podContainers, strings.TrimSuffix(annotationVaultSATokenPath, "/token"))
 	if err != nil {
 		return nil, err
 	}
 
-	return &sidecarPlaceholders{k8sSaSecretsVolName, annotationVaultRole, annotationVaultSATokenPath, ctTemplates.String()}, nil
+	return &sidecarPlaceholders{k8sSaSecretsVolName, vaultInjectorSaSecretsVolName, annotationVaultRole, ctTemplates.String()}, nil
 }
 
 // Deal with both InitContainers & Containers
@@ -305,7 +308,6 @@ func (vaultInjector *VaultInjector) addContainer(podContainers []corev1.Containe
 			}
 			container.Command[commandIdx] = strings.Replace(container.Command[commandIdx], appJobVarPlaceholder, strconv.FormatBool(jobWorkload), -1)
 			container.Command[commandIdx] = strings.Replace(container.Command[commandIdx], vaultRolePlaceholder, placeholders.vaultRole, -1)
-			container.Command[commandIdx] = strings.Replace(container.Command[commandIdx], vaultAppSvcSATokenPathPlaceholder, placeholders.vaultSATokenPath, -1)
 			container.Command[commandIdx] = strings.Replace(container.Command[commandIdx], consulTemplateTemplatesPlaceholder, placeholders.consulTemplateTemplates, -1)
 		}
 
@@ -313,12 +315,13 @@ func (vaultInjector *VaultInjector) addContainer(podContainers []corev1.Containe
 		container.VolumeMounts = make([]corev1.VolumeMount, len(sidecarCnt.VolumeMounts))
 		copy(container.VolumeMounts, sidecarCnt.VolumeMounts)
 
-		// Loop to see if we have a '/var/run/secrets/kubernetes.io/serviceaccount' mountPath
-		// then overwrite its name with extracted value from submitted pod
+		// Loop to set proper volume names (extracted values from submitted pod)
 		for volMountIdx := range container.VolumeMounts {
-			if container.VolumeMounts[volMountIdx].MountPath == k8sServiceAccountTokenVolMountPath {
-				container.VolumeMounts[volMountIdx].Name = placeholders.serviceAccountTokenVolumeName
-				break
+			switch container.VolumeMounts[volMountIdx].MountPath {
+			case k8sDefaultSATokenVolMountPath:
+				container.VolumeMounts[volMountIdx].Name = placeholders.k8sDefaultSATokenVolumeName
+			case vaultInjectorSATokenVolMountPath:
+				container.VolumeMounts[volMountIdx].Name = placeholders.vaultInjectorSATokenVolumeName
 			}
 		}
 

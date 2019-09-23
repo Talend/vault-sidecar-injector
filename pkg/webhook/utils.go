@@ -100,8 +100,8 @@ Loop:
 	}
 
 	if k8sSaSecretsVolName == "" {
-		klog.Errorf("Volume Mount for path %s not found in submitted pod", k8sServiceAccountTokenVolMountPath)
-		return "", fmt.Errorf("Volume Mount for path %s not found in submitted pod", k8sServiceAccountTokenVolMountPath)
+		klog.Errorf("Volume Mount for path %s not found in submitted pod", saTokenPath)
+		return "", fmt.Errorf("Volume Mount for path %s not found in submitted pod", saTokenPath)
 	}
 
 	return k8sSaSecretsVolName, nil
