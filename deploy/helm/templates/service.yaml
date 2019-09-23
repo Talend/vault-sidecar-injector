@@ -14,7 +14,7 @@ spec:
   ports:
     - name: https
       port: {{ .Values.service.exposedServicePort }}
-      targetPort: vaultinjector-webhook-api
+      targetPort: webhook-api
     {{- if .Values.image.metricsPort }}
     - name: http-metrics
       port: {{ .Values.image.metricsPort }}

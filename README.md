@@ -193,7 +193,7 @@ The following tables lists the configurable parameters of the `Talend Vault Side
 | image.tag  | tag defines the version/tag of the docker image     | 1.7.1-20190828131916                                           |
 | injectconfig.consultemplate.image.path   | the Docker image path in the registry (including registry name)   | hashicorp/consul-template    |
 | injectconfig.consultemplate.image.pullPolicy   | pullPolicy defines the pull policy for docker images: IfNotPresent or Always  | IfNotPresent    |
-| injectconfig.consultemplate.image.tag          | tag defines the version/tag of the docker image   | 0.21.0-alpine       |
+| injectconfig.consultemplate.image.tag          | tag defines the version/tag of the docker image   | 0.22.0-alpine       |
 | injectconfig.consultemplate.loglevel           | Consul Template log level: trace, debug, info, warn, err   | info       |
 | injectconfig.consultemplate.resources.limits.cpu | Consul Template sidecar CPU resource limits | 20m |
 | injectconfig.consultemplate.resources.limits.memory | Consul Template sidecar memory resource limits | 25Mi |

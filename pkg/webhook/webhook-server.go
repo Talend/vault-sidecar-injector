@@ -173,15 +173,6 @@ func (vaultInjector *VaultInjector) computeSidecarsPlaceholders(podContainers []
 		return nil, fmt.Errorf("Submitted pod must contain labels %s and %s", vaultInjector.ApplicationLabelKey, vaultInjector.ApplicationServiceLabelKey)
 	}
 
-	// Look after volumeMounts' Name for mountPath '/var/run/secrets/kubernetes.io/serviceaccount'
-	// To be done since Service Account Admission Controller does not automatically add volumeSource mounted at
-	// '/var/run/secrets/kubernetes.io/serviceaccount' for our injected containers.
-	// Vault Agent needs to retrieve service account's JWT token there to perform Vault K8S Auth.
-	k8sSaSecretsVolName, err := getServiceAccountTokenVolume(podContainers)
-	if err != nil {
-		return nil, err
-	}
-
 	annotationVaultRole := annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationRoleKey]]
 	annotationVaultSATokenPath := annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationSATokenKey]]
 	annotationVaultSecretsPath := strings.Split(annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationSecretsPathKey]], ",")
@@ -249,6 +240,16 @@ func (vaultInjector *VaultInjector) computeSidecarsPlaceholders(podContainers []
 
 		ctTemplates.WriteString(ctTemplateBlock)
 		ctTemplates.WriteString("\n")
+	}
+
+	// Look after volumeMounts' Name for Service Account's mountPath: '/var/run/secrets/kubernetes.io/serviceaccount' by default
+	// or using custom value provided with 'sa-token' annotation (get rid of ending '/token' if any to have mount path only).
+	//
+	// To be done since Service Account Admission Controller does not automatically add volumeSource for our injected containers.
+	// Vault Agent needs to retrieve service account's JWT token there to perform Vault K8S Auth.
+	k8sSaSecretsVolName, err := getServiceAccountTokenVolumeName(podContainers, strings.TrimSuffix(annotationVaultSATokenPath, "/token"))
+	if err != nil {
+		return nil, err
 	}
 
 	return &sidecarPlaceholders{k8sSaSecretsVolName, annotationVaultRole, annotationVaultSATokenPath, ctTemplates.String()}, nil

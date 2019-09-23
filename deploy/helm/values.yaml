@@ -104,7 +104,7 @@ injectconfig:
   consultemplate:
     image:
       path: "hashicorp/consul-template" # the Docker image path in the registry (including registry name)
-      tag: "0.21.0-alpine" # tag defines the version/tag of the docker image
+      tag: "0.22.0-alpine" # tag defines the version/tag of the docker image
       pullPolicy: IfNotPresent # pullPolicy defines the pull policy for docker images: IfNotPresent or Always
     loglevel: info # Consul Template log level: trace, debug, info, warn, err
     resources:
