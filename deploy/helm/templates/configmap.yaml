@@ -111,7 +111,7 @@ data:
                 }
               }
             EOF
-            else if [ $vault_auth_method = "approle" ]; then
+            elif [ $vault_auth_method = "approle" ]; then
               cat <<EOF > vault-agent-config.hcl
               pid_file = "/home/vault/pidfile"
 
