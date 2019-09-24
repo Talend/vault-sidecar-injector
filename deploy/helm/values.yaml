@@ -176,6 +176,7 @@ vault:
     kubernetes:
       path: kubernetes # Path defined for Kubernetes Auth Method
     approle:
+      path: approle # Path defined for AppRole Auth Method
       roleid_filename: approle_roleid # Filename for role id
       secretid_filename: approle_secretid # Filename for secret id
   ssl:

@@ -110,15 +110,18 @@ data:
                   }
                 }
               }
-              EOF
+            EOF
             else if [ $vault_auth_method = "approle" ]; then
               cat <<EOF > vault-agent-config.hcl
               pid_file = "/home/vault/pidfile"
 
               auto_auth {
                 method "approle" {
-                  role_id_file_path = "/opt/talend/secrets/{{ .Values.vault.authMethods.approle.roleid_filename }}"
-                  secret_id_file_path = "/opt/talend/secrets/{{ .Values.vault.authMethods.approle.secretid_filename }}"
+                  mount_path = "auth/{{ .Values.vault.authMethods.approle.path }}"
+                  config = {
+                    role_id_file_path = "/opt/talend/secrets/{{ .Values.vault.authMethods.approle.roleid_filename }}"
+                    secret_id_file_path = "/opt/talend/secrets/{{ .Values.vault.authMethods.approle.secretid_filename }}"
+                  }
                 }
 
                 sink "file" {
@@ -127,7 +130,7 @@ data:
                   }
                 }
               }
-              EOF
+            EOF
             else
               echo "Unsupported Vault Auth Method: $vault_auth_method"
               exit 1
@@ -194,7 +197,7 @@ data:
                 verify = {{ .Values.vault.ssl.verify }}
               }
             }
-
+            
             <APPSVC_TEMPLATES>
             EOF
             workload_is_job="<APP_JOB>"

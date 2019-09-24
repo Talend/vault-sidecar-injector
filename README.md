@@ -241,6 +241,7 @@ The following tables lists the configurable parameters of the `Talend Vault Side
 | service.type                                    | type is the Kubernetes service type: ClusterIP, NodePort, LoadBalancer, ExternalName                                                 | ClusterIP                                                       |
 | talendImageRegistry  | talendImageRegistry is Talend's Docker registry host name | artifactory.datapwn.com/tlnd-docker-dev  |
 | vault.addr                                      | Address of Vault server                                                                                                              | https://vault:8200                                               |
+| vault.authMethods.approle.path      | Path defined for AppRole Auth Method            | approle |
 | vault.authMethods.approle.roleid_filename    | Filename for role id    | approle_roleid   |
 | vault.authMethods.approle.secretid_filename  | Filename for secret id  | approle_secretid |
 | vault.authMethods.kubernetes.path      | Path defined for Kubernetes Auth Method            | kubernetes |
