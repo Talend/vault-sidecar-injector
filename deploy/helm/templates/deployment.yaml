@@ -45,10 +45,12 @@ spec:
             - -v=4
             - 2>&1
           ports:
-            - name: vaultinjector-webhook-api
+            - name: webhook-api
               containerPort: {{ .Values.image.port }}
+            {{- if .Values.image.metricsPort }}
             - name: http-metrics
               containerPort: {{ .Values.image.metricsPort }}
+            {{- end }}
           livenessProbe:
             exec:
               command:

@@ -17,6 +17,7 @@ package webhook
 const (
 	//--- Vault Sidecar Injector annotation keys (without prefix)
 	vaultInjectorAnnotationInjectKey          = "inject"              // Mandatory
+	vaultInjectorAnnotationAuthMethodKey      = "auth"                // Optional. Vault Auth Method to use: kubernetes (default) or approle
 	vaultInjectorAnnotationRoleKey            = "role"                // Optional. To explicitly provide Vault role to use
 	vaultInjectorAnnotationSATokenKey         = "sa-token"            // Optional. Full path to service account token used for Vault Kubernetes authentication
 	vaultInjectorAnnotationSecretsPathKey     = "secrets-path"        // Optional. Full path, e.g.: "secret/<some value>", "aws/creds/<some role>", ... Several values separated by ','.
@@ -31,9 +32,13 @@ const (
 	vaultInjectorAnnotationStatusValue      = "injected"
 	vaultInjectorAnnotationWorkloadJobValue = "job"
 
+	//--- Vault Sidecar Injector mount path for service accounts
+	vaultInjectorSATokenVolMountPath = "/var/run/secrets/talend/vault-sidecar-injector/serviceaccount"
+	k8sDefaultSATokenVolMountPath    = "/var/run/secrets/kubernetes.io/serviceaccount"
+
 	//--- Vault Agent & Consul Template placeholders
 	vaultRolePlaceholder                       = "<APP_VAULT_ROLE>"
-	vaultAppSvcSATokenPathPlaceholder          = "<APPSVC_VAULT_SA_TOKEN_PATH>"
+	vaultAuthMethodPlaceholder                 = "<APPSVC_VAULT_AUTH_METHOD>"
 	vaultAppSvcSecretsPathPlaceholder          = "<APPSVC_VAULT_SECRETS_PATH>"
 	consulTemplateAppSvcDestinationPlaceholder = "<APPSVC_SECRETS_DESTINATION>"
 	consulTemplateTemplateContentPlaceholder   = "<APPSVC_TEMPLATE_CONTENT>"
@@ -41,10 +46,10 @@ const (
 	consulTemplateTemplatesPlaceholder         = "<APPSVC_TEMPLATES>"
 	appSvcSecretsVolMountPathPlaceholder       = "<APPSVC_SECRETS_VOL_MOUNTPATH>"
 
+	vaultDefaultAuthMethod                 = "kubernetes"         // Default auth method used by Vault Agent
 	appSvcSecretsVolName                   = "secrets"            // Name of the volume shared between containers to store secrets file(s)
 	consulTemplateAppSvcDefaultDestination = "secrets.properties" // Default secrets destination
-	k8sServiceAccountTokenVolMountPath     = "/var/run/secrets/kubernetes.io/serviceaccount"
-	k8sServiceAccountTokenPath             = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+	k8sDefaultServiceAccountTokenPath      = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 	vaultDefaultSecretsEnginePath          = "secret" // Default path for Vault K/V Secrets Engine if no 'secrets-path' annotation
 
 	//--- Job handling - Temporary mechanism until KEP https://github.com/kubernetes/enhancements/blob/master/keps/sig-apps/sidecarcontainers.md is implemented (and we migrate on appropriate version of k8s)

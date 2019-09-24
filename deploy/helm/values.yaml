@@ -104,7 +104,7 @@ injectconfig:
   consultemplate:
     image:
       path: "hashicorp/consul-template" # the Docker image path in the registry (including registry name)
-      tag: "0.21.0-alpine" # tag defines the version/tag of the docker image
+      tag: "0.22.0-alpine" # tag defines the version/tag of the docker image
       pullPolicy: IfNotPresent # pullPolicy defines the pull policy for docker images: IfNotPresent or Always
     loglevel: info # Consul Template log level: trace, debug, info, warn, err
     resources:
@@ -174,7 +174,11 @@ vault:
   addr: https://vault:8200  # Address of Vault server
   authMethods:
     kubernetes:
-      path: kubernetes  # Path defined for Kubernetes Auth Method
+      path: kubernetes # Path defined for Kubernetes Auth Method
+    approle:
+      path: approle # Path defined for AppRole Auth Method
+      roleid_filename: approle_roleid # Filename for role id
+      secretid_filename: approle_secretid # Filename for secret id
   ssl:
     enabled: true  # Enable or disable secure connection with Vault server
     verify: true  # Enable or disable verification of certificates

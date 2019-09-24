@@ -86,13 +86,13 @@ func mutationRequired(ignoredList []string, vaultInjectorAnnotations map[string]
 	return required
 }
 
-func getServiceAccountTokenVolume(cnts []corev1.Container) (string, error) {
+func getServiceAccountTokenVolumeName(cnts []corev1.Container, saTokenPath string) (string, error) {
 	var k8sSaSecretsVolName string
 
 Loop:
 	for _, sourceContainer := range cnts {
 		for _, volMount := range sourceContainer.VolumeMounts {
-			if volMount.MountPath == k8sServiceAccountTokenVolMountPath {
+			if volMount.MountPath == saTokenPath {
 				k8sSaSecretsVolName = volMount.Name
 				break Loop
 			}
@@ -100,8 +100,8 @@ Loop:
 	}
 
 	if k8sSaSecretsVolName == "" {
-		klog.Errorf("Volume Mount for path %s not found in submitted pod", k8sServiceAccountTokenVolMountPath)
-		return "", fmt.Errorf("Volume Mount for path %s not found in submitted pod", k8sServiceAccountTokenVolMountPath)
+		klog.Errorf("Volume Mount for path %s not found in submitted pod", saTokenPath)
+		return "", fmt.Errorf("Volume Mount for path %s not found in submitted pod", saTokenPath)
 	}
 
 	return k8sSaSecretsVolName, nil

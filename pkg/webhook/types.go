@@ -21,6 +21,7 @@ import (
 
 var vaultInjectorAnnotationKeys = []string{
 	vaultInjectorAnnotationInjectKey,
+	vaultInjectorAnnotationAuthMethodKey,
 	vaultInjectorAnnotationRoleKey,
 	vaultInjectorAnnotationSATokenKey,
 	vaultInjectorAnnotationSecretsPathKey,
@@ -40,10 +41,11 @@ type VaultInjector struct {
 
 // Struct to carry computed placeholders' values
 type sidecarPlaceholders struct {
-	serviceAccountTokenVolumeName string
-	vaultRole                     string
-	vaultSATokenPath              string
-	consulTemplateTemplates       string
+	k8sDefaultSATokenVolumeName    string
+	vaultInjectorSATokenVolumeName string
+	vaultAuthMethod                string
+	vaultRole                      string
+	consulTemplateTemplates        string
 }
 
 // This struct represents a JSON Patch operation (see http://jsonpatch.com/)
