@@ -14,9 +14,6 @@
 ## defines custom values
 ## ------------------------------------------------------------------------------------------------------ ##
 
-registryKey: "talend-registry" # registryKey is a k8s secret for Docker images
-talendImageRegistry: artifactory.datapwn.com/tlnd-docker-dev # talendImageRegistry is Talend's Docker registry host name
-
 replicaCount: 3  # replicaCount defines the number of container replicas running in parallel
 revisionHistoryLimit: 3  # revision history limit in tiller / helm / k8s
 
@@ -80,7 +77,8 @@ injectconfig:
     #fsGroup: 61000  # to be able to read /home/vault content using our 'talend' user in consul-template container
   jobbabysitter:
     image:
-      path: "talend/common/tsbi/centos-base" # the Docker image path in the registry
+      path: "everpeace/curl-jq" # the Docker image path in the registry
+      tag: "latest" # tag defines the version/tag of the docker image
       pullPolicy: IfNotPresent # pullPolicy defines the pull policy for docker images: IfNotPresent or Always
     resources:
       limits:
@@ -91,7 +89,8 @@ injectconfig:
         memory: 20Mi  # Vault sidecar memory resource requests
   vault:
     image:
-      path: "talend/common/tsbi/vault" # the Docker image path in the registry
+      path: "vault" # the Docker image path in the registry
+      tag: "1.2.3" # tag defines the version/tag of the docker image
       pullPolicy: IfNotPresent # pullPolicy defines the pull policy for docker images: IfNotPresent or Always
     loglevel: info # Vault log level: trace, debug, info, warn, err
     resources:
@@ -121,7 +120,8 @@ injectconfig:
 
 hook:
   image:
-    path: "talend/common/tsbi/kube-base"  # the Docker image path in the registry
+    path: "bitnami/kubectl"  # the Docker image path in the registry
+    tag: "latest" # tag defines the version/tag of the docker image
     ## default value is IfNotPresent
     pullPolicy: IfNotPresent  # pullPolicy defines the pull policy for docker images: IfNotPresent or Always
 
