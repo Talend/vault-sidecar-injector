@@ -19,11 +19,14 @@
     - [General requirements](#general-requirements)
     - [Specific requirements with K8S Jobs](#specific-requirements-with-k8s-jobs)
     - [Examples](#examples)
-      - [Usage with a K8S Deployment workload](#usage-with-a-k8s-deployment-workload)
-      - [Usage with a K8S Job workload](#usage-with-a-k8s-job-workload)
-      - [Custom secrets path and notification command](#custom-secrets-path-and-notification-command)
-      - [Ask for secrets hook injection, custom secrets file and template](#ask-for-secrets-hook-injection-custom-secrets-file-and-template)
-      - [Ask for secrets hook injection, several custom secrets files and templates](#ask-for-secrets-hook-injection-several-custom-secrets-files-and-templates)
+      - [Using Vault Kubernetes Auth Method](#using-vault-kubernetes-auth-method)
+        - [Usage with a K8S Deployment workload](#usage-with-a-k8s-deployment-workload)
+        - [Usage with a K8S Job workload](#usage-with-a-k8s-job-workload)
+        - [Custom secrets path and notification command](#custom-secrets-path-and-notification-command)
+        - [Ask for secrets hook injection, custom secrets file and template](#ask-for-secrets-hook-injection-custom-secrets-file-and-template)
+        - [Ask for secrets hook injection, several custom secrets files and templates](#ask-for-secrets-hook-injection-several-custom-secrets-files-and-templates)
+        - [Using Talend Dev cluster, hybrid mode and Multicluster Service Account](#using-talend-dev-cluster-hybrid-mode-and-multicluster-service-account)
+      - [Using Vault AppRole Auth Method](#using-vault-approle-auth-method)
 
 ## TL;DR
 
@@ -190,7 +193,7 @@ The following tables lists the configurable parameters of the `Talend Vault Side
 | image.port       | service main port exposed by the docker image   | 8443                                                             |
 | image.pullPolicy   | pullPolicy defines the pull policy for docker images: IfNotPresent or Always       | IfNotPresent           |
 | image.serviceNameLabel   | serviceNameLabel represents the Talend Service Name and it must match the label com.talend.service from the docker image             | talend-vault-sidecar-injector                                   |
-| image.tag  | tag defines the version/tag of the docker image     | 1.7.1-20190828131916                                           |
+| image.tag  | tag defines the version/tag of the docker image     | latest                                           |
 | injectconfig.consultemplate.image.path   | the Docker image path in the registry (including registry name)   | hashicorp/consul-template    |
 | injectconfig.consultemplate.image.pullPolicy   | pullPolicy defines the pull policy for docker images: IfNotPresent or Always  | IfNotPresent    |
 | injectconfig.consultemplate.image.tag          | tag defines the version/tag of the docker image   | 0.22.0-alpine       |
@@ -348,7 +351,9 @@ Details on template syntax:
 
 ### Examples
 
-#### Usage with a K8S Deployment workload
+#### Using Vault Kubernetes Auth Method
+
+##### Usage with a K8S Deployment workload
 
 Only mandatory annotation to ask for Vault Agent and Consul Template injection is `sidecar.vault.talend.org/inject`.
 
@@ -393,7 +398,7 @@ spec:
             medium: Memory
 ```
 
-#### Usage with a K8S Job workload
+##### Usage with a K8S Job workload
 
 When submitting a job, annotation `sidecar.vault.talend.org/workload` **must be used with value set to `"job"`**.
 
@@ -480,7 +485,7 @@ spec:
             medium: Memory
 ```
 
-#### Custom secrets path and notification command
+##### Custom secrets path and notification command
 
 Several optional annotations to end up with:
 
@@ -526,7 +531,7 @@ spec:
             medium: Memory
 ```
 
-#### Ask for secrets hook injection, custom secrets file and template
+##### Ask for secrets hook injection, custom secrets file and template
 
 Several optional annotations to end up with:
 
@@ -583,7 +588,7 @@ spec:
             medium: Memory
 ```
 
-#### Ask for secrets hook injection, several custom secrets files and templates
+##### Ask for secrets hook injection, several custom secrets files and templates
 
 Several optional annotations to end up with:
 
@@ -631,6 +636,113 @@ spec:
         - name: ...
           image: ...
           ...
+          volumeMounts:
+            - name: secrets
+              mountPath: /opt/talend/secrets
+      volumes:
+        - name: secrets
+          emptyDir:
+            medium: Memory
+```
+
+##### Using Talend Dev cluster, hybrid mode and Multicluster Service Account
+
+In this sample we leverage both our Vault Sidecar Injector *and* the Multicluster Service Account feature (that we provide as part as our Talend Helm plugin).
+
+- ask to mount service account `kind-pod-lister-sai` in our pod
+- ask Vault Sidecar Injector to use token attached to `kind-pod-lister-sai` service account for Vault authentication
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-app-7
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      com.talend.application: test
+      com.talend.service: test-app-svc
+  template:
+    metadata:
+      annotations:
+        multicluster.admiralty.io/service-account-import.name: kind-pod-lister-sai
+        sidecar.vault.talend.org/inject: "true"
+        sidecar.vault.talend.org/sa-token: /var/run/secrets/admiralty.io/serviceaccountimports/kind-pod-lister-sai/token
+      labels:
+        com.talend.application: test
+        com.talend.service: test-app-svc
+    spec:
+      serviceAccountName: default
+      imagePullSecrets:
+        - name: talend-registry
+      containers:
+        - name: test-app-7-container
+          image: busybox:1.28
+          command:
+            - "sh"
+            - "-c"
+            - >
+              while true;do echo "My secrets are: $(cat /opt/talend/secrets/secrets.properties)"; sleep 5; done
+          volumeMounts:
+            - name: secrets
+              mountPath: /opt/talend/secrets
+      volumes:
+        - name: secrets
+          emptyDir:
+            medium: Memory
+```
+
+#### Using Vault AppRole Auth Method
+
+- Ask Vault Sidecar Injector to use Vault authentication method `approle` (instead of the default which is `kubernetes`)
+- Vault AppRole requires info stored into 2 files (containing role id and secret id) that have to be provided to Vault Sidecar Injector: in the sample below this is done via an init container
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-app-8
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      com.talend.application: test
+      com.talend.service: test-app-svc
+  template:
+    metadata:
+      annotations:
+        sidecar.vault.talend.org/inject: "true"
+        sidecar.vault.talend.org/auth: "approle"
+      labels:
+        com.talend.application: test
+        com.talend.service: test-app-svc
+    spec:
+      serviceAccountName: default
+      imagePullSecrets:
+        - name: talend-registry
+      initContainers:
+        - name: test-app-8-container-init
+          image: busybox:1.28
+          command:
+            - "sh"
+            - "-c"
+            - |
+              echo "<ROLE ID from Vault>" > /opt/talend/secrets/approle_roleid
+              echo "<SECRET ID from Vault>" > /opt/talend/secrets/approle_secretid
+          volumeMounts:
+            - name: secrets
+              mountPath: /opt/talend/secrets
+      containers:
+        - name: test-app-8-container
+          image: busybox:1.28
+          command:
+            - "sh"
+            - "-c"
+            - >
+              while true;do echo "My secrets are: $(cat /opt/talend/secrets/secrets.properties)"; sleep 5; done
           volumeMounts:
             - name: secrets
               mountPath: /opt/talend/secrets
