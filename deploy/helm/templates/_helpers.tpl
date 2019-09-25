@@ -24,13 +24,6 @@ Create a default chart name including the version number
 {{- end -}}
 
 {{/*
-Define the docker registry key.
-*/}}
-{{- define "talend-vault-sidecar-injector.registryKey" -}}
-{{- .registryKey | default "" -}}
-{{- end -}}
-
-{{/*
 Define mutating webhook failure policy (https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#failure-policy)
 Force 'Ignore' if only one replica (because 'Fail' will prevent any pod to start if the only one Vault Sidecar Injector pod is down...)
 */}}
@@ -74,21 +67,21 @@ heritage: {{ .Release.Service }}
 Define the docker image (image.path:image.tag).
 */}}
 {{- define "talend-vault-sidecar-injector.image" -}}
-{{- printf "%s/%s:%s" .talendImageRegistry .image.path (default "latest" .image.tag) -}}
+{{- printf "%s:%s" .image.path (default "latest" .image.tag) -}}
 {{- end -}}
 
 {{/*
 Define the docker image for Job Babysitter sidecar container (image.path:image.tag).
 */}}
 {{- define "talend-vault-sidecar-injector.injectconfig.jobbabysitter.image" -}}
-{{- printf "%s/%s:%s" .talendImageRegistry .injectconfig.jobbabysitter.image.path (default "latest" .image.tag) -}}
+{{- printf "%s:%s" .injectconfig.jobbabysitter.image.path (default "latest" .image.tag) -}}
 {{- end -}}
 
 {{/*
 Define the docker image for Vault sidecar container (image.path:image.tag).
 */}}
 {{- define "talend-vault-sidecar-injector.injectconfig.vault.image" -}}
-{{- printf "%s/%s:%s" .talendImageRegistry .injectconfig.vault.image.path (default "latest" .image.tag) -}}
+{{- printf "%s:%s" .injectconfig.vault.image.path (default "latest" .image.tag) -}}
 {{- end -}}
 
 {{/*
@@ -102,7 +95,7 @@ Define the docker image for Consul Template sidecar container (image.path:image.
 Define the docker image for pre-install hook (image.path:image.tag).
 */}}
 {{- define "talend-vault-sidecar-injector.hook.image" -}}
-{{- printf "%s/%s:%s" .talendImageRegistry .hook.image.path (default "latest" .image.tag) -}}
+{{- printf "%s:%s" .hook.image.path (default "latest" .image.tag) -}}
 {{- end -}}
 
 {{/*

@@ -537,9 +537,9 @@ spec:
 
 Several optional annotations to end up with:
 
-- Vault authentication using role `common-dataset` (value of `com.talend.application` label)
+- Vault authentication using role `test-app-6` (value of `com.talend.application` label)
 - hook injected in application's container(s) to wait for secrets file availability
-- secrets fetched from Vault's path `aws/creds/common-dataset` using **one custom Consul Template's template**
+- secrets fetched from Vault's path `aws/creds/test-app-6` using **one custom Consul Template's template**
 - secrets to be stored into `/opt/talend/secrets/creds.properties`
 
 ```yaml
@@ -551,7 +551,7 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      com.talend.application: common-dataset
+      com.talend.application: test-app-6
       com.talend.service: test-app-6-svc
   template:
     metadata:
@@ -560,18 +560,16 @@ spec:
         sidecar.vault.talend.org/secrets-hook: "true"
         sidecar.vault.talend.org/secrets-destination: "creds.properties"
         sidecar.vault.talend.org/secrets-template: |
-          {{ with secret "aws/creds/common-dataset" }}
+          {{ with secret "aws/creds/test-app-6" }}
           {{ if .Data.access_key }}
-          dataset.local.s3.credentials.accessKey={{ .Data.access_key }}
-          dataset.s3.credentials.accessKey={{ .Data.access_key }}
+          test-app-6.s3.credentials.accessKey={{ .Data.access_key }}
           {{ end }}
           {{ if .Data.secret_key }}
-          dataset.local.s3.credentials.secret={{ .Data.secret_key }}
-          dataset.s3.credentials.secret={{ .Data.secret_key }}
+          test-app-6.s3.credentials.secret={{ .Data.secret_key }}
           {{ end }}
           {{ end }}
       labels:
-        com.talend.application: common-dataset
+        com.talend.application: test-app-6
         com.talend.service: test-app-6-svc
     spec:
       serviceAccountName: ...

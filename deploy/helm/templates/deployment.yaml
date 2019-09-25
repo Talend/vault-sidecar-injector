@@ -21,8 +21,6 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
-      imagePullSecrets:
-        - name: {{ include "talend-vault-sidecar-injector.registryKey" .Values }}
       serviceAccountName: talend-vault-sidecar-injector
       containers:
         - name: {{ include "talend-vault-sidecar-injector.fullname" . }}
