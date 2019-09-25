@@ -184,32 +184,35 @@ This command removes all the Kubernetes components associated with the chart and
 The following tables lists the configurable parameters of the `Talend Vault Sidecar Injector` chart and their default values.
 
 | Parameter    | Description          | Default                                                         |
-|:------------------------------------------------|:-------------------------------------------------------------------------------------------------------------------------------------|:----------------------------------------------------------------|
-| hook.image.path            | the Docker image path in the registry | talend/common/tsbi/kube-base |
+|:-------------|:---------------------|:----------------------------------------------------------------|
+| hook.image.path            | the Docker image path | bitnami/kubectl |
 | hook.image.pullPolicy      | pullPolicy defines the pull policy for docker images: IfNotPresent or Always | IfNotPresent |
-| image.applicationNameLabel   | applicationNameLabel represents the Talend Application Name and it must match the label com.talend.application from the docker image | talend-vault-sidecar-injector                                   |
+| hook.image.tag             | tag defines the version/tag of the docker image | latest |
+| image.applicationNameLabel   | applicationNameLabel represents the Talend Application Name and it must match the label com.talend.application from the docker image | talend-vault-sidecar-injector   |
 | image.metricsPort                | metricsPort defines the port exposed by the docker image for metrics collection | 9000 |
-| image.path       | the Docker image path in the registry   | talend/common/tsbi/k8s/vault-sidecar-injector |
-| image.port       | service main port exposed by the docker image   | 8443                                                             |
+| image.path       | the Docker image path   | talend/vault-sidecar-injector |
+| image.port       | service main port exposed by the docker image   | 8443            |
 | image.pullPolicy   | pullPolicy defines the pull policy for docker images: IfNotPresent or Always       | IfNotPresent           |
-| image.serviceNameLabel   | serviceNameLabel represents the Talend Service Name and it must match the label com.talend.service from the docker image             | talend-vault-sidecar-injector                                   |
-| image.tag  | tag defines the version/tag of the docker image     | latest                                           |
-| injectconfig.consultemplate.image.path   | the Docker image path in the registry (including registry name)   | hashicorp/consul-template    |
-| injectconfig.consultemplate.image.pullPolicy   | pullPolicy defines the pull policy for docker images: IfNotPresent or Always  | IfNotPresent    |
+| image.serviceNameLabel   | serviceNameLabel represents the Talend Service Name and it must match the label com.talend.service from the docker image             | talend-vault-sidecar-injector      |
+| image.tag  | tag defines the version/tag of the docker image     | latest      |
+| injectconfig.consultemplate.image.path   | the Docker image path  | hashicorp/consul-template    |
+| injectconfig.consultemplate.image.pullPolicy   | pullPolicy defines the pull policy for docker images: IfNotPresent or Always  | IfNotPresent  |
 | injectconfig.consultemplate.image.tag          | tag defines the version/tag of the docker image   | 0.22.0-alpine       |
 | injectconfig.consultemplate.loglevel           | Consul Template log level: trace, debug, info, warn, err   | info       |
 | injectconfig.consultemplate.resources.limits.cpu | Consul Template sidecar CPU resource limits | 20m |
 | injectconfig.consultemplate.resources.limits.memory | Consul Template sidecar memory resource limits | 25Mi |
 | injectconfig.consultemplate.resources.requests.cpu | Consul Template sidecar CPU resource requests | 10m |
 | injectconfig.consultemplate.resources.requests.memory | Consul Template sidecar memory resource requests | 15Mi |
-| injectconfig.jobbabysitter.image.path   | the Docker image path in the registry | talend/common/tsbi/centos-base |
+| injectconfig.jobbabysitter.image.path   | the Docker image path | everpeace/curl-jq |
 | injectconfig.jobbabysitter.image.pullPolicy | pullPolicy defines the pull policy for docker images: IfNotPresent or Always | IfNotPresent |
+| injectconfig.jobbabysitter.image.tag   | tag defines the version/tag of the docker image  | latest |
 | injectconfig.jobbabysitter.resources.limits.cpu | Vault sidecar CPU resource limits | 20m |
 | injectconfig.jobbabysitter.resources.limits.memory | Vault sidecar memory resource limits | 25Mi |
 | injectconfig.jobbabysitter.resources.requests.cpu | Vault sidecar CPU resource requests | 15m |
 | injectconfig.jobbabysitter.resources.requests.memory | Vault sidecar memory resource requests | 20Mi |
-| injectconfig.vault.image.path  | the Docker image path in the registry  | talend/common/tsbi/vault |
+| injectconfig.vault.image.path  | the Docker image path  | vault |
 | injectconfig.vault.image.pullPolicy    | pullPolicy defines the pull policy for docker images: IfNotPresent or Always  | IfNotPresent   |
+| injectconfig.vault.image.tag  | tag defines the version/tag of the docker image | 1.2.3 |
 | injectconfig.vault.loglevel                    | Vault log level: trace, debug, info, warn, err    | info    |
 | injectconfig.vault.resources.limits.cpu | Vault sidecar CPU resource limits | 30m |
 | injectconfig.vault.resources.limits.memory | Vault sidecar memory resource limits | 25Mi |
@@ -221,29 +224,28 @@ The following tables lists the configurable parameters of the `Talend Vault Side
 | mutatingwebhook.failurePolicy | defines how unrecognized errors and timeout errors from the admission webhook are handled. Allowed values are Ignore or Fail | Ignore |
 | mutatingwebhook.namespaceSelector.boolean    | Enable to control, with label "vault-injection=enabled", the namespaces where injection is allowed (if false: all namespaces except _kube-system_ and _kube-public_) | false                                                           |
 | mutatingwebhook.namespaceSelector.namespaced | Enable to control, with label "vault-injection={{ .Release.Namespace }}", the specific namespace where injection is allowed (ie, restrict to namespace where injector is installed) | false |
-| probes.liveness.failureThreshold                | Number of probe failure before restarting the probe                                                                                  | 3                                                               |
-| probes.liveness.initialDelaySeconds             | Number of seconds after the container has started before the probe is initiated                                                      | 2                                                              |
-| probes.liveness.periodSeconds                   | How often (in seconds) to perform the probe                                                                                          | 20                                                              |
-| probes.liveness.timeoutSeconds                  | Number of seconds after which the probe times out                                                                                    | 5                                                               |
-| probes.readiness.failureThreshold               | Number of probe failure before setting the probe to Unready                                                                          | 3                                                               |
-| probes.readiness.initialDelaySeconds            | Number of seconds after the container has started before the probe is initiated                                                      | 2                                                              |
-| probes.readiness.periodSeconds                  | How often (in seconds) to perform the probe                                                                                          | 20                                                              |
-| probes.readiness.successThreshold               | Minimum consecutive successes for the probe to be considered successful after having failed                                          | 1                                                               |
-| probes.readiness.timeoutSeconds                 | Number of seconds after which the probe times out                                                                                    | 5                                                               |
-| rbac.install                         | create RBAC resources. Must be set for any cluster configured with rbac. | true |
-| registryKey         | registryKey is a k8s secret for Docker images.                               | talend-registry |
-| replicaCount                                    | replicaCount defines the number of container replicas running in parallel                                                            | 3                                                               |
-| resources.limits.cpu                            | CPU resource limits                                                                                                                  | 250m                                                            |
-| resources.limits.memory                         | Memory resource limits                                                                                                               | 256Mi                                                           |
-| resources.requests.cpu                          | CPU resource requests                                                                                                                | 100m                                                            |
-| resources.requests.memory                       | Memory resource requests                                                                                                             | 128Mi                                                           |
-| revisionHistoryLimit                            | revision history limit in tiller / helm / k8s                                                                                        | 3                                                               |
-| service.exposedServicePort                      | exposedServicePort is the port exposed by the K8s service (Kubernetes always assumes port 443 for webhooks)                       | 443                                                             |
-| service.name                                    | service name                                                                                                                         | talend-vault-sidecar-injector                                   |
+| probes.liveness.failureThreshold                | Number of probe failure before restarting the probe                                 | 3  |
+| probes.liveness.initialDelaySeconds             | Number of seconds after the container has started before the probe is initiated     | 2  |
+| probes.liveness.periodSeconds                   | How often (in seconds) to perform the probe                                         | 20 |
+| probes.liveness.timeoutSeconds                  | Number of seconds after which the probe times out                                   | 5  |
+| probes.readiness.failureThreshold               | Number of probe failure before setting the probe to Unready                         | 3  |
+| probes.readiness.initialDelaySeconds            | Number of seconds after the container has started before the probe is initiated     | 2  |
+| probes.readiness.periodSeconds                  | How often (in seconds) to perform the probe       | 20   |
+| probes.readiness.successThreshold      | Minimum consecutive successes for the probe to be considered successful after having failed  | 1  |
+| probes.readiness.timeoutSecon          | Number of seconds after which the probe times out  | 5   |
+| rbac.install                        | create RBAC resources. Must be set for any cluster configured with rbac. | true |
+| replicaCount                        | replicaCount defines the number of container replicas running in parallel | 3    |
+| resources.limits.cpu                | CPU resource limits                             | 250m         |
+| resources.limits.memory             | Memory resource limits                          | 256Mi        |
+| resources.requests.cpu              | CPU resource requests                           | 100m         |
+| resources.requests.memory           | Memory resource requests                        | 128Mi        |
+| revisionHistoryLimit                | revision history limit in tiller / helm / k8s   | 3            |
+| service.exposedServicePort   | exposedServicePort is the port exposed by the K8s service (Kubernetes always assumes port 443 for webhooks) | 443 |
+| service.name                                    | service name            | talend-vault-sidecar-injector                                   |
 | service.prefixWithHelmRelease                   | prefixWithHelmRelease defines whether the service name will be prefixed with Helm release name                                       | false                                                           |
-| service.type                                    | type is the Kubernetes service type: ClusterIP, NodePort, LoadBalancer, ExternalName                                                 | ClusterIP                                                       |
+| service.type                        | type is the Kubernetes service type: ClusterIP, NodePort, LoadBalancer, ExternalName  | ClusterIP    |
 | talendImageRegistry  | talendImageRegistry is Talend's Docker registry host name | artifactory.datapwn.com/tlnd-docker-dev  |
-| vault.addr                                      | Address of Vault server                                                                                                              | https://vault:8200                                               |
+| vault.addr                                      | Address of Vault server    | https://vault:8200       |
 | vault.authMethods.approle.path      | Path defined for AppRole Auth Method            | approle |
 | vault.authMethods.approle.roleid_filename    | Filename for role id    | approle_roleid   |
 | vault.authMethods.approle.secretid_filename  | Filename for secret id  | approle_secretid |

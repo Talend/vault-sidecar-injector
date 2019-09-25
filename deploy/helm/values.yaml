@@ -3,14 +3,6 @@
 ## Declare variables to be passed into your templates
 
 ## ------------------------------------------------------------------------------------------------------ ##
-## enable/disable dependencies
-## ------------------------------------------------------------------------------------------------------ ##
-
-## ------------------------------------------------------------------------------------------------------ ##
-## defines global values
-## ------------------------------------------------------------------------------------------------------ ##
-
-## ------------------------------------------------------------------------------------------------------ ##
 ## defines custom values
 ## ------------------------------------------------------------------------------------------------------ ##
 
@@ -29,13 +21,10 @@ rbac:
 # ----------------------------------------------------------------------------
 
 image:
-  path: "talend/vault-sidecar-injector"  # the Docker image path in the registry
-  ## if tag is not defined it is automatically set to "latest"
+  path: "talend/vault-sidecar-injector"  # the Docker image path
   tag: "latest"  # tag defines the version/tag of the docker image
-  ## default value is IfNotPresent
   pullPolicy: IfNotPresent  # pullPolicy defines the pull policy for docker images: IfNotPresent or Always
   port: 8443  # service main port exposed by the docker image
-  ## if metrics are not exposed this value needs to be commented out
   metricsPort: 9000  # metricsPort defines the port exposed by the docker image for metrics collection
 
   applicationNameLabel: talend-vault-sidecar-injector  # applicationNameLabel represents the Talend Application Name and it must match the label com.talend.application from the docker image
@@ -47,12 +36,8 @@ image:
 
 service:
   name: talend-vault-sidecar-injector  # service name
-  ## shared services must have a fixed name that can be easily referenced by other services
-  ## for shared services (i.e. tpsvc-iam, tpsvc-config, mongodb, etc...) set this value to false
   prefixWithHelmRelease: false  # prefixWithHelmRelease defines whether the service name will be prefixed with Helm release name
-  ## for all talend services exposing a rest api this value must be set to 80
   exposedServicePort: 443  # exposedServicePort is the port exposed by the K8s service (Kubernetes always assumes port 443 for webhooks)
-  ## default value is ClusterIP
   type: ClusterIP  # type is the Kubernetes service type: ClusterIP, NodePort, LoadBalancer, ExternalName
 
 # ----------------------------------------------------------------------------
@@ -73,11 +58,9 @@ mutatingwebhook:
 # Define injection config properties
 # ----------------------------------------------------------------------------
 injectconfig:
-  #securityContext:
-    #fsGroup: 61000  # to be able to read /home/vault content using our 'talend' user in consul-template container
   jobbabysitter:
     image:
-      path: "everpeace/curl-jq" # the Docker image path in the registry
+      path: "everpeace/curl-jq" # the Docker image path
       tag: "latest" # tag defines the version/tag of the docker image
       pullPolicy: IfNotPresent # pullPolicy defines the pull policy for docker images: IfNotPresent or Always
     resources:
@@ -89,7 +72,7 @@ injectconfig:
         memory: 20Mi  # Vault sidecar memory resource requests
   vault:
     image:
-      path: "vault" # the Docker image path in the registry
+      path: "vault" # the Docker image path
       tag: "1.2.3" # tag defines the version/tag of the docker image
       pullPolicy: IfNotPresent # pullPolicy defines the pull policy for docker images: IfNotPresent or Always
     loglevel: info # Vault log level: trace, debug, info, warn, err
@@ -102,7 +85,7 @@ injectconfig:
         memory: 20Mi  # Vault sidecar memory resource requests
   consultemplate:
     image:
-      path: "hashicorp/consul-template" # the Docker image path in the registry (including registry name)
+      path: "hashicorp/consul-template" # the Docker image path
       tag: "0.22.0-alpine" # tag defines the version/tag of the docker image
       pullPolicy: IfNotPresent # pullPolicy defines the pull policy for docker images: IfNotPresent or Always
     loglevel: info # Consul Template log level: trace, debug, info, warn, err
@@ -120,9 +103,8 @@ injectconfig:
 
 hook:
   image:
-    path: "bitnami/kubectl"  # the Docker image path in the registry
+    path: "bitnami/kubectl"  # the Docker image path
     tag: "latest" # tag defines the version/tag of the docker image
-    ## default value is IfNotPresent
     pullPolicy: IfNotPresent  # pullPolicy defines the pull policy for docker images: IfNotPresent or Always
 
 # ----------------------------------------------------------------------------
