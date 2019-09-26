@@ -5,8 +5,9 @@
   - [TL;DR](#tldr)
   - [Introduction](#introduction)
   - [Prerequisites](#prerequisites)
-    - [Docker Registry secret](#docker-registry-secret)
     - [Tiller installation](#tiller-installation)
+    - [Vault server installation](#vault-server-installation)
+  - [Building the image](#building-the-image)
   - [Testing the chart](#testing-the-chart)
   - [Installing the chart](#installing-the-chart)
     - [Installing the chart in a dev environment](#installing-the-chart-in-a-dev-environment)
@@ -16,7 +17,6 @@
   - [Annotations](#annotations)
   - [Consul Template's template](#consul-templates-template)
   - [How to invoke Talend Vault Sidecar Injector](#how-to-invoke-talend-vault-sidecar-injector)
-    - [General requirements](#general-requirements)
     - [Specific requirements with K8S Jobs](#specific-requirements-with-k8s-jobs)
     - [Examples](#examples)
       - [Using Vault Kubernetes Auth Method](#using-vault-kubernetes-auth-method)
@@ -30,11 +30,11 @@
 
 ## TL;DR
 
-`Talend Vault Sidecar Injector` is a special component in that it is not a Talend business service nor really a technical service but can be more accurately described as a Kubernetes admission controller plugin. It consists in a **Webhook Admission Server**, registered in the Kubernetes Mutating Admission Webhook Controller, that will mutate resources depending on defined criteriae. See here for more details: <https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#admission-webhooks>.
+`Talend Vault Sidecar Injector` consists in a **Webhook Admission Server**, registered in the Kubernetes Mutating Admission Webhook Controller, that will mutate resources depending on defined criteriae. See here for more details: <https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#admission-webhooks>.
 
-In our case, this component allows us to dynamically inject both Vault Agent and Consul Template containers as sidecars (along with configuration and volumes) in any matching pod manifest. Pods willing to benefit from Vault to handle their secrets just have to add some custom annotations to ask for the sidecars injection at deployment time.
+This component allows to dynamically inject both Vault Agent and Consul Template containers as sidecars (along with configuration and volumes) in any matching pod manifest. Pods willing to benefit from Vault to handle their secrets just have to add some custom annotations to ask for the sidecars injection at deployment time.
 
-A Helm chart for `Talend Vault Sidecar Injector` is provided under [deploy/helm](deploy/helm) folder and can be installed on your Kubernetes cluster using following command:
+To ease deployment, a Helm chart is provided under [deploy/helm](deploy/helm) folder and can be installed on your Kubernetes cluster using following command:
 
 ```bash
 $ helm install <chart_folder_location>
@@ -42,13 +42,13 @@ $ helm install <chart_folder_location>
 
 > ⚠️ **Important note** ⚠️: support for sidecars in Kubernetes **jobs** suffers from limitations and issues exposed here: <https://github.com/kubernetes/kubernetes/issues/25908>. Same issues/limitations exist with Istio service mesh.
 >
-> A Kubernetes proposal tries to address those points: <https://github.com/kubernetes/enhancements/blob/master/keps/sig-apps/sidecarcontainers.md>, <https://github.com/kubernetes/enhancements/issues/753>. Implementation of the proposal has started and should be released in Kubernetes 1.16 (in Alpha stage).
+> A Kubernetes proposal tries to address those points: <https://github.com/kubernetes/enhancements/blob/master/keps/sig-apps/sidecarcontainers.md>, <https://github.com/kubernetes/enhancements/issues/753>. Implementation of the proposal has started and may be released in Kubernetes 1.17 (in Alpha stage).
 >
 > In the meantime however, `Talend Vault Sidecar Injector` implements specific sidecar and signaling mechanism to properly stop all injected containers on job termination.
 
 ## Introduction
 
-This chart is intended to be deployed in a "system" namespace (`admin`) and only once as it handles all injection requests from any pods deployed in any namespaces. **It *shall not* be deployed in every namespaces**.
+This chart is intended to be deployed in a "system" namespace and only once as it handles all injection requests from any pods deployed in any namespaces. **It *shall not* be deployed in every namespaces**.
 
 >**Note**: it is possible to deploy an instance in a given namespace **and to restrict injection to this same namespace** if necessary, **in particular in a dev environment where each team wants its own instance of `Talend Vault Sidecar Injector` for testing purpose** with its dedicated configuration (including a dedicated Vault server). Refer to section [Installing the chart in a dev environment](#Installing-the-chart-in-a-dev-environment) below.
 
@@ -61,18 +61,7 @@ Installation:
 
 Runtime:
 
-- Vault server started
-- Vault server reachable through Kubernetes service & endpoint deployed into cluster
-
-### Docker Registry secret
-
-You need to provision Talend Docker Registry secret in **each namespace** where you intend to install this chart:
-
-```bash
-kubectl create secret docker-registry talend-registry --docker-server=artifactory.datapwn.com --docker-username=<you user name> --docker-password="<your password>" --docker-email=<your email> -n <namespace>
-```
-
-> Note: as `Talend Vault Sidecar Injector` is meant to be deployed in the `admin` namespace, do not forget to create the Docker registry secret in this namespace.
+- Vault server deployed (either in cluster with official chart <https://github.com/hashicorp/vault-helm> or out of cluster), started and reachable through Kubernetes service & endpoint deployed into cluster
 
 ### Tiller installation
 
@@ -108,54 +97,68 @@ For details on using Tiller with RBAC:
 - <https://helm.sh/docs/using_helm/#tiller-and-user-permissions>
 - <https://helm.sh/docs/using_helm/#tiller-and-role-based-access-control>
 
+### Vault server installation
+
+We will install a test Vault server in Kubernetes cluster but an external, out of cluster, Vault server can also be used. Note that we will install Vault server in *dev mode* below, do not use this setup in production.
+
+Using HashiCorp's Vault Helm chart:
+
+```bash
+$ git clone https://github.com/hashicorp/vault-helm.git
+$ cd vault-helm
+$ git checkout v0.1.2
+$ helm install . --name=vault --set server.dev.enabled=true --set authDelegator.enabled=true --set ui.enabled=true --set ui.serviceType="NodePort"
+```
+
+Then init Vault server with our test config:
+
+```bash
+# Check status
+$ kubectl exec -it vault-0 -- vault status
+$ kubectl logs vault-0
+
+# Set up needed auth methods, secrets engines, policies, roles and secrets
+$ cd vault-sidecar-injector/deploy/vault
+$ ./init-dev-vault-server.sh
+```
+
+## Building the image
+
+Before being able to deploy `Talend Vault Sidecar Injector` into your Kubernetes cluster you need to build its Docker image. Refer to [build/README.md](build/README.md) for instructions.
+
 ## Testing the chart
 
 > **Note:** as `Talend Vault Sidecar Injector` chart makes use of Helm post-install hooks, **do not** provide Helm `--wait` flag since it will prevent post-install hooks from running and installation will fail.
 
 ```bash
-$ helm install <chart_folder_location> --name vault-sidecar-injector --debug --dry-run
+$ cd deploy/helm
+$ helm install . --name vault-sidecar-injector --debug --dry-run
 
-$ helm install <chart_folder_location> --name vault-sidecar-injector --debug
+$ helm install . --name vault-sidecar-injector --debug
 ```
 
 ## Installing the chart
 
-To install the chart with the release name vault-sidecar-injector on your local k8s cluster you need to:
+To install the chart on the cluster:
 
 ```bash
-$ helm install --name vault-sidecar-injector <chart_folder_location> --namespace admin
-```
-
-or from Helm registry:
-
-```bash
-$ helm install --name vault-sidecar-injector talend/talend-vault-sidecar-injector --version <chart_version> --namespace admin
-```
-
-To install the chart on the Talend k8s cluster you also need to set the Tiller namespace and the application namespace. You can do this with one of the following two commands:
-
-```bash
-$ TILLER_NAMESPACE=admin helm install --name vault-sidecar-injector <chart_folder_location> --namespace admin
-
-$ helm install --name vault-sidecar-injector <chart_folder_location> --namespace admin --tiller-namespace admin
+$ cd deploy/helm
+$ helm install . --name vault-sidecar-injector --namespace kube-system --set vault.addr=http://vault:8200 --set vault.ssl.enabled=false --set vault.ssl.verify=false
 ```
 
 > **Note:** `Talend Vault Sidecar Injector` should be deployed only once (except for testing purpose, see below). It will mutate any "vault-sidecar annotated" pod from any namespace.
 
-The command deploys the `Talend Vault Sidecar Injector` service on the Kubernetes cluster in the default configuration. The [configuration](#configuration) section lists the parameters that can be configured during installation.
+The command deploys the `Talend Vault Sidecar Injector` service on the Kubernetes cluster with modified configuration to target our in-cluster test instance (no tls, no verification of certificates). Such settings are no fit for production.
+
+The [configuration](#configuration) section lists all the parameters that can be configured during installation.
 
 ### Installing the chart in a dev environment
 
 In a dev environment, you may want to install your own instance of `Talend Vault Sidecar Injector`, connected to your own Vault server and limiting injection to your namespace. To do so, use following options:
 
 ```bash
-$ helm install --name vault-sidecar-injector <chart_folder_location> --namespace <your namespace> --tiller-namespace <your namespace> --set mutatingwebhook.namespaceSelector.namespaced=true --set vault.addr=<your Vault server>
-```
-
-or from Helm registry:
-
-```bash
-$ helm install --name vault-sidecar-injector talend/talend-vault-sidecar-injector --version <chart_version> --namespace <your namespace> --tiller-namespace <your namespace> --set mutatingwebhook.namespaceSelector.namespaced=true --set vault.addr=<your Vault server>
+$ cd deploy/helm
+$ helm install . --name vault-sidecar-injector --namespace <your namespace> --set mutatingwebhook.namespaceSelector.namespaced=true --set vault.addr=<your Vault server address>
 ```
 
 And then **add a label on your namespace** as follows (if not done, no injection will be performed):
@@ -342,10 +345,6 @@ Details on template syntax:
 
 ## How to invoke Talend Vault Sidecar Injector
 
-### General requirements
-
-- **use of `imagePullSecrets` attribute** with value `talend-registry`, for being able to pull TSBI-based sidecars
-
 ### Specific requirements with K8S Jobs
 
 - **use of `serviceAccountName` attribute**, with role allowing to perform GET on pods (needed to poll for job's pod status)
@@ -385,8 +384,6 @@ spec:
         com.talend.service: test-app-1-svc
     spec:
       serviceAccountName: ...
-      imagePullSecrets:
-        - name: talend-registry
       containers:
         - name: ...
           image: ...
@@ -456,8 +453,6 @@ spec:
     spec:
       restartPolicy: Never
       serviceAccountName: job-sa
-      imagePullSecrets:
-        - name: talend-registry
       containers:
         - name: test-app-1-job-container
           image: busybox:1.28
@@ -518,8 +513,6 @@ spec:
         com.talend.service: test-app-4-svc
     spec:
       serviceAccountName: ...
-      imagePullSecrets:
-        - name: talend-registry
       containers:
         - name: ...
           image: ...
@@ -573,8 +566,6 @@ spec:
         com.talend.service: test-app-6-svc
     spec:
       serviceAccountName: ...
-      imagePullSecrets:
-        - name: talend-registry
       containers:
         - name: ...
           image: ...
@@ -630,8 +621,6 @@ spec:
         com.talend.service: test-app-2-svc
     spec:
       serviceAccountName: ...
-      imagePullSecrets:
-        - name: talend-registry
       containers:
         - name: ...
           image: ...
@@ -675,8 +664,6 @@ spec:
         com.talend.service: test-app-svc
     spec:
       serviceAccountName: default
-      imagePullSecrets:
-        - name: talend-registry
       containers:
         - name: test-app-7-container
           image: busybox:1.28
@@ -721,8 +708,6 @@ spec:
         com.talend.service: test-app-svc
     spec:
       serviceAccountName: default
-      imagePullSecrets:
-        - name: talend-registry
       initContainers:
         - name: test-app-8-container-init
           image: busybox:1.28
