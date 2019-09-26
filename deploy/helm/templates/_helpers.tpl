@@ -74,14 +74,14 @@ Define the docker image (image.path:image.tag).
 Define the docker image for Job Babysitter sidecar container (image.path:image.tag).
 */}}
 {{- define "talend-vault-sidecar-injector.injectconfig.jobbabysitter.image" -}}
-{{- printf "%s:%s" .injectconfig.jobbabysitter.image.path (default "latest" .image.tag) -}}
+{{- printf "%s:%s" .injectconfig.jobbabysitter.image.path (default "latest" .injectconfig.jobbabysitter.image.tag) -}}
 {{- end -}}
 
 {{/*
 Define the docker image for Vault sidecar container (image.path:image.tag).
 */}}
 {{- define "talend-vault-sidecar-injector.injectconfig.vault.image" -}}
-{{- printf "%s:%s" .injectconfig.vault.image.path (default "latest" .image.tag) -}}
+{{- printf "%s:%s" .injectconfig.vault.image.path (default "latest" .injectconfig.vault.image.tag) -}}
 {{- end -}}
 
 {{/*
@@ -95,7 +95,7 @@ Define the docker image for Consul Template sidecar container (image.path:image.
 Define the docker image for pre-install hook (image.path:image.tag).
 */}}
 {{- define "talend-vault-sidecar-injector.hook.image" -}}
-{{- printf "%s:%s" .hook.image.path (default "latest" .image.tag) -}}
+{{- printf "%s:%s" .hook.image.path (default "latest" .hook.image.tag) -}}
 {{- end -}}
 
 {{/*
