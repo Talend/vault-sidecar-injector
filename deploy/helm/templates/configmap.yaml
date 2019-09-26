@@ -51,10 +51,9 @@ data:
           - |
             jwt_sa_token=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
             pod_ns=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
-            podDesc=$(curl -s -X GET -H "Authorization: Bearer $jwt_sa_token" --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt https://$KUBERNETES_SERVICE_HOST/api/v1/namespaces/$pod_ns/pods/$POD_NAME?pretty=false)
-            retCode=$(echo $podDesc | jq .code)
+            retCode=$(curl -s -X GET -H "Authorization: Bearer $jwt_sa_token" --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt https://$KUBERNETES_SERVICE_HOST/api/v1/namespaces/$pod_ns/pods/$POD_NAME?pretty=false | jq .code)
             if [ $retCode = "403" ]; then
-              echo $podDesc | jq .message
+              curl -s -X GET -H "Authorization: Bearer $jwt_sa_token" --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt https://$KUBERNETES_SERVICE_HOST/api/v1/namespaces/$pod_ns/pods/$POD_NAME?pretty=false | jq .message
               exit 1
             fi
 
