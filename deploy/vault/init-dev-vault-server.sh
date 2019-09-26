@@ -21,11 +21,11 @@ export VAULT_SA_NAME=$(kubectl get sa vault -o jsonpath="{.secrets[*]['name']}")
 export SA_JWT_TOKEN=$(kubectl get secret $VAULT_SA_NAME -o jsonpath="{.data.token}" | base64 --decode; echo)
 export SA_CA_CRT=$(kubectl get secret $VAULT_SA_NAME -o jsonpath="{.data['ca\.crt']}" | base64 --decode; echo)
 
-${VAULT_POD} "VAULT_TOKEN=root vault write auth/kubernetes/config kubernetes_host="https://kubernetes:443" kubernetes_ca_cert="$SA_CA_CRT" token_reviewer_jwt="$SA_JWT_TOKEN""
+${VAULT_POD} "VAULT_TOKEN=root vault write auth/kubernetes/config kubernetes_host=\"https://kubernetes:443\" kubernetes_ca_cert=\"$SA_CA_CRT\" token_reviewer_jwt=\"$SA_JWT_TOKEN\""
 
 # Create roles for Vault K8S Auth Method
-${VAULT_POD} "VAULT_TOKEN=root vault write auth/kubernetes/role/test bound_service_account_names=default bound_service_account_namespaces=default policies=test_pol ttl=5m"
-${VAULT_POD} "VAULT_TOKEN=root vault write auth/kubernetes/role/test2 bound_service_account_names=default bound_service_account_namespaces=default policies=test_pol2 ttl=5m"
+${VAULT_POD} "VAULT_TOKEN=root vault write auth/kubernetes/role/test bound_service_account_names=default,job-sa bound_service_account_namespaces=default policies=test_pol ttl=5m"
+${VAULT_POD} "VAULT_TOKEN=root vault write auth/kubernetes/role/test2 bound_service_account_names=default,job-sa bound_service_account_namespaces=default policies=test_pol2 ttl=5m"
 
 # Enable Vault AppRole Auth Method
 echo "-> Enable & set up Vault AppRole Auth Method"

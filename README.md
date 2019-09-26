@@ -107,7 +107,7 @@ Using HashiCorp's Vault Helm chart:
 $ git clone https://github.com/hashicorp/vault-helm.git
 $ cd vault-helm
 $ git checkout v0.1.2
-$ helm install . --name=vault --set server.dev.enabled=true --set authDelegator.enabled=true --set ui.enabled=true --set ui.serviceType="NodePort"
+$ helm install . --name=vault --set server.dev.enabled=true --set server.authDelegator.enabled=true --set ui.enabled=true --set ui.serviceType="NodePort"
 ```
 
 Then init Vault server with our test config:
@@ -366,6 +366,10 @@ Details on template syntax:
 - **to not make use of annotation `sidecar.vault.talend.org/secrets-hook`** as it will immediately put the job in error state. This hook is meant to be used with deployment workloads only as it forces a restart of the application container until secrets are available in application's context. With jobs, as we look after status of the job container, our special signaling mechanism will terminate all the sidecars upon job exit thus preventing use of the hook.
 
 ### Examples
+
+Ready to use sample manifests are provided under [deploy/samples](deploy/samples) folder. Just deploy them using `kubectl apply -f <sample file>`.
+
+Examples hereafter go further and highlight all the features of `Talend Vault Sidecar Injector` through the supported annotations.
 
 #### Using Vault Kubernetes Auth Method
 
