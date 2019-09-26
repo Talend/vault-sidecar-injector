@@ -8,9 +8,9 @@
     - [Tiller installation](#tiller-installation)
     - [Vault server installation](#vault-server-installation)
   - [Building the image](#building-the-image)
-  - [Testing the chart](#testing-the-chart)
   - [Installing the chart](#installing-the-chart)
     - [Installing the chart in a dev environment](#installing-the-chart-in-a-dev-environment)
+    - [Restrict injection to specific namespaces](#restrict-injection-to-specific-namespaces)
   - [Uninstalling the chart](#uninstalling-the-chart)
   - [Configuration](#configuration)
   - [Metrics](#metrics)
@@ -126,18 +126,16 @@ $ ./init-dev-vault-server.sh
 
 Before being able to deploy `Talend Vault Sidecar Injector` into your Kubernetes cluster you need to build its Docker image. Refer to [build/README.md](build/README.md) for instructions.
 
-## Testing the chart
+## Installing the chart
 
 > **Note:** as `Talend Vault Sidecar Injector` chart makes use of Helm post-install hooks, **do not** provide Helm `--wait` flag since it will prevent post-install hooks from running and installation will fail.
+
+To see Chart content before installing it, perform a dry run first:
 
 ```bash
 $ cd deploy/helm
 $ helm install . --name vault-sidecar-injector --debug --dry-run
-
-$ helm install . --name vault-sidecar-injector --debug
 ```
-
-## Installing the chart
 
 To install the chart on the cluster:
 
@@ -154,20 +152,37 @@ The [configuration](#configuration) section lists all the parameters that can be
 
 ### Installing the chart in a dev environment
 
-In a dev environment, you may want to install your own instance of `Talend Vault Sidecar Injector`, connected to your own Vault server and limiting injection to your namespace. To do so, use following options:
+In a dev environment, you may want to install your own test instance of `Talend Vault Sidecar Injector`, connected to your own Vault server and limiting injection to a given namespace. To do so, use following options:
 
 ```bash
 $ cd deploy/helm
-$ helm install . --name vault-sidecar-injector --namespace <your namespace> --set mutatingwebhook.namespaceSelector.namespaced=true --set vault.addr=<your Vault server address>
+$ helm install . --name vault-sidecar-injector --namespace <your dev namespace> --set mutatingwebhook.namespaceSelector.namespaced=true --set vault.addr=<your dev Vault server address>
 ```
 
 And then **add a label on your namespace** as follows (if not done, no injection will be performed):
 
 ```bash
-$ kubectl label namespace <your namespace> vault-injection=<your namespace> --overwrite
+$ kubectl label namespace <your dev namespace> vault-injection=<your dev namespace> --overwrite
 
 # check label is set
 $ kubectl get namespace -L vault-injection
+```
+
+### Restrict injection to specific namespaces
+
+By default `Talend Vault Sidecar Injector` monitors all namespaces (except `kube-system` and `kube-public`) and looks afer annotations in submitted pods.
+
+If you want to strictly control the list of namespaces where injection is allowed, set value `mutatingwebhook.namespaceSelector.boolean=true` when installing the chart as follows:
+
+```bash
+$ cd deploy/helm
+$ helm install . --name vault-sidecar-injector --set mutatingwebhook.namespaceSelector.boolean=true
+```
+
+Then apply label `vault-injection=enabled` on **all** required namespaces:
+
+```bash
+$ kubectl label namespace <namespace> vault-injection=enabled
 ```
 
 ## Uninstalling the chart
