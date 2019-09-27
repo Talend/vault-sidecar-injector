@@ -25,7 +25,7 @@ containers:
     valueFrom:
       fieldRef:
         fieldPath: metadata.name
-  image: artifactory.datapwn.com/tlnd-docker-dev/talend/common/tsbi/centos-base:1.2.1-20190701101124
+  image: everpeace/curl-jq
   imagePullPolicy: IfNotPresent
   name: tvsi-job-babysitter
   resources: {}
@@ -78,7 +78,7 @@ containers:
     value: "true"
   - name: VAULT_ADDR
     value: https://vault:8200
-  image: vault:1.1.0
+  image: vault:1.2.3
   imagePullPolicy: IfNotPresent
   lifecycle:
     preStop:
@@ -133,7 +133,7 @@ containers:
   env:
   - name: VAULT_ADDR
     value: https://vault:8200
-  image: hashicorp/consul-template:0.20.0-alpine
+  image: hashicorp/consul-template:0.22.0-alpine
   imagePullPolicy: IfNotPresent
   name: tvsi-consul-template
   resources: {}

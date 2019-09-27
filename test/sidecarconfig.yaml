@@ -3,7 +3,7 @@
 containers:
   # This container is only injected in K8S jobs to monitor app job's container termination and send signal to vault and consul template sidecars
   - name: tvsi-job-babysitter
-    image: artifactory.datapwn.com/tlnd-docker-dev/talend/common/tsbi/centos-base:1.2.1-20190701101124
+    image: everpeace/curl-jq
     imagePullPolicy: IfNotPresent
     env:
       - name: POD_NAME
@@ -39,7 +39,7 @@ containers:
         mountPath: /var/run/secrets/kubernetes.io/serviceaccount
         readOnly: true
   - name: tvsi-vault-agent
-    image: vault:1.1.0
+    image: vault:1.2.3
     imagePullPolicy: IfNotPresent
     env:
       - name: SKIP_SETCAP
@@ -101,7 +101,7 @@ containers:
         mountPath: /var/run/secrets/talend/vault-sidecar-injector/serviceaccount
         readOnly: true
   - name: tvsi-consul-template
-    image: hashicorp/consul-template:0.20.0-alpine
+    image: hashicorp/consul-template:0.22.0-alpine
     imagePullPolicy: IfNotPresent
     env:
       - name: VAULT_ADDR

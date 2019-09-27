@@ -51,10 +51,9 @@ data:
           - |
             jwt_sa_token=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
             pod_ns=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
-            podDesc=$(curl -s -X GET -H "Authorization: Bearer $jwt_sa_token" --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt https://$KUBERNETES_SERVICE_HOST/api/v1/namespaces/$pod_ns/pods/$POD_NAME?pretty=false)
-            retCode=$(echo $podDesc | jq .code)
+            retCode=$(curl -s -X GET -H "Authorization: Bearer $jwt_sa_token" --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt https://$KUBERNETES_SERVICE_HOST/api/v1/namespaces/$pod_ns/pods/$POD_NAME?pretty=false | jq .code)
             if [ $retCode = "403" ]; then
-              echo $podDesc | jq .message
+              curl -s -X GET -H "Authorization: Bearer $jwt_sa_token" --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt https://$KUBERNETES_SERVICE_HOST/api/v1/namespaces/$pod_ns/pods/$POD_NAME?pretty=false | jq .message
               exit 1
             fi
 
@@ -93,43 +92,43 @@ data:
             vault_auth_method="<APPSVC_VAULT_AUTH_METHOD>"
             if [ $vault_auth_method = "kubernetes" ]; then
               cat <<EOF > vault-agent-config.hcl
-              pid_file = "/home/vault/pidfile"
+            pid_file = "/home/vault/pidfile"
 
-              auto_auth {
-                method "kubernetes" {
-                  mount_path = "auth/{{ .Values.vault.authMethods.kubernetes.path }}"
-                  config = {
-                    role = "<APP_VAULT_ROLE>"
-                    token_path = "/var/run/secrets/talend/vault-sidecar-injector/serviceaccount/token"
-                  }
-                }
-
-                sink "file" {
-                  config = {
-                    path = "/home/vault/.vault-token"
-                  }
+            auto_auth {
+              method "kubernetes" {
+                mount_path = "auth/{{ .Values.vault.authMethods.kubernetes.path }}"
+                config = {
+                  role = "<APP_VAULT_ROLE>"
+                  token_path = "/var/run/secrets/talend/vault-sidecar-injector/serviceaccount/token"
                 }
               }
+
+              sink "file" {
+                config = {
+                  path = "/home/vault/.vault-token"
+                }
+              }
+            }
             EOF
             elif [ $vault_auth_method = "approle" ]; then
               cat <<EOF > vault-agent-config.hcl
-              pid_file = "/home/vault/pidfile"
+            pid_file = "/home/vault/pidfile"
 
-              auto_auth {
-                method "approle" {
-                  mount_path = "auth/{{ .Values.vault.authMethods.approle.path }}"
-                  config = {
-                    role_id_file_path = "/opt/talend/secrets/{{ .Values.vault.authMethods.approle.roleid_filename }}"
-                    secret_id_file_path = "/opt/talend/secrets/{{ .Values.vault.authMethods.approle.secretid_filename }}"
-                  }
-                }
-
-                sink "file" {
-                  config = {
-                    path = "/home/vault/.vault-token"
-                  }
+            auto_auth {
+              method "approle" {
+                mount_path = "auth/{{ .Values.vault.authMethods.approle.path }}"
+                config = {
+                  role_id_file_path = "/opt/talend/secrets/{{ .Values.vault.authMethods.approle.roleid_filename }}"
+                  secret_id_file_path = "/opt/talend/secrets/{{ .Values.vault.authMethods.approle.secretid_filename }}"
                 }
               }
+
+              sink "file" {
+                config = {
+                  path = "/home/vault/.vault-token"
+                }
+              }
+            }
             EOF
             else
               echo "Unsupported Vault Auth Method: $vault_auth_method"
@@ -197,7 +196,7 @@ data:
                 verify = {{ .Values.vault.ssl.verify }}
               }
             }
-            
+
             <APPSVC_TEMPLATES>
             EOF
             workload_is_job="<APP_JOB>"

@@ -13,4 +13,4 @@ sources:
 maintainers:
    - name: Talend
      email: support@talend.com
-appVersion: 3.0.0-oss
+appVersion: 3.0.0
