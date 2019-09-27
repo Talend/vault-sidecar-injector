@@ -1,7 +1,7 @@
 
-# Talend Vault Sidecar Injector
+# Vault Sidecar Injector
 
-- [Talend Vault Sidecar Injector](#talend-vault-sidecar-injector)
+- [Vault Sidecar Injector](#vault-sidecar-injector)
   - [TL;DR](#tldr)
   - [Introduction](#introduction)
   - [Prerequisites](#prerequisites)
@@ -16,7 +16,7 @@
   - [Metrics](#metrics)
   - [Annotations](#annotations)
   - [Consul Template's template](#consul-templates-template)
-  - [How to invoke Talend Vault Sidecar Injector](#how-to-invoke-talend-vault-sidecar-injector)
+  - [How to invoke Vault Sidecar Injector](#how-to-invoke-vault-sidecar-injector)
     - [Specific requirements with K8S Jobs](#specific-requirements-with-k8s-jobs)
     - [Examples](#examples)
       - [Using Vault Kubernetes Auth Method](#using-vault-kubernetes-auth-method)
@@ -25,12 +25,11 @@
         - [Custom secrets path and notification command](#custom-secrets-path-and-notification-command)
         - [Ask for secrets hook injection, custom secrets file and template](#ask-for-secrets-hook-injection-custom-secrets-file-and-template)
         - [Ask for secrets hook injection, several custom secrets files and templates](#ask-for-secrets-hook-injection-several-custom-secrets-files-and-templates)
-        - [Using Talend Dev cluster, hybrid mode and Multicluster Service Account](#using-talend-dev-cluster-hybrid-mode-and-multicluster-service-account)
       - [Using Vault AppRole Auth Method](#using-vault-approle-auth-method)
 
 ## TL;DR
 
-`Talend Vault Sidecar Injector` consists in a **Webhook Admission Server**, registered in the Kubernetes Mutating Admission Webhook Controller, that will mutate resources depending on defined criteriae. See here for more details: <https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#admission-webhooks>.
+`Vault Sidecar Injector` consists in a **Webhook Admission Server**, registered in the Kubernetes Mutating Admission Webhook Controller, that will mutate resources depending on defined criteriae. See here for more details: <https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#admission-webhooks>.
 
 This component allows to dynamically inject both Vault Agent and Consul Template containers as sidecars (along with configuration and volumes) in any matching pod manifest. Pods willing to benefit from Vault to handle their secrets just have to add some custom annotations to ask for the sidecars injection at deployment time.
 
@@ -44,13 +43,13 @@ $ helm install <chart_folder_location>
 >
 > A Kubernetes proposal tries to address those points: <https://github.com/kubernetes/enhancements/blob/master/keps/sig-apps/sidecarcontainers.md>, <https://github.com/kubernetes/enhancements/issues/753>. Implementation of the proposal has started and may be released in Kubernetes 1.17 (in Alpha stage).
 >
-> In the meantime however, `Talend Vault Sidecar Injector` implements specific sidecar and signaling mechanism to properly stop all injected containers on job termination.
+> In the meantime however, `Vault Sidecar Injector` implements specific sidecar and signaling mechanism to properly stop all injected containers on job termination.
 
 ## Introduction
 
 This chart is intended to be deployed in a "system" namespace and only once as it handles all injection requests from any pods deployed in any namespaces. **It *shall not* be deployed in every namespaces**.
 
->**Note**: it is possible to deploy an instance in a given namespace **and to restrict injection to this same namespace** if necessary, **in particular in a dev environment where each team wants its own instance of `Talend Vault Sidecar Injector` for testing purpose** with its dedicated configuration (including a dedicated Vault server). Refer to section [Installing the chart in a dev environment](#Installing-the-chart-in-a-dev-environment) below.
+>**Note**: it is possible to deploy an instance in a given namespace **and to restrict injection to this same namespace** if necessary, **in particular in a dev environment where each team wants its own instance of `Vault Sidecar Injector` for testing purpose** with its dedicated configuration (including a dedicated Vault server). Refer to section [Installing the chart in a dev environment](#Installing-the-chart-in-a-dev-environment) below.
 
 ## Prerequisites
 
@@ -124,11 +123,17 @@ $ ./init-dev-vault-server.sh
 
 ## Building the image
 
-Before being able to deploy `Talend Vault Sidecar Injector` into your Kubernetes cluster you need to build its Docker image. Refer to [build/README.md](build/README.md) for instructions.
+Before being able to deploy `Vault Sidecar Injector` into your Kubernetes cluster you need to build its Docker image.
+
+Just run following command:
+
+```bash
+$ make image
+```
 
 ## Installing the chart
 
-> **Note:** as `Talend Vault Sidecar Injector` chart makes use of Helm post-install hooks, **do not** provide Helm `--wait` flag since it will prevent post-install hooks from running and installation will fail.
+> **Note:** as `Vault Sidecar Injector` chart makes use of Helm post-install hooks, **do not** provide Helm `--wait` flag since it will prevent post-install hooks from running and installation will fail.
 
 To see Chart content before installing it, perform a dry run first:
 
@@ -144,15 +149,15 @@ $ cd deploy/helm
 $ helm install . --name vault-sidecar-injector --namespace kube-system --set vault.addr=http://vault:8200 --set vault.ssl.enabled=false --set vault.ssl.verify=false
 ```
 
-> **Note:** `Talend Vault Sidecar Injector` should be deployed only once (except for testing purpose, see below). It will mutate any "vault-sidecar annotated" pod from any namespace.
+> **Note:** `Vault Sidecar Injector` should be deployed only once (except for testing purpose, see below). It will mutate any "vault-sidecar annotated" pod from any namespace.
 
-The command deploys the `Talend Vault Sidecar Injector` service on the Kubernetes cluster with modified configuration to target our in-cluster test instance (no tls, no verification of certificates). Such settings are no fit for production.
+The command deploys the `Vault Sidecar Injector` service on the Kubernetes cluster with modified configuration to target our in-cluster test instance (no tls, no verification of certificates). Such settings are no fit for production.
 
 The [configuration](#configuration) section lists all the parameters that can be configured during installation.
 
 ### Installing the chart in a dev environment
 
-In a dev environment, you may want to install your own test instance of `Talend Vault Sidecar Injector`, connected to your own Vault server and limiting injection to a given namespace. To do so, use following options:
+In a dev environment, you may want to install your own test instance of `Vault Sidecar Injector`, connected to your own Vault server and limiting injection to a given namespace. To do so, use following options:
 
 ```bash
 $ cd deploy/helm
@@ -170,7 +175,7 @@ $ kubectl get namespace -L vault-injection
 
 ### Restrict injection to specific namespaces
 
-By default `Talend Vault Sidecar Injector` monitors all namespaces (except `kube-system` and `kube-public`) and looks afer annotations in submitted pods.
+By default `Vault Sidecar Injector` monitors all namespaces (except `kube-system` and `kube-public`) and looks afer annotations in submitted pods.
 
 If you want to strictly control the list of namespaces where injection is allowed, set value `mutatingwebhook.namespaceSelector.boolean=true` when installing the chart as follows:
 
@@ -187,7 +192,7 @@ $ kubectl label namespace <namespace> vault-injection=enabled
 
 ## Uninstalling the chart
 
-To uninstall/delete the `Talend Vault Sidecar Injector` deployment:
+To uninstall/delete the `Vault Sidecar Injector` deployment:
 
 ```bash
 $ helm delete --purge vault-sidecar-injector
@@ -199,19 +204,19 @@ This command removes all the Kubernetes components associated with the chart and
 
 ## Configuration
 
-The following tables lists the configurable parameters of the `Talend Vault Sidecar Injector` chart and their default values.
+The following tables lists the configurable parameters of the `Vault Sidecar Injector` chart and their default values.
 
 | Parameter    | Description          | Default                                                         |
 |:-------------|:---------------------|:----------------------------------------------------------------|
 | hook.image.path            | the Docker image path | bitnami/kubectl |
 | hook.image.pullPolicy      | pullPolicy defines the pull policy for docker images: IfNotPresent or Always | IfNotPresent |
 | hook.image.tag             | tag defines the version/tag of the docker image | latest |
-| image.applicationNameLabel   | applicationNameLabel represents the Talend Application Name and it must match the label com.talend.application from the docker image | talend-vault-sidecar-injector   |
+| image.applicationNameLabel   | applicationNameLabel represents the Application Name and it must match the label com.talend.application from the docker image | talend-vault-sidecar-injector   |
 | image.metricsPort                | metricsPort defines the port exposed by the docker image for metrics collection | 9000 |
 | image.path       | the Docker image path   | talend/vault-sidecar-injector |
 | image.port       | service main port exposed by the docker image   | 8443            |
 | image.pullPolicy   | pullPolicy defines the pull policy for docker images: IfNotPresent or Always       | IfNotPresent           |
-| image.serviceNameLabel   | serviceNameLabel represents the Talend Service Name and it must match the label com.talend.service from the docker image             | talend-vault-sidecar-injector      |
+| image.serviceNameLabel   | serviceNameLabel represents the Service Name and it must match the label com.talend.service from the docker image             | talend-vault-sidecar-injector      |
 | image.tag  | tag defines the version/tag of the docker image     | latest      |
 | injectconfig.consultemplate.image.path   | the Docker image path  | hashicorp/consul-template    |
 | injectconfig.consultemplate.image.pullPolicy   | pullPolicy defines the pull policy for docker images: IfNotPresent or Always  | IfNotPresent  |
@@ -262,7 +267,6 @@ The following tables lists the configurable parameters of the `Talend Vault Side
 | service.name                                    | service name            | talend-vault-sidecar-injector                                   |
 | service.prefixWithHelmRelease                   | prefixWithHelmRelease defines whether the service name will be prefixed with Helm release name                                       | false                                                           |
 | service.type                        | type is the Kubernetes service type: ClusterIP, NodePort, LoadBalancer, ExternalName  | ClusterIP    |
-| talendImageRegistry  | talendImageRegistry is Talend's Docker registry host name | artifactory.datapwn.com/tlnd-docker-dev  |
 | vault.addr                                      | Address of Vault server    | https://vault:8200       |
 | vault.authMethods.approle.path      | Path defined for AppRole Auth Method            | approle |
 | vault.authMethods.approle.roleid_filename    | Filename for role id    | approle_roleid   |
@@ -281,19 +285,13 @@ $ helm install --name vault-sidecar-injector \
 
 > Example, to skip certificates verification when testing locally:
 >
-> `helm install --name vault-sidecar-injector talend/talend-vault-sidecar-injector --version <chart_version> --namespace admin --set vault.ssl.verify=false`
-
-Alternatively, a YAML file that specifies the values for the parameters can be provided while installing the chart. For example,
-
-```bash
-$ helm install --name <release_name> -f <path>/values-standalone.yaml  <chart_folder_location>
-```
+> `helm install . --name vault-sidecar-injector --version <chart_version> --namespace kube-system --set vault.ssl.verify=false`
 
 > **Tip**: You can use the default [values.yaml](values.yaml)
 
 ## Metrics
 
-Talend Vault Sidecar Injector exposes a Prometheus endpoint at `/metrics` on port `metricsPort` (default: 9000).
+Vault Sidecar Injector exposes a Prometheus endpoint at `/metrics` on port `metricsPort` (default: 9000).
 
 Following collectors are available:
 
@@ -334,11 +332,11 @@ Following annotations in requesting pods are supported:
 | `sidecar.vault.talend.org/secrets-template` | O | Default template *(see below)* | Comma-separated Consul Template templates | Allow to override default Consul Template's template. Ignore `sidecar.vault.talend.org/secrets-path` annotation if set |
 | `sidecar.vault.talend.org/notify`              | O                      | ""   | Comma-separated strings  | List of commands to notify application/service of secrets change, one per secrets path |
 
-Upon successful injection, Talend Vault Sidecar Injector will add annotation(s) to the requesting pods:
+Upon successful injection, Vault Sidecar Injector will add annotation(s) to the requesting pods:
 
 | Annotation                        | Value      | Description                                 |
 |-----------------------------------|------------|---------------------------------------------|
-| `sidecar.vault.talend.org/status` | "injected" | Status set by Talend Vault Sidecar Injector |
+| `sidecar.vault.talend.org/status` | "injected" | Status set by Vault Sidecar Injector |
 
 ## Consul Template's template
 
@@ -358,7 +356,7 @@ Details on template syntax:
 - <https://github.com/hashicorp/consul-template#secrets>
 - <https://github.com/hashicorp/consul-template#helper-functions>
 
-## How to invoke Talend Vault Sidecar Injector
+## How to invoke Vault Sidecar Injector
 
 ### Specific requirements with K8S Jobs
 
@@ -369,7 +367,7 @@ Details on template syntax:
 
 Ready to use sample manifests are provided under [deploy/samples](deploy/samples) folder. Just deploy them using `kubectl apply -f <sample file>`.
 
-Examples hereafter go further and highlight all the features of `Talend Vault Sidecar Injector` through the supported annotations.
+Examples hereafter go further and highlight all the features of `Vault Sidecar Injector` through the supported annotations.
 
 #### Using Vault Kubernetes Auth Method
 
@@ -644,53 +642,6 @@ spec:
         - name: ...
           image: ...
           ...
-          volumeMounts:
-            - name: secrets
-              mountPath: /opt/talend/secrets
-      volumes:
-        - name: secrets
-          emptyDir:
-            medium: Memory
-```
-
-##### Using Talend Dev cluster, hybrid mode and Multicluster Service Account
-
-In this sample we leverage both our Vault Sidecar Injector *and* the Multicluster Service Account feature (that we provide as part as our Talend Helm plugin).
-
-- ask to mount service account `kind-pod-lister-sai` in our pod
-- ask Vault Sidecar Injector to use token attached to `kind-pod-lister-sai` service account for Vault authentication
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: test-app-7
-  namespace: default
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      com.talend.application: test
-      com.talend.service: test-app-svc
-  template:
-    metadata:
-      annotations:
-        multicluster.admiralty.io/service-account-import.name: kind-pod-lister-sai
-        sidecar.vault.talend.org/inject: "true"
-        sidecar.vault.talend.org/sa-token: /var/run/secrets/admiralty.io/serviceaccountimports/kind-pod-lister-sai/token
-      labels:
-        com.talend.application: test
-        com.talend.service: test-app-svc
-    spec:
-      serviceAccountName: default
-      containers:
-        - name: test-app-7-container
-          image: busybox:1.28
-          command:
-            - "sh"
-            - "-c"
-            - >
-              while true;do echo "My secrets are: $(cat /opt/talend/secrets/secrets.properties)"; sleep 5; done
           volumeMounts:
             - name: secrets
               mountPath: /opt/talend/secrets

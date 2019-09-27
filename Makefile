@@ -13,7 +13,7 @@ LDFLAGS=-ldflags "-X=main.VERSION=$(VERSION)"
 .PHONY: all clean fmt test build release image
 .DEFAULT_GOAL := build
 
-all: build
+all: release
 
 clean:
 	rm -f $(TARGET)*
@@ -30,7 +30,7 @@ build: clean test
 	GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -a -o $(TARGET)
 	cd target && sha512sum vaultinjector-webhook > vaultinjector-webhook.sha512
 
-image: build
+image:
 	echo "Build image ..."
 	docker build -t talend/vault-sidecar-injector .
 

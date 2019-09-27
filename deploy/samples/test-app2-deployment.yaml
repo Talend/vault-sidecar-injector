@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-app2
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      com.talend.application: test2
+      com.talend.service: test-app2-svc
+  template:
+    metadata:
+      annotations:
+        sidecar.vault.talend.org/inject: "true"
+        sidecar.vault.talend.org/secrets-destination: "secrets.properties,secrets2.properties"
+        sidecar.vault.talend.org/secrets-template: |
+          {{ with secret "secret/test2/test-app2-svc" }}
+          {{ if .Data.SECRET1 }}
+          bob={{ .Data.SECRET1 }}
+          {{ end }}
+          {{ end }},
+          {{ with secret "secret/test2/test-app2-svc" }}
+          {{ if .Data.SECRET2 }}
+          alice={{ .Data.SECRET2 }}
+          joe={{ .Data.SECRET3 }}
+          {{ end }}
+          {{ end }}
+      labels:
+        com.talend.application: test2
+        com.talend.service: test-app2-svc
+    spec:
+      serviceAccountName: default
+      containers:
+        - name: test-app2-container-1
+          image: busybox:1.28
+          command:
+            - "sh"
+            - "-c"
+            - >
+              while true;do echo "My secrets are: $(cat /opt/talend/secrets/secrets.properties)"; sleep 5; done
+          volumeMounts:
+            - name: secrets
+              mountPath: /opt/talend/secrets
+        - name: test-app2-container-2
+          image: busybox:1.28
+          command:
+            - "sh"
+            - "-c"
+            - >
+              while true;do echo "My secrets 2 are: $(cat /opt/talend/secrets/secrets2.properties)"; sleep 5; done
+          volumeMounts:
+            - name: secrets
+              mountPath: /opt/talend/secrets
+      volumes:
+        - name: secrets
+          emptyDir:
+            medium: Memory
