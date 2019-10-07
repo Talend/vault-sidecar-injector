@@ -139,19 +139,26 @@ To see Chart content before installing it, perform a dry run first:
 
 ```bash
 $ cd deploy/helm
-$ helm install . --name vault-sidecar-injector --debug --dry-run
+$ helm install . --name vault-sidecar-injector --namespace <namespace for deployment> --set vault.addr=<Vault server address> --debug --dry-run
 ```
 
 To install the chart on the cluster:
 
 ```bash
 $ cd deploy/helm
-$ helm install . --name vault-sidecar-injector --namespace kube-system --set vault.addr=http://vault:8200 --set vault.ssl.enabled=false --set vault.ssl.verify=false
+$ helm install . --name vault-sidecar-injector --namespace <namespace for deployment> --set vault.addr=<Vault server address>
 ```
 
 > **Note:** `Vault Sidecar Injector` should be deployed only once (except for testing purpose, see below). It will mutate any "vault-sidecar annotated" pod from any namespace.
 
-The command deploys the `Vault Sidecar Injector` service on the Kubernetes cluster with modified configuration to target our in-cluster test instance (no tls, no verification of certificates). Such settings are no fit for production.
+As an example, to install `Vault Sidecar Injector` on our test cluster:
+
+```bash
+$ cd deploy/helm
+$ helm install . --name vault-sidecar-injector --namespace kube-system --set vault.addr=http://vault:8200 --set vault.ssl.enabled=false --set vault.ssl.verify=false
+```
+
+This command deploys the component on the Kubernetes cluster with modified configuration to target our Vault server in-cluster test instance (no tls, no verification of certificates): such settings *are no fit for production*.
 
 The [configuration](#configuration) section lists all the parameters that can be configured during installation.
 
@@ -161,7 +168,7 @@ In a dev environment, you may want to install your own test instance of `Vault S
 
 ```bash
 $ cd deploy/helm
-$ helm install . --name vault-sidecar-injector --namespace <your dev namespace> --set mutatingwebhook.namespaceSelector.namespaced=true --set vault.addr=<your dev Vault server address>
+$ helm install . --name vault-sidecar-injector --namespace <your dev namespace> --set vault.addr=<your dev Vault server address> --set mutatingwebhook.namespaceSelector.namespaced=true
 ```
 
 And then **add a label on your namespace** as follows (if not done, no injection will be performed):
@@ -169,7 +176,7 @@ And then **add a label on your namespace** as follows (if not done, no injection
 ```bash
 $ kubectl label namespace <your dev namespace> vault-injection=<your dev namespace> --overwrite
 
-# check label is set
+# check label on namespace
 $ kubectl get namespace -L vault-injection
 ```
 
@@ -181,13 +188,16 @@ If you want to strictly control the list of namespaces where injection is allowe
 
 ```bash
 $ cd deploy/helm
-$ helm install . --name vault-sidecar-injector --set mutatingwebhook.namespaceSelector.boolean=true
+$ helm install . --name vault-sidecar-injector --namespace <namespace for deployment> --set vault.addr=<Vault server address> --set mutatingwebhook.namespaceSelector.boolean=true
 ```
 
 Then apply label `vault-injection=enabled` on **all** required namespaces:
 
 ```bash
 $ kubectl label namespace <namespace> vault-injection=enabled
+
+# check label on namespace
+$ kubectl get namespace -L vault-injection
 ```
 
 ## Uninstalling the chart
@@ -287,8 +297,6 @@ $ helm install --name vault-sidecar-injector \
 >
 > `helm install . --name vault-sidecar-injector --version <chart_version> --namespace kube-system --set vault.ssl.verify=false`
 
-> **Tip**: You can use the default [values.yaml](values.yaml)
-
 ## Metrics
 
 Vault Sidecar Injector exposes a Prometheus endpoint at `/metrics` on port `metricsPort` (default: 9000).
@@ -336,11 +344,11 @@ Upon successful injection, Vault Sidecar Injector will add annotation(s) to the 
 
 | Annotation                        | Value      | Description                                 |
 |-----------------------------------|------------|---------------------------------------------|
-| `sidecar.vault.talend.org/status` | "injected" | Status set by Vault Sidecar Injector |
+| `sidecar.vault.talend.org/status` | "injected" | Status set by Vault Sidecar Injector        |
 
 ## Consul Template's template
 
-Default template below is generic (fetch all secrets and create key/value pairs) and should be ok for most use cases:
+Template below is used by default to fetch all secrets and create corresponding key/value pairs. It is generic enough and should be fine for most use cases:
 
 ```ct
 {{ with secret "<APPSVC_VAULT_SECRETS_PATH>" }}{{ range \$k, \$v := .Data }}
