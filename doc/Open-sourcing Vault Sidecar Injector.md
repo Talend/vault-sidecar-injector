@@ -54,7 +54,7 @@ In a nutshell, Vault Sidecar Injector
 
 As of today, it supports the following features:
 
-- handle **both Kubernetes deployment and job workloads**. In the later case, an aditional sidecar is injected to monitor for job termination and properly shutdown Vault Agent and Consul Template sidecars
+- handle **both Kubernetes deployment and job workloads**. In the latter case, an additional sidecar is injected to monitor for job termination and properly shutdown Vault Agent and Consul Template sidecars
 - authentication on Vault Servers using either [Kubernetes](https://www.vaultproject.io/docs/auth/kubernetes.html) or [AppRole](https://www.vaultproject.io/docs/auth/approle.html) methods
 - continuously renew Vault access tokens and fetch up-to-date secrets values
 - able to notify applications of any secrets change
