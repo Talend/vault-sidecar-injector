@@ -20,7 +20,7 @@ Kubernetes comes with the `Secret` resource to allow secret creation, retrieval,
 The secret itself is stored into etcd, the key/value store that also serve as the internal database for all Kubernetes configuration and administration operations.
 
 - *Before Kubernetes 1.7*, secrets were stored in **cleartext** in etcd.
-- *From Kubernetes 1.7*, encryption of secret data at rest is supported (<https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG-1.7.md#encryption-at-rest>) but **not applied by default**.
+- *From Kubernetes 1.7*, [encryption of secret data at rest is supported](<https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG-1.7.md#encryption-at-rest>) but **not applied by default**.
 
 To sum up, Secrets
 
@@ -84,7 +84,7 @@ The repository also comes with [samples](https://github.com/Talend/vault-sidecar
 
 ## Community
 
-Vault Sidecar Injector code is published under the very permissive **Apache 2.0** license. We are already using this component internaly and would eagerly listen for any improvements and suggestions from the open source community.
+Vault Sidecar Injector code is published under the very permissive **Apache 2.0** license. We are already using this component internally and would eagerly listen for any improvements and suggestions from the open source community.
 
 Here's how you can contribute to Vault Sidecar Injector:
 
