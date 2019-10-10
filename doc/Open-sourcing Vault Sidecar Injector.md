@@ -90,3 +90,5 @@ Here's how you can contribute to Vault Sidecar Injector:
 
 - [Report issues on GitHub](https://github.com/Talend/vault-sidecar-injector/issues) to help us squash any remaining bugs
 - [Submit PR on GitHub](https://github.com/Talend/vault-sidecar-injector/pulls) to propose new features
+
+Tags: #technology #kubernetes #secrets-management #security #vault
