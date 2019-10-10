@@ -3,20 +3,9 @@
 
 - [Vault Sidecar Injector](#vault-sidecar-injector)
   - [TL;DR](#tldr)
-  - [Introduction](#introduction)
-  - [Prerequisites](#prerequisites)
-    - [Tiller installation](#tiller-installation)
-    - [Vault server installation](#vault-server-installation)
-  - [Building the image](#building-the-image)
-  - [Installing the chart](#installing-the-chart)
-    - [Installing the chart in a dev environment](#installing-the-chart-in-a-dev-environment)
-    - [Restrict injection to specific namespaces](#restrict-injection-to-specific-namespaces)
-  - [Uninstalling the chart](#uninstalling-the-chart)
-  - [Configuration](#configuration)
-  - [Metrics](#metrics)
-  - [Annotations](#annotations)
-  - [Consul Template's template](#consul-templates-template)
   - [How to invoke Vault Sidecar Injector](#how-to-invoke-vault-sidecar-injector)
+    - [Annotations](#annotations)
+    - [Consul Template's template](#consul-templates-template)
     - [Specific requirements with K8S Jobs](#specific-requirements-with-k8s-jobs)
     - [Examples](#examples)
       - [Using Vault Kubernetes Auth Method](#using-vault-kubernetes-auth-method)
@@ -26,304 +15,35 @@
         - [Ask for secrets hook injection, custom secrets file and template](#ask-for-secrets-hook-injection-custom-secrets-file-and-template)
         - [Ask for secrets hook injection, several custom secrets files and templates](#ask-for-secrets-hook-injection-several-custom-secrets-files-and-templates)
       - [Using Vault AppRole Auth Method](#using-vault-approle-auth-method)
+  - [How to build and deploy Vault Sidecar Injector](#how-to-build-and-deploy-vault-sidecar-injector)
+    - [Prerequisites](#prerequisites)
+      - [Tiller installation](#tiller-installation)
+      - [Vault server installation](#vault-server-installation)
+    - [Building Vault Sidecar Injector image](#building-vault-sidecar-injector-image)
+    - [Installing the Chart](#installing-the-chart)
+      - [Installing the chart in a dev environment](#installing-the-chart-in-a-dev-environment)
+      - [Restrict injection to specific namespaces](#restrict-injection-to-specific-namespaces)
+    - [Uninstalling the chart](#uninstalling-the-chart)
+  - [Configuration](#configuration)
+  - [Metrics](#metrics)
 
 ## TL;DR
 
 `Vault Sidecar Injector` consists in a **Webhook Admission Server**, registered in the Kubernetes Mutating Admission Webhook Controller, that will mutate resources depending on defined criteriae. See here for more details: <https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#admission-webhooks>.
 
-This component allows to dynamically inject both Vault Agent and Consul Template containers as sidecars (along with configuration and volumes) in any matching pod manifest. Pods willing to benefit from Vault to handle their secrets just have to add some custom annotations to ask for the sidecars injection at deployment time.
+This component allows **to dynamically inject both Vault Agent and Consul Template containers as sidecars** (along with configuration and volumes) in any matching pod manifest. Pods willing to benefit from Vault to handle their secrets just have to add some custom annotations to ask for the sidecars injection at deployment time.
 
-To ease deployment, a Helm chart is provided under [deploy/helm](deploy/helm) folder and can be installed on your Kubernetes cluster using following command:
-
-```bash
-$ helm install <chart_folder_location>
-```
+To ease deployment, a Helm chart is provided under [deploy/helm](deploy/helm) folder of this repository as well as instructions to [build the Docker image](#building-vault-sidecar-injector-image) and [deploy the chart]().
 
 > ⚠️ **Important note** ⚠️: support for sidecars in Kubernetes **jobs** suffers from limitations and issues exposed here: <https://github.com/kubernetes/kubernetes/issues/25908>. Same issues/limitations exist with Istio service mesh.
 >
 > A Kubernetes proposal tries to address those points: <https://github.com/kubernetes/enhancements/blob/master/keps/sig-apps/sidecarcontainers.md>, <https://github.com/kubernetes/enhancements/issues/753>. Implementation of the proposal has started and may be released in Kubernetes 1.17 (in Alpha stage).
 >
-> In the meantime however, `Vault Sidecar Injector` implements specific sidecar and signaling mechanism to properly stop all injected containers on job termination.
+> In the meantime however, `Vault Sidecar Injector` implements **specific sidecar and signaling mechanism** to properly stop all injected containers on job termination.
 
-## Introduction
+## How to invoke Vault Sidecar Injector
 
-This chart is intended to be deployed in a "system" namespace and only once as it handles all injection requests from any pods deployed in any namespaces. **It *shall not* be deployed in every namespaces**.
-
->**Note**: it is possible to deploy an instance in a given namespace **and to restrict injection to this same namespace** if necessary, **in particular in a dev environment where each team wants its own instance of `Vault Sidecar Injector` for testing purpose** with its dedicated configuration (including a dedicated Vault server). Refer to section [Installing the chart in a dev environment](#Installing-the-chart-in-a-dev-environment) below.
-
-## Prerequisites
-
-Installation:
-
-- Kubernetes v1.10+
-- Tiller & Helm client
-
-Runtime:
-
-- Vault server deployed (either in cluster with official chart <https://github.com/hashicorp/vault-helm> or out of cluster), started and reachable through Kubernetes service & endpoint deployed into cluster
-
-### Tiller installation
-
-Install Tiller using a service account:
-
-```bash
-$ cat <<EOF | kubectl apply -f -
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: tiller
-  namespace: kube-system
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: tiller
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: cluster-admin
-subjects:
-- kind: ServiceAccount
-  name: tiller
-  namespace: kube-system
-EOF
-
-$ helm init --service-account tiller
-```
-
-For details on using Tiller with RBAC:
-
-- <https://helm.sh/docs/using_helm/#tiller-and-user-permissions>
-- <https://helm.sh/docs/using_helm/#tiller-and-role-based-access-control>
-
-### Vault server installation
-
-We will install a test Vault server in Kubernetes cluster but an external, out of cluster, Vault server can also be used. Note that we will install Vault server in *dev mode* below, do not use this setup in production.
-
-Using HashiCorp's Vault Helm chart:
-
-```bash
-$ git clone https://github.com/hashicorp/vault-helm.git
-$ cd vault-helm
-$ git checkout v0.1.2
-$ helm install . --name=vault --set server.dev.enabled=true --set server.authDelegator.enabled=true --set ui.enabled=true --set ui.serviceType="NodePort"
-```
-
-Then init Vault server with our test config:
-
-```bash
-# Check status
-$ kubectl exec -it vault-0 -- vault status
-$ kubectl logs vault-0
-
-# Set up needed auth methods, secrets engines, policies, roles and secrets
-$ cd vault-sidecar-injector/deploy/vault
-$ ./init-dev-vault-server.sh
-```
-
-## Building the image
-
-Before being able to deploy `Vault Sidecar Injector` into your Kubernetes cluster you need to build its Docker image.
-
-Just run following command:
-
-```bash
-$ make image
-```
-
-## Installing the chart
-
-> **Note:** as `Vault Sidecar Injector` chart makes use of Helm post-install hooks, **do not** provide Helm `--wait` flag since it will prevent post-install hooks from running and installation will fail.
-
-To see Chart content before installing it, perform a dry run first:
-
-```bash
-$ cd deploy/helm
-$ helm install . --name vault-sidecar-injector --namespace <namespace for deployment> --set vault.addr=<Vault server address> --debug --dry-run
-```
-
-To install the chart on the cluster:
-
-```bash
-$ cd deploy/helm
-$ helm install . --name vault-sidecar-injector --namespace <namespace for deployment> --set vault.addr=<Vault server address>
-```
-
-> **Note:** `Vault Sidecar Injector` should be deployed only once (except for testing purpose, see below). It will mutate any "vault-sidecar annotated" pod from any namespace.
-
-As an example, to install `Vault Sidecar Injector` on our test cluster:
-
-```bash
-$ cd deploy/helm
-$ helm install . --name vault-sidecar-injector --namespace kube-system --set vault.addr=http://vault:8200 --set vault.ssl.enabled=false --set vault.ssl.verify=false
-```
-
-This command deploys the component on the Kubernetes cluster with modified configuration to target our Vault server in-cluster test instance (no tls, no verification of certificates): such settings *are no fit for production*.
-
-The [configuration](#configuration) section lists all the parameters that can be configured during installation.
-
-### Installing the chart in a dev environment
-
-In a dev environment, you may want to install your own test instance of `Vault Sidecar Injector`, connected to your own Vault server and limiting injection to a given namespace. To do so, use following options:
-
-```bash
-$ cd deploy/helm
-$ helm install . --name vault-sidecar-injector --namespace <your dev namespace> --set vault.addr=<your dev Vault server address> --set mutatingwebhook.namespaceSelector.namespaced=true
-```
-
-And then **add a label on your namespace** as follows (if not done, no injection will be performed):
-
-```bash
-$ kubectl label namespace <your dev namespace> vault-injection=<your dev namespace> --overwrite
-
-# check label on namespace
-$ kubectl get namespace -L vault-injection
-```
-
-### Restrict injection to specific namespaces
-
-By default `Vault Sidecar Injector` monitors all namespaces (except `kube-system` and `kube-public`) and looks afer annotations in submitted pods.
-
-If you want to strictly control the list of namespaces where injection is allowed, set value `mutatingwebhook.namespaceSelector.boolean=true` when installing the chart as follows:
-
-```bash
-$ cd deploy/helm
-$ helm install . --name vault-sidecar-injector --namespace <namespace for deployment> --set vault.addr=<Vault server address> --set mutatingwebhook.namespaceSelector.boolean=true
-```
-
-Then apply label `vault-injection=enabled` on **all** required namespaces:
-
-```bash
-$ kubectl label namespace <namespace> vault-injection=enabled
-
-# check label on namespace
-$ kubectl get namespace -L vault-injection
-```
-
-## Uninstalling the chart
-
-To uninstall/delete the `Vault Sidecar Injector` deployment:
-
-```bash
-$ helm delete --purge vault-sidecar-injector
-```
-
-> Note If you encounter issues trying to uninstall the chart, try option `--no-hooks` then remove remaining parts with kubectl cli.
-
-This command removes all the Kubernetes components associated with the chart and deletes the release.
-
-## Configuration
-
-The following tables lists the configurable parameters of the `Vault Sidecar Injector` chart and their default values.
-
-| Parameter    | Description          | Default                                                         |
-|:-------------|:---------------------|:----------------------------------------------------------------|
-| hook.image.path            | the Docker image path | bitnami/kubectl |
-| hook.image.pullPolicy      | pullPolicy defines the pull policy for docker images: IfNotPresent or Always | IfNotPresent |
-| hook.image.tag             | tag defines the version/tag of the docker image | latest |
-| image.applicationNameLabel   | applicationNameLabel represents the Application Name and it must match the label com.talend.application from the docker image | talend-vault-sidecar-injector   |
-| image.metricsPort                | metricsPort defines the port exposed by the docker image for metrics collection | 9000 |
-| image.path       | the Docker image path   | talend/vault-sidecar-injector |
-| image.port       | service main port exposed by the docker image   | 8443            |
-| image.pullPolicy   | pullPolicy defines the pull policy for docker images: IfNotPresent or Always       | IfNotPresent           |
-| image.serviceNameLabel   | serviceNameLabel represents the Service Name and it must match the label com.talend.service from the docker image             | talend-vault-sidecar-injector      |
-| image.tag  | tag defines the version/tag of the docker image     | latest      |
-| injectconfig.consultemplate.image.path   | the Docker image path  | hashicorp/consul-template    |
-| injectconfig.consultemplate.image.pullPolicy   | pullPolicy defines the pull policy for docker images: IfNotPresent or Always  | IfNotPresent  |
-| injectconfig.consultemplate.image.tag          | tag defines the version/tag of the docker image   | 0.22.0-alpine       |
-| injectconfig.consultemplate.loglevel           | Consul Template log level: trace, debug, info, warn, err   | info       |
-| injectconfig.consultemplate.resources.limits.cpu | Consul Template sidecar CPU resource limits | 20m |
-| injectconfig.consultemplate.resources.limits.memory | Consul Template sidecar memory resource limits | 25Mi |
-| injectconfig.consultemplate.resources.requests.cpu | Consul Template sidecar CPU resource requests | 10m |
-| injectconfig.consultemplate.resources.requests.memory | Consul Template sidecar memory resource requests | 15Mi |
-| injectconfig.jobbabysitter.image.path   | the Docker image path | everpeace/curl-jq |
-| injectconfig.jobbabysitter.image.pullPolicy | pullPolicy defines the pull policy for docker images: IfNotPresent or Always | IfNotPresent |
-| injectconfig.jobbabysitter.image.tag   | tag defines the version/tag of the docker image  | latest |
-| injectconfig.jobbabysitter.resources.limits.cpu | Vault sidecar CPU resource limits | 20m |
-| injectconfig.jobbabysitter.resources.limits.memory | Vault sidecar memory resource limits | 25Mi |
-| injectconfig.jobbabysitter.resources.requests.cpu | Vault sidecar CPU resource requests | 15m |
-| injectconfig.jobbabysitter.resources.requests.memory | Vault sidecar memory resource requests | 20Mi |
-| injectconfig.vault.image.path  | the Docker image path  | vault |
-| injectconfig.vault.image.pullPolicy    | pullPolicy defines the pull policy for docker images: IfNotPresent or Always  | IfNotPresent   |
-| injectconfig.vault.image.tag  | tag defines the version/tag of the docker image | 1.2.3 |
-| injectconfig.vault.loglevel                    | Vault log level: trace, debug, info, warn, err    | info    |
-| injectconfig.vault.resources.limits.cpu | Vault sidecar CPU resource limits | 30m |
-| injectconfig.vault.resources.limits.memory | Vault sidecar memory resource limits | 25Mi |
-| injectconfig.vault.resources.requests.cpu | Vault sidecar CPU resource requests | 30m |
-| injectconfig.vault.resources.requests.memory | Vault sidecar memory resource requests | 20Mi |
-| mutatingwebhook.annotations.appLabelKey | annotation for application's name. Annotation's value used as Vault role by default. | com.talend.application  |
-| mutatingwebhook.annotations.appServiceLabelKey | annotation for service's name | com.talend.service  |
-| mutatingwebhook.annotations.keyPrefix | prefix used for all vault sidecar injector annotations | sidecar.vault.talend.org  |
-| mutatingwebhook.failurePolicy | defines how unrecognized errors and timeout errors from the admission webhook are handled. Allowed values are Ignore or Fail | Ignore |
-| mutatingwebhook.namespaceSelector.boolean    | Enable to control, with label "vault-injection=enabled", the namespaces where injection is allowed (if false: all namespaces except _kube-system_ and _kube-public_) | false                                                           |
-| mutatingwebhook.namespaceSelector.namespaced | Enable to control, with label "vault-injection={{ .Release.Namespace }}", the specific namespace where injection is allowed (ie, restrict to namespace where injector is installed) | false |
-| probes.liveness.failureThreshold                | Number of probe failure before restarting the probe                                 | 3  |
-| probes.liveness.initialDelaySeconds             | Number of seconds after the container has started before the probe is initiated     | 2  |
-| probes.liveness.periodSeconds                   | How often (in seconds) to perform the probe                                         | 20 |
-| probes.liveness.timeoutSeconds                  | Number of seconds after which the probe times out                                   | 5  |
-| probes.readiness.failureThreshold               | Number of probe failure before setting the probe to Unready                         | 3  |
-| probes.readiness.initialDelaySeconds            | Number of seconds after the container has started before the probe is initiated     | 2  |
-| probes.readiness.periodSeconds                  | How often (in seconds) to perform the probe       | 20   |
-| probes.readiness.successThreshold      | Minimum consecutive successes for the probe to be considered successful after having failed  | 1  |
-| probes.readiness.timeoutSecon          | Number of seconds after which the probe times out  | 5   |
-| rbac.install                        | create RBAC resources. Must be set for any cluster configured with rbac. | true |
-| replicaCount                        | replicaCount defines the number of container replicas running in parallel | 3    |
-| resources.limits.cpu                | CPU resource limits                             | 250m         |
-| resources.limits.memory             | Memory resource limits                          | 256Mi        |
-| resources.requests.cpu              | CPU resource requests                           | 100m         |
-| resources.requests.memory           | Memory resource requests                        | 128Mi        |
-| revisionHistoryLimit                | revision history limit in tiller / helm / k8s   | 3            |
-| service.exposedServicePort   | exposedServicePort is the port exposed by the K8s service (Kubernetes always assumes port 443 for webhooks) | 443 |
-| service.name                                    | service name            | talend-vault-sidecar-injector                                   |
-| service.prefixWithHelmRelease                   | prefixWithHelmRelease defines whether the service name will be prefixed with Helm release name                                       | false                                                           |
-| service.type                        | type is the Kubernetes service type: ClusterIP, NodePort, LoadBalancer, ExternalName  | ClusterIP    |
-| vault.addr                                      | Address of Vault server    | https://vault:8200       |
-| vault.authMethods.approle.path      | Path defined for AppRole Auth Method            | approle |
-| vault.authMethods.approle.roleid_filename    | Filename for role id    | approle_roleid   |
-| vault.authMethods.approle.secretid_filename  | Filename for secret id  | approle_secretid |
-| vault.authMethods.kubernetes.path      | Path defined for Kubernetes Auth Method            | kubernetes |
-| vault.ssl.enabled              | Enable or disable secure connection with Vault server               | true |
-| vault.ssl.verify               | Enable or disable verification of certificates               | true |
-
-You can override these values at runtime using the `--set key=value[,key=value]` argument to `helm install`. For example,
-
-```bash
-$ helm install --name vault-sidecar-injector \
-               --set <parameter1>=<value1>,<parameter2>=<value2> \
-                <chart_folder_location>
-```
-
-> Example, to skip certificates verification when testing locally:
->
-> `helm install . --name vault-sidecar-injector --version <chart_version> --namespace kube-system --set vault.ssl.verify=false`
-
-## Metrics
-
-Vault Sidecar Injector exposes a Prometheus endpoint at `/metrics` on port `metricsPort` (default: 9000).
-
-Following collectors are available:
-
-- Process Collector
-  - process_cpu_seconds_total
-  - process_virtual_memory_bytes
-  - process_start_time_seconds
-  - process_open_fds
-  - process_max_fds
-- Go Collector
-  - go_goroutines
-  - go_threads
-  - go_gc_duration_seconds
-  - go_info
-  - go_memstats_alloc_bytes
-  - go_memstats_heap_alloc_bytes
-  - go_memstats_alloc_bytes_total
-  - go_memstats_sys_bytes
-  - go_memstats_lookups_total
-  - ...
-
-![Grafana dashboard](doc/grafana-vault-sidecar-injector.png)
-
-## Annotations
+### Annotations
 
 Following annotations in requesting pods are supported:
 
@@ -332,12 +52,12 @@ Following annotations in requesting pods are supported:
 | `sidecar.vault.talend.org/inject`     | M                      |         | "true" / "on" / "yes" / "y"    | Ask for sidecar injection to get secrets from Vault    |
 | `sidecar.vault.talend.org/auth`       | O                      | "kubernetes"   | "kubernetes" / "approle" | Vault Auth Method to use |
 | `sidecar.vault.talend.org/workload`   | O                      |  | "job" | Type of submitted workload |
-| `sidecar.vault.talend.org/role`       | O                      | "\<`com.talend.application` label\>" | Any string    | Vault role associated to requesting pod  |
+| `sidecar.vault.talend.org/role`       | O                      | "\<`com.talend.application` label\>" | Any string    | Vault role associated to requesting pod. If annotation not used, role is read from label defined by `mutatingwebhook.annotations.appLabelKey` key (refer to [configuration](#configuration)) which is `com.talend.application` by default |
 | `sidecar.vault.talend.org/sa-token`   | O                      | "/var/run/secrets/kubernetes.io/serviceaccount/token" | Any string | Full path to service account token used for Vault Kubernetes authentication |
-| `sidecar.vault.talend.org/secrets-path`        | O                      | "secret/<`com.talend.application` label>/<`com.talend.service` label>" | Comma-separated strings | List of secrets engines and path      |
+| `sidecar.vault.talend.org/secrets-path`        | O                      | "secret/<`com.talend.application` label>/<`com.talend.service` label>" | Comma-separated strings | List of secrets engines and path. If annotation not used, path is set from labels defined by `mutatingwebhook.annotations.appLabelKey`  and `mutatingwebhook.annotations.appServiceLabelKey` keys (refer to [configuration](#configuration))      |
 | `sidecar.vault.talend.org/secrets-destination` | O                      | "secrets.properties" | Comma-separated strings  | List of secrets filenames (without path), one per secrets path |
 | `sidecar.vault.talend.org/secrets-hook` | O |  | "true" / "on" / "yes" / "y" | If set, lifecycle hooks will be added to pod's container(s) to wait for secrets files |
-| `sidecar.vault.talend.org/secrets-template` | O | Default template *(see below)* | Comma-separated Consul Template templates | Allow to override default Consul Template's template. Ignore `sidecar.vault.talend.org/secrets-path` annotation if set |
+| `sidecar.vault.talend.org/secrets-template` | O | Default template *(see [Consul Template's template](#consul-templates-template) section)* | Comma-separated Consul Template templates | Allow to override default Consul Template's template. Ignore `sidecar.vault.talend.org/secrets-path` annotation if set |
 | `sidecar.vault.talend.org/notify`              | O                      | ""   | Comma-separated strings  | List of commands to notify application/service of secrets change, one per secrets path |
 
 Upon successful injection, Vault Sidecar Injector will add annotation(s) to the requesting pods:
@@ -346,7 +66,9 @@ Upon successful injection, Vault Sidecar Injector will add annotation(s) to the 
 |-----------------------------------|------------|---------------------------------------------|
 | `sidecar.vault.talend.org/status` | "injected" | Status set by Vault Sidecar Injector        |
 
-## Consul Template's template
+> **Note:** you can change the annotation prefix (set by default to `sidecar.vault.talend.org`) thanks to `mutatingwebhook.annotations.keyPrefix` key in [configuration](#configuration).
+
+### Consul Template's template
 
 Template below is used by default to fetch all secrets and create corresponding key/value pairs. It is generic enough and should be fine for most use cases:
 
@@ -356,15 +78,13 @@ Template below is used by default to fetch all secrets and create corresponding 
 {{ end }}{{ end }}
 ```
 
-Using annotation `sidecar.vault.talend.org/secrets-template` it is nevertheless possible to provide your own list of templates. For some examples have a look at the next section.
+Using annotation `sidecar.vault.talend.org/secrets-template` it is nevertheless possible to provide your own list of templates. For some examples have a look at the next section ([here](#ask-for-secrets-hook-injection-custom-secrets-file-and-template) and [there](#ask-for-secrets-hook-injection-several-custom-secrets-files-and-templates)).
 
 Details on template syntax:
 
 - <https://github.com/hashicorp/consul-template#secret>
 - <https://github.com/hashicorp/consul-template#secrets>
 - <https://github.com/hashicorp/consul-template#helper-functions>
-
-## How to invoke Vault Sidecar Injector
 
 ### Specific requirements with K8S Jobs
 
@@ -714,3 +434,283 @@ spec:
           emptyDir:
             medium: Memory
 ```
+
+## How to build and deploy Vault Sidecar Injector
+
+The provided [chart](deploy/helm) is intended to be deployed in a "system" namespace and only once as it handles all injection requests from any pods deployed in any namespaces. **It *shall not* be deployed in every namespaces**.
+
+>**Note**: it is possible to deploy an instance in a given namespace **and to restrict injection to this same namespace** if necessary, **in particular in a dev environment where each team wants its own instance of `Vault Sidecar Injector` for testing purpose** with its dedicated configuration (including a dedicated Vault server). Refer to section [Installing the chart in a dev environment](#Installing-the-chart-in-a-dev-environment) below.
+
+### Prerequisites
+
+Installation:
+
+- Kubernetes v1.10+
+- Tiller & Helm client
+
+Runtime:
+
+- Vault server deployed (either in cluster with official chart <https://github.com/hashicorp/vault-helm> or out of cluster), started and reachable through Kubernetes service & endpoint deployed into cluster
+
+#### Tiller installation
+
+Install Tiller using a service account:
+
+```bash
+$ cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tiller
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: tiller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: tiller
+  namespace: kube-system
+EOF
+
+$ helm init --service-account tiller
+```
+
+For details on using Tiller with RBAC:
+
+- <https://helm.sh/docs/using_helm/#tiller-and-user-permissions>
+- <https://helm.sh/docs/using_helm/#tiller-and-role-based-access-control>
+
+#### Vault server installation
+
+> **Note:** this step is optional if you already have a running Vault server. This section helps you setup a test Vault server with ready to use configuration.
+
+We will install a test Vault server in Kubernetes cluster but an external, out of cluster, Vault server can also be used. Note that we will install Vault server in *dev mode* below, do not use this setup in production.
+
+Using HashiCorp's Vault Helm chart:
+
+```bash
+$ git clone https://github.com/hashicorp/vault-helm.git
+$ cd vault-helm
+$ git checkout v0.1.2
+$ helm install . --name=vault --set server.dev.enabled=true --set server.authDelegator.enabled=true --set ui.enabled=true --set ui.serviceType="NodePort"
+```
+
+Then init Vault server with our test config:
+
+```bash
+# Check status
+$ kubectl exec -it vault-0 -- vault status
+$ kubectl logs vault-0
+
+# Set up needed auth methods, secrets engines, policies, roles and secrets
+$ cd vault-sidecar-injector/deploy/vault
+$ ./init-dev-vault-server.sh
+```
+
+### Building Vault Sidecar Injector image
+
+Before being able to deploy `Vault Sidecar Injector` component into your Kubernetes cluster you need to build its Docker image. A [Dockerfile](Dockerfile) is provided.
+
+Just run following command:
+
+```bash
+$ make image
+```
+
+### Installing the Chart
+
+> **Note:** as `Vault Sidecar Injector` chart makes use of Helm post-install hooks, **do not** provide Helm `--wait` flag since it will prevent post-install hooks from running and installation will fail.
+
+To see Chart content before installing it, perform a dry run first:
+
+```bash
+$ cd deploy/helm
+$ helm install . --name vault-sidecar-injector --namespace <namespace for deployment> --set vault.addr=<Vault server address> --debug --dry-run
+```
+
+To install the chart on the cluster:
+
+```bash
+$ cd deploy/helm
+$ helm install . --name vault-sidecar-injector --namespace <namespace for deployment> --set vault.addr=<Vault server address>
+```
+
+> **Note:** `Vault Sidecar Injector` should be deployed only once (except for testing purpose, see below). It will mutate any "vault-sidecar annotated" pod from any namespace.
+
+As an example, to install `Vault Sidecar Injector` on our test cluster:
+
+```bash
+$ cd deploy/helm
+$ helm install . --name vault-sidecar-injector --namespace kube-system --set vault.addr=http://vault:8200 --set vault.ssl.enabled=false --set vault.ssl.verify=false
+```
+
+This command deploys the component on the Kubernetes cluster with modified configuration to target our Vault server in-cluster test instance (no tls, no verification of certificates): such settings *are no fit for production*.
+
+The [configuration](#configuration) section lists all the parameters that can be configured during installation.
+
+#### Installing the chart in a dev environment
+
+In a dev environment, you may want to install your own test instance of `Vault Sidecar Injector`, connected to your own Vault server and limiting injection to a given namespace. To do so, use following options:
+
+```bash
+$ cd deploy/helm
+$ helm install . --name vault-sidecar-injector --namespace <your dev namespace> --set vault.addr=<your dev Vault server address> --set mutatingwebhook.namespaceSelector.namespaced=true
+```
+
+And then **add a label on your namespace** as follows (if not done, no injection will be performed):
+
+```bash
+$ kubectl label namespace <your dev namespace> vault-injection=<your dev namespace> --overwrite
+
+# check label on namespace
+$ kubectl get namespace -L vault-injection
+```
+
+#### Restrict injection to specific namespaces
+
+By default `Vault Sidecar Injector` monitors all namespaces (except `kube-system` and `kube-public`) and looks afer annotations in submitted pods.
+
+If you want to strictly control the list of namespaces where injection is allowed, set value `mutatingwebhook.namespaceSelector.boolean=true` when installing the chart as follows:
+
+```bash
+$ cd deploy/helm
+$ helm install . --name vault-sidecar-injector --namespace <namespace for deployment> --set vault.addr=<Vault server address> --set mutatingwebhook.namespaceSelector.boolean=true
+```
+
+Then apply label `vault-injection=enabled` on **all** required namespaces:
+
+```bash
+$ kubectl label namespace <namespace> vault-injection=enabled
+
+# check label on namespace
+$ kubectl get namespace -L vault-injection
+```
+
+### Uninstalling the chart
+
+To uninstall/delete the `Vault Sidecar Injector` deployment:
+
+```bash
+$ helm delete --purge vault-sidecar-injector
+```
+
+> Note If you encounter issues trying to uninstall the chart, try option `--no-hooks` then remove remaining parts with kubectl cli.
+
+This command removes all the Kubernetes components associated with the chart and deletes the release.
+
+## Configuration
+
+The following tables lists the configurable parameters of the `Vault Sidecar Injector` chart and their default values.
+
+| Parameter    | Description          | Default                                                         |
+|:-------------|:---------------------|:----------------------------------------------------------------|
+| hook.image.path            | the Docker image path | bitnami/kubectl |
+| hook.image.pullPolicy      | pullPolicy defines the pull policy for docker images: IfNotPresent or Always | IfNotPresent |
+| hook.image.tag             | tag defines the version/tag of the docker image | latest |
+| image.applicationNameLabel   | applicationNameLabel represents the Application Name and it must match the label com.talend.application from the docker image | talend-vault-sidecar-injector   |
+| image.metricsPort                | metricsPort defines the port exposed by the docker image for metrics collection | 9000 |
+| image.path       | the Docker image path   | talend/vault-sidecar-injector |
+| image.port       | service main port exposed by the docker image   | 8443            |
+| image.pullPolicy   | pullPolicy defines the pull policy for docker images: IfNotPresent or Always       | IfNotPresent           |
+| image.serviceNameLabel   | serviceNameLabel represents the Service Name and it must match the label com.talend.service from the docker image             | talend-vault-sidecar-injector      |
+| image.tag  | tag defines the version/tag of the docker image     | latest      |
+| injectconfig.consultemplate.image.path   | the Docker image path  | hashicorp/consul-template    |
+| injectconfig.consultemplate.image.pullPolicy   | pullPolicy defines the pull policy for docker images: IfNotPresent or Always  | IfNotPresent  |
+| injectconfig.consultemplate.image.tag          | tag defines the version/tag of the docker image   | 0.22.0-alpine       |
+| injectconfig.consultemplate.loglevel           | Consul Template log level: trace, debug, info, warn, err   | info       |
+| injectconfig.consultemplate.resources.limits.cpu | Consul Template sidecar CPU resource limits | 20m |
+| injectconfig.consultemplate.resources.limits.memory | Consul Template sidecar memory resource limits | 25Mi |
+| injectconfig.consultemplate.resources.requests.cpu | Consul Template sidecar CPU resource requests | 10m |
+| injectconfig.consultemplate.resources.requests.memory | Consul Template sidecar memory resource requests | 15Mi |
+| injectconfig.jobbabysitter.image.path   | the Docker image path | everpeace/curl-jq |
+| injectconfig.jobbabysitter.image.pullPolicy | pullPolicy defines the pull policy for docker images: IfNotPresent or Always | IfNotPresent |
+| injectconfig.jobbabysitter.image.tag   | tag defines the version/tag of the docker image  | latest |
+| injectconfig.jobbabysitter.resources.limits.cpu | Vault sidecar CPU resource limits | 20m |
+| injectconfig.jobbabysitter.resources.limits.memory | Vault sidecar memory resource limits | 25Mi |
+| injectconfig.jobbabysitter.resources.requests.cpu | Vault sidecar CPU resource requests | 15m |
+| injectconfig.jobbabysitter.resources.requests.memory | Vault sidecar memory resource requests | 20Mi |
+| injectconfig.vault.image.path  | the Docker image path  | vault |
+| injectconfig.vault.image.pullPolicy    | pullPolicy defines the pull policy for docker images: IfNotPresent or Always  | IfNotPresent   |
+| injectconfig.vault.image.tag  | tag defines the version/tag of the docker image | 1.2.3 |
+| injectconfig.vault.loglevel                    | Vault log level: trace, debug, info, warn, err    | info    |
+| injectconfig.vault.resources.limits.cpu | Vault sidecar CPU resource limits | 30m |
+| injectconfig.vault.resources.limits.memory | Vault sidecar memory resource limits | 25Mi |
+| injectconfig.vault.resources.requests.cpu | Vault sidecar CPU resource requests | 30m |
+| injectconfig.vault.resources.requests.memory | Vault sidecar memory resource requests | 20Mi |
+| mutatingwebhook.annotations.appLabelKey | annotation for application's name. Annotation's value used as Vault role by default. | com.talend.application  |
+| mutatingwebhook.annotations.appServiceLabelKey | annotation for service's name | com.talend.service  |
+| mutatingwebhook.annotations.keyPrefix | prefix used for all vault sidecar injector annotations | sidecar.vault.talend.org  |
+| mutatingwebhook.failurePolicy | defines how unrecognized errors and timeout errors from the admission webhook are handled. Allowed values are Ignore or Fail | Ignore |
+| mutatingwebhook.namespaceSelector.boolean    | Enable to control, with label "vault-injection=enabled", the namespaces where injection is allowed (if false: all namespaces except _kube-system_ and _kube-public_) | false                                                           |
+| mutatingwebhook.namespaceSelector.namespaced | Enable to control, with label "vault-injection={{ .Release.Namespace }}", the specific namespace where injection is allowed (ie, restrict to namespace where injector is installed) | false |
+| probes.liveness.failureThreshold                | Number of probe failure before restarting the probe                                 | 3  |
+| probes.liveness.initialDelaySeconds             | Number of seconds after the container has started before the probe is initiated     | 2  |
+| probes.liveness.periodSeconds                   | How often (in seconds) to perform the probe                                         | 20 |
+| probes.liveness.timeoutSeconds                  | Number of seconds after which the probe times out                                   | 5  |
+| probes.readiness.failureThreshold               | Number of probe failure before setting the probe to Unready                         | 3  |
+| probes.readiness.initialDelaySeconds            | Number of seconds after the container has started before the probe is initiated     | 2  |
+| probes.readiness.periodSeconds                  | How often (in seconds) to perform the probe       | 20   |
+| probes.readiness.successThreshold      | Minimum consecutive successes for the probe to be considered successful after having failed  | 1  |
+| probes.readiness.timeoutSecon          | Number of seconds after which the probe times out  | 5   |
+| rbac.install                        | create RBAC resources. Must be set for any cluster configured with rbac. | true |
+| replicaCount                        | replicaCount defines the number of container replicas running in parallel | 3    |
+| resources.limits.cpu                | CPU resource limits                             | 250m         |
+| resources.limits.memory             | Memory resource limits                          | 256Mi        |
+| resources.requests.cpu              | CPU resource requests                           | 100m         |
+| resources.requests.memory           | Memory resource requests                        | 128Mi        |
+| revisionHistoryLimit                | revision history limit in tiller / helm / k8s   | 3            |
+| service.exposedServicePort   | exposedServicePort is the port exposed by the K8s service (Kubernetes always assumes port 443 for webhooks) | 443 |
+| service.name                                    | service name            | talend-vault-sidecar-injector                                   |
+| service.prefixWithHelmRelease                   | prefixWithHelmRelease defines whether the service name will be prefixed with Helm release name                                       | false                                                           |
+| service.type                        | type is the Kubernetes service type: ClusterIP, NodePort, LoadBalancer, ExternalName  | ClusterIP    |
+| vault.addr                                      | Address of Vault server    | https://vault:8200       |
+| vault.authMethods.approle.path      | Path defined for AppRole Auth Method            | approle |
+| vault.authMethods.approle.roleid_filename    | Filename for role id    | approle_roleid   |
+| vault.authMethods.approle.secretid_filename  | Filename for secret id  | approle_secretid |
+| vault.authMethods.kubernetes.path      | Path defined for Kubernetes Auth Method            | kubernetes |
+| vault.ssl.enabled              | Enable or disable secure connection with Vault server               | true |
+| vault.ssl.verify               | Enable or disable verification of certificates               | true |
+
+You can override these values at runtime using the `--set key=value[,key=value]` argument to `helm install`. For example,
+
+```bash
+$ helm install --name vault-sidecar-injector \
+               --set <parameter1>=<value1>,<parameter2>=<value2> \
+                <chart_folder_location>
+```
+
+> Example, to skip certificates verification when testing locally:
+>
+> `helm install . --name vault-sidecar-injector --version <chart_version> --namespace kube-system --set vault.ssl.verify=false`
+
+## Metrics
+
+Vault Sidecar Injector exposes a Prometheus endpoint at `/metrics` on port `metricsPort` (default: 9000).
+
+Following collectors are available:
+
+- Process Collector
+  - process_cpu_seconds_total
+  - process_virtual_memory_bytes
+  - process_start_time_seconds
+  - process_open_fds
+  - process_max_fds
+- Go Collector
+  - go_goroutines
+  - go_threads
+  - go_gc_duration_seconds
+  - go_info
+  - go_memstats_alloc_bytes
+  - go_memstats_heap_alloc_bytes
+  - go_memstats_alloc_bytes_total
+  - go_memstats_sys_bytes
+  - go_memstats_lookups_total
+  - ...
+
+![Grafana dashboard](doc/grafana-vault-sidecar-injector.png)
