@@ -31,7 +31,7 @@
 
 `Vault Sidecar Injector` consists in a **Webhook Admission Server**, registered in the Kubernetes Mutating Admission Webhook Controller, that will mutate resources depending on defined criteriae. See here for more details: <https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#admission-webhooks>.
 
-This component allows **to dynamically inject both Vault Agent and Consul Template containers as sidecars** (along with configuration and volumes) in any matching pod manifest. Pods willing to benefit from Vault to handle their secrets just have to add some custom annotations to ask for the sidecars injection at deployment time.
+This component allows **to dynamically inject both Vault Agent and Consul Template containers as sidecars** (along with configuration and volumes) in any matching pod manifest to seamlessly and dynamically fetch secrets. Pods willing to benefit from this feature just have to add some custom annotations to ask for the sidecars injection **at deployment time**.
 
 To ease deployment, a Helm chart is provided under [deploy/helm](deploy/helm) folder of this repository as well as instructions to [build the Docker image](#building-vault-sidecar-injector-image) and [deploy the chart]().
 
@@ -42,6 +42,13 @@ To ease deployment, a Helm chart is provided under [deploy/helm](deploy/helm) fo
 > In the meantime however, `Vault Sidecar Injector` implements **specific sidecar and signaling mechanism** to properly stop all injected containers on job termination.
 
 ## How to invoke Vault Sidecar Injector
+
+Invoking `Vault Sidecar Injector` is pretty straightforward. In your application manifest:
+
+- Add annotation `sidecar.vault.talend.org/inject: "true"`. This is the only mandatory annotation.
+- Add volume `secrets`, setting field `emptyDir.medium` to *Memory*. Deciphered secrets will be made available in file `secrets.properties` (using format `<secret key>=<secret value>`) by default or in the secrets destination you provide with annotation `sidecar.vault.talend.org/secrets-destination`.
+
+Refer to provided [sample files](deploy/samples) and [examples](#examples) section.
 
 ### Annotations
 
