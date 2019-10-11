@@ -1,4 +1,4 @@
-# Open sourcing Vault Sidecar Injector, Talend's Vault-based secrets management solution on Kubernetes
+# Open sourcing Vault Sidecar Injector, Talend's Vault-based secrets management on Kubernetes
 
 *October 2019, [Post by Alain Saint-Sever, Senior Software Cloud Architect (@alstsever)](https://twitter.com/alstsever)*
 
@@ -6,7 +6,7 @@ Handling secrets has always been a challenging and critical task within organiza
 
 Today we are **open sourcing the code of our Vault Sidecar Injector component**. [You can start exploring it on GitHub right now](https://github.com/Talend/vault-sidecar-injector).
 
-With this component we are introducing a secrets management solution relying on sidecars injection and kubernetes admission controller to provide a secure, seamless and dynamic experience.
+This component is part of our hybrid secrets management solution relying on sidecars injection and kubernetes admission controller to provide a secure, seamless and dynamic experience.
 
 ## Benefits to the Ecosystem
 
