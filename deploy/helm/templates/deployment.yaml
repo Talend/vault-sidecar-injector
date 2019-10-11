@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "talend-vault-sidecar-injector.fullname" . }}
+  labels:
+{{ include "talend-vault-sidecar-injector.labels" . | indent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount | int }}
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit | int }}
+  selector:
+    matchLabels:
+      com.talend.application: {{ .Values.image.applicationNameLabel }}
+      com.talend.service: {{ .Values.image.serviceNameLabel }}
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        com.talend.application: {{ .Values.image.applicationNameLabel }}
+        com.talend.service: {{ .Values.image.serviceNameLabel }}
+        release: {{ .Release.Name }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      serviceAccountName: talend-vault-sidecar-injector
+      containers:
+        - name: {{ include "talend-vault-sidecar-injector.fullname" . }}
+          image: {{ include "talend-vault-sidecar-injector.image" .Values }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - -port={{ .Values.image.port }}
+            - -metricsport={{ .Values.image.metricsPort }}
+            - -annotationKeyPrefix={{ .Values.mutatingwebhook.annotations.keyPrefix }}
+            - -appLabelKey={{ .Values.mutatingwebhook.annotations.appLabelKey }}
+            - -appServiceLabelKey={{ .Values.mutatingwebhook.annotations.appServiceLabelKey }}
+            - -sidecarcfgfile=/opt/talend/webhook/config/sidecarconfig.yaml
+            - -cttmplblockfile=/opt/talend/webhook/config/consultemplatetmplblock.hcl
+            - -cttmpldefaultfile=/opt/talend/webhook/config/consultemplatetmpldefault.ctmpl
+            - -podlchooksfile=/opt/talend/webhook/config/podlifecyclehooks.yaml
+            - -tlscertfile=/opt/talend/webhook/certs/cert.pem
+            - -tlskeyfile=/opt/talend/webhook/certs/key.pem
+            - -logtostderr
+            - -stderrthreshold=0
+            - -v=4
+            - 2>&1
+          ports:
+            - name: webhook-api
+              containerPort: {{ .Values.image.port }}
+            {{- if .Values.image.metricsPort }}
+            - name: http-metrics
+              containerPort: {{ .Values.image.metricsPort }}
+            {{- end }}
+          livenessProbe:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - ps -edf | grep vaultinjector-webhook
+            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.liveness.timeoutSeconds }}
+            failureThreshold: {{ .Values.probes.liveness.failureThreshold }}
+          readinessProbe:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - ps -edf | grep vaultinjector-webhook
+            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.readiness.timeoutSeconds }}
+            successThreshold: {{ .Values.probes.readiness.successThreshold }}
+            failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
+          volumeMounts:
+            - name: webhook-certs
+              mountPath: /opt/talend/webhook/certs
+              readOnly: true
+            - name: webhook-config
+              mountPath: /opt/talend/webhook/config
+          {{- if .Values.resources }}
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+          {{- end }}
+      {{- if .Values.nodeAffinity }}
+      affinity:
+        nodeAffinity:
+{{ toYaml .Values.nodeAffinity | indent 10 }}
+      {{- end }}
+      volumes:
+        - name: webhook-certs
+          secret:
+            secretName: {{ include "talend-vault-sidecar-injector.service.name" . }}-{{ .Release.Namespace }}-certs
+        - name: webhook-config
+          configMap:
+            name: {{ include "talend-vault-sidecar-injector.fullname" . }}
