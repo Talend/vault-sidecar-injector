@@ -2,27 +2,30 @@
 
 *October 2019, [Post by Alain Saint-Sever, Senior Software Cloud Architect (@alstsever)](https://twitter.com/alstsever)*
 
-Today we are open sourcing the code of our Vault Sidecar Injector component. [You can start exploring it on GitHub right now](https://github.com/Talend/vault-sidecar-injector).
-
 Handling secrets has always been a challenging and critical task within organizations. As production workloads deployed in remote clouds or following hybrid patterns are ever increasing, this problematic becomes more complex: we still want to manage secrets from a central place, using state-of-the-art security practices (encryption at rest, secrets rotation), with as less adherence on the underlying technology as possible to maximize components reusability across deployment topologies and ease testability.
-With the Vault Sidecar Injector component we are introducing a secrets management solution relying on sidecars injection and kubernetes admission controller to provide a secure, seamless and dynamic experience.
+
+Today we are **open sourcing the code of our Vault Sidecar Injector component**. [You can start exploring it on GitHub right now](https://github.com/Talend/vault-sidecar-injector).
+
+With this component we are introducing a secrets management solution relying on sidecars injection and kubernetes admission controller to provide a secure, seamless and dynamic experience.
 
 ## Benefits to the Ecosystem
 
-Kubernetes provides an effective but somewhat basic way to handle secrets. By default, encryption at rest is not enabled and evolved key management operations are not available. There is no signaling mechanism either upon any secrets change thus enforcing a file polling pattern on applications willing to use up-to-date credentials. But, paradoxically, the biggest issue may lie in the "Kubernetes-native" nature of this solution: it is not the best candidate in architectures mixing legacy/non-containerized applications with Cloud Native ones. It may also not be a good fit if you want to handle secrets dispatched over a set of Kubernetes clusters. Organizations want to centralize secrets management among Kubernetes clusters and traditional applications and a more technology/stack agnostic solution with full-fledged encryption and authentication options will preferably be adopted to this end.
+Kubernetes provides an effective but somewhat basic way to handle secrets. By default, encryption at rest is not enabled and advanced key management operations are not available. There is no signaling mechanism either upon any secrets change thus enforcing a file polling pattern on applications willing to use up-to-date credentials. But, paradoxically, the biggest issue may lie in the "Kubernetes-native" nature of this solution: it is not the best candidate in architectures mixing legacy/non-containerized applications with Cloud Native ones. It may also not be a good fit if you want to handle secrets dispatched over a set of Kubernetes clusters.
+
+For organizations looking to centralize secrets management among Kubernetes clusters and traditional applications, it is more relevant to adopt a technology/stack agnostic solution with full-fledged encryption and authentication options.
 
 The Vault Sidecar Injector component allows organizations to securely and continuously fetch and push secrets to applications while still delivering a developer experience on par with Kubernetes Secrets.
 
 ## What's wrong with Kubernetes Secrets?
 
-Kubernetes comes with the `Secret` resource to allow secret creation, retrieval, deletion. As a native Kubernetes concept, it is best used to handle secrets for applications lying in the cluster. Containers consuming `Secrets` mounted in a volume will receive updates whenever a change is deployed in the cluster (but your application should be designed to be *aware* of secrets rotation).
+Kubernetes comes with the `Secret` resource to allow secret creation, retrieval, deletion. As a native Kubernetes concept, it is best used to handle secrets for applications lying in the cluster. Containers consuming `Secrets` mounted in a volume will receive updates whenever a change is deployed in the cluster (your application should be designed to be *aware* of secrets rotation).
 
 The secret itself is stored into etcd, the key/value store that also serve as the internal database for all Kubernetes configuration and administration operations.
 
 - *Before Kubernetes 1.7*, secrets were stored in **cleartext** in etcd.
-- *From Kubernetes 1.7*, [encryption of secret data at rest is supported](<https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG-1.7.md#encryption-at-rest>) but **not applied by default**.
+- *From Kubernetes 1.7*, [encryption of secret data at rest is supported](<https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG-1.7.md#encryption-at-rest>) but **not applied by default**. This is still the case with latest Kubernetes version (1.16 as of writing this blog post).
 
-To sum up, Secrets
+To sum up, Kubernetes Secrets
 
 - offer a Kubernetes native, off-the-shelf, solution for your in-cluster apps **but cannot be leveraged by out-of-cluster apps**
 - do not support storing or retrieving secret data **from external secret management systems**
@@ -60,17 +63,21 @@ As of today, it supports the following features:
 - able to notify applications of any secrets change
 - secrets path in Vault, templates to fetch secrets, output filename for secrets, Vault roles to use are all made customizable through dedicated annotations
 
+After this short introduction, time to delve into implementation details!
+
 ## Going deeper with some technical insights
 
 Vault Sidecar Injector leverages [Kubernetes' Admission Controllers](https://kubernetes.io/blog/2019/03/21/a-guide-to-kubernetes-admission-controllers):
 
 ![](admission-controller-phases.png)
 
-*"Kubernetes admission controllers are plugins [...] that intercept API requests and may change the request object or deny the request altogether. The admission control process has two phases: the mutating phase is executed first, followed by the validating phase. Consequently, admission controllers can act as mutating or validating controllers or as a combination of both."*
+Definition excerpted from Kubernetes Blog: *"Kubernetes admission controllers are plugins [...] that intercept API requests and may change the request object or deny the request altogether. The admission control process has two phases: the mutating phase is executed first, followed by the validating phase. Consequently, admission controllers can act as mutating or validating controllers or as a combination of both."*
 
-In detail, Vault Sidecar Injector is a webhook registered against the **Mutating Admission Webhook controller**. This controller does nothing on its own but calling each registered webhook with the manifests of intercepted resources. Those webhooks are then responsible for the whole logic on how to mutate the objects.
+In detail, Vault Sidecar Injector is a **webhook** registered against the **Mutating Admission Webhook controller**. This Kubernetes controller does nothing on its own but calling each registered webhook with the manifests of intercepted resources. Those webhooks are then responsible for the whole logic on how to mutate the objects.
 
 So, all it takes is to register and implement a webhook admission server that will receive pods' creation requests and dynamically inject Vault Agent and Consul Template as sidecars in requesting pods. Mutations are performed using [JSON Patch](https://tools.ietf.org/html/rfc6902) structs.
+
+Figure below depicts what's happening when you submit a manifest with custom annotations managed by the Vault Sidecar Injector:
 
 ![](vault-sidecar-workflow-steps.png)
 
@@ -91,4 +98,4 @@ Here's how you can contribute to Vault Sidecar Injector:
 - [Report issues on GitHub](https://github.com/Talend/vault-sidecar-injector/issues) to help us squash any remaining bugs
 - [Submit PR on GitHub](https://github.com/Talend/vault-sidecar-injector/pulls) to propose new features
 
-Tags: #technology #kubernetes #secrets-management #security #vault
+Tags: #technology #kubernetes #secrets #security #vault
