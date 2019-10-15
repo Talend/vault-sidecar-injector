@@ -29,6 +29,9 @@
 
 ## TL;DR
 
+**Why ?**
+Check out [Open-sourcing Vault Sidecar Injector](doc/Open-sourcing%20Vault%20Sidecar%20Injector.md).
+
 `Vault Sidecar Injector` consists in a **Webhook Admission Server**, registered in the Kubernetes Mutating Admission Webhook Controller, that will mutate resources depending on defined criteriae. See here for more details: <https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#admission-webhooks>.
 
 This component allows **to dynamically inject both Vault Agent and Consul Template containers as sidecars** (along with configuration and volumes) in any matching pod manifest to seamlessly and dynamically fetch secrets. Pods willing to benefit from this feature just have to add some custom annotations to ask for the sidecars injection **at deployment time**.
