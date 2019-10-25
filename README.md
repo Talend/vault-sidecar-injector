@@ -36,9 +36,9 @@ Check out [Open-sourcing Vault Sidecar Injector](doc/Open-sourcing%20Vault%20Sid
 
 This component allows **to dynamically inject both Vault Agent and Consul Template containers as sidecars** (along with configuration and volumes) in any matching pod manifest to seamlessly and dynamically fetch secrets. Pods willing to benefit from this feature just have to add some custom annotations to ask for the sidecars injection **at deployment time**.
 
-To ease deployment, a Helm chart is provided under [deploy/helm](deploy/helm) folder of this repository as well as instructions to [build the Docker image](#building-vault-sidecar-injector-image) and [deploy the chart]().
+To ease deployment, a Helm chart is provided under [deploy/helm](deploy/helm) folder of this repository as well as instructions to [build the Docker image](#building-vault-sidecar-injector-image) and [deploy the chart](#installing-the-chart).
 
-> ⚠️ **Important note** ⚠️: support for sidecars in Kubernetes **jobs** suffers from limitations and issues exposed here: <https://github.com/kubernetes/kubernetes/issues/25908>. Same issues/limitations exist with Istio service mesh.
+> ⚠️ **Important note** ⚠️: support for sidecars in Kubernetes **jobs** suffers from limitations and issues exposed here: <https://github.com/kubernetes/kubernetes/issues/25908>.
 >
 > A Kubernetes proposal tries to address those points: <https://github.com/kubernetes/enhancements/blob/master/keps/sig-apps/sidecarcontainers.md>, <https://github.com/kubernetes/enhancements/issues/753>. Implementation of the proposal has started and may be released in Kubernetes 1.17 (in Alpha stage).
 >
@@ -621,43 +621,43 @@ The following tables lists the configurable parameters of the `Vault Sidecar Inj
 
 | Parameter    | Description          | Default                                                         |
 |:-------------|:---------------------|:----------------------------------------------------------------|
-| hook.image.path            | the Docker image path | bitnami/kubectl |
-| hook.image.pullPolicy      | pullPolicy defines the pull policy for docker images: IfNotPresent or Always | IfNotPresent |
-| hook.image.tag             | tag defines the version/tag of the docker image | latest |
-| image.applicationNameLabel   | applicationNameLabel represents the Application Name and it must match the label com.talend.application from the docker image | talend-vault-sidecar-injector   |
-| image.metricsPort                | metricsPort defines the port exposed by the docker image for metrics collection | 9000 |
-| image.path       | the Docker image path   | talend/vault-sidecar-injector |
-| image.port       | service main port exposed by the docker image   | 8443            |
-| image.pullPolicy   | pullPolicy defines the pull policy for docker images: IfNotPresent or Always       | IfNotPresent           |
-| image.serviceNameLabel   | serviceNameLabel represents the Service Name and it must match the label com.talend.service from the docker image             | talend-vault-sidecar-injector      |
-| image.tag  | tag defines the version/tag of the docker image     | latest      |
-| injectconfig.consultemplate.image.path   | the Docker image path  | hashicorp/consul-template    |
-| injectconfig.consultemplate.image.pullPolicy   | pullPolicy defines the pull policy for docker images: IfNotPresent or Always  | IfNotPresent  |
-| injectconfig.consultemplate.image.tag          | tag defines the version/tag of the docker image   | 0.22.0-alpine       |
+| hook.image.path            | Docker image path | bitnami/kubectl |
+| hook.image.pullPolicy      | Pull policy for docker image: IfNotPresent or Always | IfNotPresent |
+| hook.image.tag             | Version/tag of the docker image | latest |
+| image.applicationNameLabel   | Application Name. Must match label com.talend.application | talend-vault-sidecar-injector   |
+| image.metricsPort                | Port exposed for metrics collection | 9000 |
+| image.path       | Docker image path   | talend/vault-sidecar-injector |
+| image.port       | Service main port    | 8443            |
+| image.pullPolicy   | Pull policy for docker image: IfNotPresent or Always       | IfNotPresent           |
+| image.serviceNameLabel   | Service Name. Must match label com.talend.service     | talend-vault-sidecar-injector      |
+| image.tag  | Version/tag of the docker image     | latest      |
+| injectconfig.consultemplate.image.path   | Docker image path  | hashicorp/consul-template    |
+| injectconfig.consultemplate.image.pullPolicy   | Pull policy for docker image: IfNotPresent or Always  | IfNotPresent  |
+| injectconfig.consultemplate.image.tag          | Version/tag of the docker image   | 0.22.0-alpine       |
 | injectconfig.consultemplate.loglevel           | Consul Template log level: trace, debug, info, warn, err   | info       |
 | injectconfig.consultemplate.resources.limits.cpu | Consul Template sidecar CPU resource limits | 20m |
 | injectconfig.consultemplate.resources.limits.memory | Consul Template sidecar memory resource limits | 25Mi |
 | injectconfig.consultemplate.resources.requests.cpu | Consul Template sidecar CPU resource requests | 10m |
 | injectconfig.consultemplate.resources.requests.memory | Consul Template sidecar memory resource requests | 15Mi |
-| injectconfig.jobbabysitter.image.path   | the Docker image path | everpeace/curl-jq |
-| injectconfig.jobbabysitter.image.pullPolicy | pullPolicy defines the pull policy for docker images: IfNotPresent or Always | IfNotPresent |
-| injectconfig.jobbabysitter.image.tag   | tag defines the version/tag of the docker image  | latest |
-| injectconfig.jobbabysitter.resources.limits.cpu | Vault sidecar CPU resource limits | 20m |
-| injectconfig.jobbabysitter.resources.limits.memory | Vault sidecar memory resource limits | 25Mi |
-| injectconfig.jobbabysitter.resources.requests.cpu | Vault sidecar CPU resource requests | 15m |
-| injectconfig.jobbabysitter.resources.requests.memory | Vault sidecar memory resource requests | 20Mi |
-| injectconfig.vault.image.path  | the Docker image path  | vault |
-| injectconfig.vault.image.pullPolicy    | pullPolicy defines the pull policy for docker images: IfNotPresent or Always  | IfNotPresent   |
-| injectconfig.vault.image.tag  | tag defines the version/tag of the docker image | 1.2.3 |
+| injectconfig.jobbabysitter.image.path   | Docker image path | everpeace/curl-jq |
+| injectconfig.jobbabysitter.image.pullPolicy | Pull policy for docker image: IfNotPresent or Always | IfNotPresent |
+| injectconfig.jobbabysitter.image.tag   | Version/tag of the docker image  | latest |
+| injectconfig.jobbabysitter.resources.limits.cpu | Job babysitter sidecar CPU resource limits | 20m |
+| injectconfig.jobbabysitter.resources.limits.memory | Job babysitter sidecar memory resource limits | 25Mi |
+| injectconfig.jobbabysitter.resources.requests.cpu | Job babysitter sidecar CPU resource requests | 15m |
+| injectconfig.jobbabysitter.resources.requests.memory | Job babysitter sidecar memory resource requests | 20Mi |
+| injectconfig.vault.image.path  | Docker image path  | vault |
+| injectconfig.vault.image.pullPolicy    | Pull policy for docker image: IfNotPresent or Always  | IfNotPresent   |
+| injectconfig.vault.image.tag  | Version/tag of the docker image | 1.2.3 |
 | injectconfig.vault.loglevel                    | Vault log level: trace, debug, info, warn, err    | info    |
 | injectconfig.vault.resources.limits.cpu | Vault sidecar CPU resource limits | 30m |
 | injectconfig.vault.resources.limits.memory | Vault sidecar memory resource limits | 25Mi |
 | injectconfig.vault.resources.requests.cpu | Vault sidecar CPU resource requests | 30m |
 | injectconfig.vault.resources.requests.memory | Vault sidecar memory resource requests | 20Mi |
-| mutatingwebhook.annotations.appLabelKey | annotation for application's name. Annotation's value used as Vault role by default. | com.talend.application  |
-| mutatingwebhook.annotations.appServiceLabelKey | annotation for service's name | com.talend.service  |
-| mutatingwebhook.annotations.keyPrefix | prefix used for all vault sidecar injector annotations | sidecar.vault.talend.org  |
-| mutatingwebhook.failurePolicy | defines how unrecognized errors and timeout errors from the admission webhook are handled. Allowed values are Ignore or Fail | Ignore |
+| mutatingwebhook.annotations.appLabelKey | Annotation for application's name. Annotation's value used as Vault role by default. | com.talend.application  |
+| mutatingwebhook.annotations.appServiceLabelKey | Annotation for service's name | com.talend.service  |
+| mutatingwebhook.annotations.keyPrefix | Prefix used for all vault sidecar injector annotations | sidecar.vault.talend.org  |
+| mutatingwebhook.failurePolicy | Defines how unrecognized errors and timeout errors from the admission webhook are handled. Allowed values are Ignore or Fail | Ignore |
 | mutatingwebhook.namespaceSelector.boolean    | Enable to control, with label "vault-injection=enabled", the namespaces where injection is allowed (if false: all namespaces except _kube-system_ and _kube-public_) | false                                                           |
 | mutatingwebhook.namespaceSelector.namespaced | Enable to control, with label "vault-injection={{ .Release.Namespace }}", the specific namespace where injection is allowed (ie, restrict to namespace where injector is installed) | false |
 | probes.liveness.failureThreshold                | Number of probe failure before restarting the probe                                 | 3  |
@@ -669,17 +669,17 @@ The following tables lists the configurable parameters of the `Vault Sidecar Inj
 | probes.readiness.periodSeconds                  | How often (in seconds) to perform the probe       | 20   |
 | probes.readiness.successThreshold      | Minimum consecutive successes for the probe to be considered successful after having failed  | 1  |
 | probes.readiness.timeoutSecon          | Number of seconds after which the probe times out  | 5   |
-| rbac.install                        | create RBAC resources. Must be set for any cluster configured with rbac. | true |
-| replicaCount                        | replicaCount defines the number of container replicas running in parallel | 3    |
+| rbac.install                        | Create RBAC resources. Must be set for any cluster configured with rbac. | true |
+| replicaCount                        | Number of replicas | 3    |
 | resources.limits.cpu                | CPU resource limits                             | 250m         |
 | resources.limits.memory             | Memory resource limits                          | 256Mi        |
 | resources.requests.cpu              | CPU resource requests                           | 100m         |
 | resources.requests.memory           | Memory resource requests                        | 128Mi        |
-| revisionHistoryLimit                | revision history limit in tiller / helm / k8s   | 3            |
-| service.exposedServicePort   | exposedServicePort is the port exposed by the K8s service (Kubernetes always assumes port 443 for webhooks) | 443 |
-| service.name                                    | service name            | talend-vault-sidecar-injector                                   |
-| service.prefixWithHelmRelease                   | prefixWithHelmRelease defines whether the service name will be prefixed with Helm release name                                       | false                                                           |
-| service.type                        | type is the Kubernetes service type: ClusterIP, NodePort, LoadBalancer, ExternalName  | ClusterIP    |
+| revisionHistoryLimit                | Revision history limit in tiller / helm / k8s   | 3            |
+| service.exposedServicePort   | Port exposed by the K8s service (Kubernetes always assumes port 443 for webhooks) | 443 |
+| service.name                                    | Service name            | talend-vault-sidecar-injector                                   |
+| service.prefixWithHelmRelease                   | Service name to be prefixed with Helm release name                                       | false                                                           |
+| service.type                        | Kubernetes service type: ClusterIP, NodePort, LoadBalancer, ExternalName  | ClusterIP    |
 | vault.addr                                      | Address of Vault server    | https://vault:8200       |
 | vault.authMethods.approle.path      | Path defined for AppRole Auth Method            | approle |
 | vault.authMethods.approle.roleid_filename    | Filename for role id    | approle_roleid   |
