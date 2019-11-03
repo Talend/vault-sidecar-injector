@@ -43,7 +43,7 @@ func TestMutate(t *testing.T) {
 			"sidecar.vault.talend.org", "com.talend.application", "com.talend.service",
 			"../../test/sidecarconfig.yaml",
 			"../../test/tmplblock.hcl",
-			"../../test/tmpldefault.ctmpl",
+			"../../test/tmpldefault.tmpl",
 			"../../test/podlifecyclehooks.yaml",
 		},
 	)

@@ -12,7 +12,7 @@ data:
           - "sh"
           - "-c"
           - cat <APPSVC_SECRETS_VOL_MOUNTPATH>/* >/dev/null 2>&1
-  templatetmplblock.hcl: |
+  templateblock.hcl: |
     template {
       destination = "/opt/talend/secrets/<APPSVC_SECRETS_DESTINATION>"
       contents = <<EOH
@@ -24,7 +24,7 @@ data:
         max = "2s"
       }
     }
-  templatetmpldefault.ctmpl: |
+  templatedefault.tmpl: |
     {{`{{ with secret "<APPSVC_VAULT_SECRETS_PATH>" }}{{ range \$k, \$v := .Data }}
     {{ \$k }}={{ \$v }}
     {{ end }}{{ end }}`}}

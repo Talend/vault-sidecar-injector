@@ -50,7 +50,7 @@ func TestLoadConfig(t *testing.T) {
 			inputLoaded{
 				"../../test/sidecarconfig.yaml",
 				"../../test/tmplblock.hcl",
-				"../../test/tmpldefault.ctmpl",
+				"../../test/tmpldefault.tmpl",
 				"../../test/podlifecyclehooks.yaml",
 			},
 			expectedLoad{
