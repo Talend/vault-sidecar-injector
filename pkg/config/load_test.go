@@ -23,22 +23,22 @@ import (
 )
 
 const (
-	ctTemplateBlockResolved       = "template {\n    destination = \"/opt/talend/secrets/<APPSVC_SECRETS_DESTINATION>\"\n    contents = <<EOH\n    <APPSVC_TEMPLATE_CONTENT>\n    EOH\n    command = \"<APPSVC_TEMPLATE_COMMAND_TO_RUN>\"\n    wait {\n    min = \"1s\"\n    max = \"2s\"\n    }\n}"
-	ctTemplateDefaultTmplResolved = "{{ with secret \"<APPSVC_VAULT_SECRETS_PATH>\" }}{{ range \\$k, \\$v := .Data }}\n{{ \\$k }}={{ \\$v }}\n{{ end }}{{ end }}"
+	templateBlockResolved   = "template {\n    destination = \"/opt/talend/secrets/<APPSVC_SECRETS_DESTINATION>\"\n    contents = <<EOH\n    <APPSVC_TEMPLATE_CONTENT>\n    EOH\n    command = \"<APPSVC_TEMPLATE_COMMAND_TO_RUN>\"\n    wait {\n    min = \"1s\"\n    max = \"2s\"\n    }\n}"
+	templateDefaultResolved = "{{ with secret \"<APPSVC_VAULT_SECRETS_PATH>\" }}{{ range \\$k, \\$v := .Data }}\n{{ \\$k }}={{ \\$v }}\n{{ end }}{{ end }}"
 )
 
 type inputLoaded struct {
-	sidecarCfgFile                string
-	consulTemplateTmplBlockFile   string
-	consulTemplateTmplDefaultFile string
-	podLifecycleHooksFile         string
+	sidecarCfgFile        string
+	templateBlockFile     string
+	templateDefaultFile   string
+	podLifecycleHooksFile string
 }
 
 type expectedLoad struct {
-	sidecarCfgFileResolved            string
-	consulTemplateTmplBlockResolved   string
-	consulTemplateTmplDefaultResolved string
-	podLifecycleHooksFileResolved     string
+	sidecarCfgFileResolved        string
+	templateBlockResolved         string
+	templateDefaultResolved       string
+	podLifecycleHooksFileResolved string
 }
 
 func TestLoadConfig(t *testing.T) {
@@ -49,14 +49,14 @@ func TestLoadConfig(t *testing.T) {
 		{
 			inputLoaded{
 				"../../test/sidecarconfig.yaml",
-				"../../test/consultemplatetmplblock.hcl",
-				"../../test/consultemplatetmpldefault.ctmpl",
+				"../../test/tmplblock.hcl",
+				"../../test/tmpldefault.ctmpl",
 				"../../test/podlifecyclehooks.yaml",
 			},
 			expectedLoad{
 				"../../test/sidecarconfig.yaml.resolved",
-				ctTemplateBlockResolved,
-				ctTemplateDefaultTmplResolved,
+				templateBlockResolved,
+				templateDefaultResolved,
 				"../../test/podlifecyclehooks.yaml.resolved",
 			},
 		},
@@ -68,8 +68,8 @@ func TestLoadConfig(t *testing.T) {
 				0, 0, "", "",
 				"", "", "",
 				table.sidecarCfgFile,
-				table.consulTemplateTmplBlockFile,
-				table.consulTemplateTmplDefaultFile,
+				table.templateBlockFile,
+				table.templateDefaultFile,
 				table.podLifecycleHooksFile,
 			},
 		)
@@ -78,8 +78,8 @@ func TestLoadConfig(t *testing.T) {
 		}
 
 		// Verify strings
-		assert.Equal(t, table.consulTemplateTmplBlockResolved, injectionCfg.CtTemplateBlock)
-		assert.Equal(t, table.consulTemplateTmplDefaultResolved, injectionCfg.CtTemplateDefaultTmpl)
+		assert.Equal(t, table.templateBlockResolved, injectionCfg.TemplateBlock)
+		assert.Equal(t, table.templateDefaultResolved, injectionCfg.TemplateDefaultTmpl)
 
 		// Verify yaml by marshalling the object into yaml again
 		assert.Equal(t, stringFromYamlFile(t, table.sidecarCfgFileResolved), stringFromYamlObj(t, injectionCfg.SidecarConfig))

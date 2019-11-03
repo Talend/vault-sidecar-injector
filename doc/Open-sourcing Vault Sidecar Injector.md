@@ -1,6 +1,6 @@
 # Open sourcing Vault Sidecar Injector, Talend's Vault-based secrets management on Kubernetes
 
-*October 2019, [Post by Alain Saint-Sever, Senior Software Cloud Architect (@alstsever)](https://twitter.com/alstsever)*
+*October 2019, [Post by Alain Saint-Sever, Senior Cloud Software Architect (@alstsever)](https://twitter.com/alstsever)*
 
 Handling secrets has always been a challenging and critical task within organizations. As production workloads deployed in remote clouds or following hybrid patterns are ever increasing, this problematic becomes more complex: we still want to manage secrets from a central place, using state-of-the-art security practices (encryption at rest, secrets rotation), with as less adherence on the underlying technology as possible to maximize components reusability across deployment topologies and ease testability.
 

@@ -202,7 +202,7 @@ func (vaultInjector *VaultInjector) computeSidecarsPlaceholders(podContainers []
 	}
 
 	if annotationConsulTemplateDestNum == 1 && annotationConsulTemplateDest[0] == "" { // Use default
-		annotationConsulTemplateDest[0] = consulTemplateAppSvcDefaultDestination
+		annotationConsulTemplateDest[0] = templateAppSvcDefaultDestination
 	}
 
 	if annotationConsulTemplateTemplateNum == 1 && annotationConsulTemplateTemplate[0] == "" {
@@ -215,7 +215,7 @@ func (vaultInjector *VaultInjector) computeSidecarsPlaceholders(podContainers []
 		// If no custom template(s), use default Consul Template's template
 		annotationConsulTemplateTemplate = make([]string, annotationConsulTemplateDestNum)
 		for tmplIdx := 0; tmplIdx < annotationConsulTemplateDestNum; tmplIdx++ {
-			annotationConsulTemplateTemplate[tmplIdx] = vaultInjector.CtTemplateDefaultTmpl
+			annotationConsulTemplateTemplate[tmplIdx] = vaultInjector.TemplateDefaultTmpl
 		}
 	} else {
 		// We must have same numbers of custom templates & secrets destinations ...
@@ -237,11 +237,11 @@ func (vaultInjector *VaultInjector) computeSidecarsPlaceholders(podContainers []
 	var ctTemplates strings.Builder
 
 	for tmplIdx := 0; tmplIdx < annotationConsulTemplateDestNum; tmplIdx++ {
-		ctTemplateBlock = vaultInjector.CtTemplateBlock
-		ctTemplateBlock = strings.Replace(ctTemplateBlock, consulTemplateAppSvcDestinationPlaceholder, annotationConsulTemplateDest[tmplIdx], -1)
-		ctTemplateBlock = strings.Replace(ctTemplateBlock, consulTemplateTemplateContentPlaceholder, annotationConsulTemplateTemplate[tmplIdx], -1)
+		ctTemplateBlock = vaultInjector.TemplateBlock
+		ctTemplateBlock = strings.Replace(ctTemplateBlock, templateAppSvcDestinationPlaceholder, annotationConsulTemplateDest[tmplIdx], -1)
+		ctTemplateBlock = strings.Replace(ctTemplateBlock, templateContentPlaceholder, annotationConsulTemplateTemplate[tmplIdx], -1)
 		ctTemplateBlock = strings.Replace(ctTemplateBlock, vaultAppSvcSecretsPathPlaceholder, annotationVaultSecretsPath[tmplIdx], -1)
-		ctTemplateBlock = strings.Replace(ctTemplateBlock, consulTemplateCommandPlaceholder, consulTemplateCommands[tmplIdx], -1)
+		ctTemplateBlock = strings.Replace(ctTemplateBlock, templateCommandPlaceholder, consulTemplateCommands[tmplIdx], -1)
 
 		ctTemplates.WriteString(ctTemplateBlock)
 		ctTemplates.WriteString("\n")
@@ -314,7 +314,7 @@ func (vaultInjector *VaultInjector) addContainer(podContainers []corev1.Containe
 			container.Command[commandIdx] = strings.Replace(container.Command[commandIdx], appJobVarPlaceholder, strconv.FormatBool(jobWorkload), -1)
 			container.Command[commandIdx] = strings.Replace(container.Command[commandIdx], vaultAuthMethodPlaceholder, placeholders.vaultAuthMethod, -1)
 			container.Command[commandIdx] = strings.Replace(container.Command[commandIdx], vaultRolePlaceholder, placeholders.vaultRole, -1)
-			container.Command[commandIdx] = strings.Replace(container.Command[commandIdx], consulTemplateTemplatesPlaceholder, placeholders.consulTemplateTemplates, -1)
+			container.Command[commandIdx] = strings.Replace(container.Command[commandIdx], templateTemplatesPlaceholder, placeholders.consulTemplateTemplates, -1)
 		}
 
 		// We will modify some values here so make a copy to not change origin
