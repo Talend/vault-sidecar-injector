@@ -16,11 +16,13 @@
         - [Ask for secrets hook injection, custom secrets file and template](#ask-for-secrets-hook-injection-custom-secrets-file-and-template)
         - [Ask for secrets hook injection, several custom secrets files and templates](#ask-for-secrets-hook-injection-several-custom-secrets-files-and-templates)
       - [Using Vault AppRole Auth Method](#using-vault-approle-auth-method)
-  - [How to build and deploy Vault Sidecar Injector](#how-to-build-and-deploy-vault-sidecar-injector)
+  - [How to deploy Vault Sidecar Injector](#how-to-deploy-vault-sidecar-injector)
     - [Prerequisites](#prerequisites)
       - [Tiller installation](#tiller-installation)
       - [Vault server installation](#vault-server-installation)
-    - [Building Vault Sidecar Injector image](#building-vault-sidecar-injector-image)
+    - [Vault Sidecar Injector image](#vault-sidecar-injector-image)
+      - [Pulling the image from Docker Hub](#pulling-the-image-from-docker-hub)
+      - [Building the image](#building-the-image)
     - [Installing the Chart](#installing-the-chart)
       - [Installing the chart in a dev environment](#installing-the-chart-in-a-dev-environment)
       - [Restrict injection to specific namespaces](#restrict-injection-to-specific-namespaces)
@@ -40,7 +42,7 @@
 
 This component allows **to dynamically inject Vault Agent as a sidecar container** (along with configuration and volumes) in any matching pod manifest to seamlessly and dynamically fetch secrets. Pods willing to benefit from this feature just have to add some custom annotations to ask for the sidecar injection **at deployment time**.
 
-To ease deployment, a Helm chart is provided under [deploy/helm](deploy/helm) folder of this repository as well as instructions to [build the Docker image](#building-vault-sidecar-injector-image) and [deploy the chart](#installing-the-chart).
+To ease deployment, a Helm chart is provided under [deploy/helm](deploy/helm) folder of this repository as well as instructions to [install it](#installing-the-chart).
 
 > ⚠️ **Important note** ⚠️: support for sidecars in Kubernetes **jobs** suffers from limitations and issues exposed here: <https://github.com/kubernetes/kubernetes/issues/25908>.
 >
@@ -450,7 +452,7 @@ spec:
             medium: Memory
 ```
 
-## How to build and deploy Vault Sidecar Injector
+## How to deploy Vault Sidecar Injector
 
 The provided [chart](deploy/helm) is intended to be deployed in a "system" namespace and only once as it handles all injection requests from any pods deployed in any namespaces. **It *shall not* be deployed in every namespaces**.
 
@@ -528,9 +530,21 @@ $ cd vault-sidecar-injector/deploy/vault
 $ ./init-dev-vault-server.sh
 ```
 
-### Building Vault Sidecar Injector image
+### Vault Sidecar Injector image
 
-Before being able to deploy `Vault Sidecar Injector` component into your Kubernetes cluster you need to build its Docker image. A [Dockerfile](Dockerfile) is provided.
+> Note: if you don't intend to perform some tests with the image you can skip this section and jump to [Installing the Chart](#installing-the-chart).
+
+#### Pulling the image from Docker Hub
+
+Official Docker images are published on Docker Hub for each `Vault Sidecar Injector` release:
+
+```bash
+$ docker pull talend/vault-sidecar-injector:<tag>
+```
+
+#### Building the image
+
+A [Dockerfile](Dockerfile) is also provided to both compile `Vault Sidecar Injector` and build the image locally if you prefer.
 
 Just run following command:
 
