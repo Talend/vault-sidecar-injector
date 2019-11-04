@@ -2,7 +2,8 @@
 # Vault Sidecar Injector
 
 - [Vault Sidecar Injector](#vault-sidecar-injector)
-  - [TL;DR](#tldr)
+  - [Announcements](#announcements)
+  - [Overview](#overview)
   - [How to invoke Vault Sidecar Injector](#how-to-invoke-vault-sidecar-injector)
     - [Annotations](#annotations)
     - [Default template](#default-template)
@@ -28,12 +29,12 @@
   - [Metrics](#metrics)
   - [List of changes](#list-of-changes)
 
-## TL;DR
+## Announcements
 
-**Why ?**
-Check out [Open-sourcing Vault Sidecar Injector](doc/Open-sourcing%20Vault%20Sidecar%20Injector.md).
+- 2019-11: [Vault Sidecar Injector now leverages Vault Agent Template feature](doc/Leveraging-Vault-Agent-Template.md)
+- 2019-10: [Open-sourcing Vault Sidecar Injector](doc/Open-sourcing%20Vault%20Sidecar%20Injector.md)
 
-**Starting with release v4.0.0, important change**: [Vault Sidecar Injector now leverages Vault Agent Template feature](doc/Leveraging-Vault-Agent-Template.md)
+## Overview
 
 `Vault Sidecar Injector` consists in a **Webhook Admission Server**, registered in the Kubernetes Mutating Admission Webhook Controller, that will mutate resources depending on defined criteriae. See here for more details: <https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#admission-webhooks>.
 
