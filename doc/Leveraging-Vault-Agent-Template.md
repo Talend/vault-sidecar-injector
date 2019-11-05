@@ -8,7 +8,7 @@ Next v4.0.0 release will bring some nice things to onboard users faster (*docker
 
 This feature, still in beta at the time of writing, will be shipped with Vault 1.3 and allows to run templates to fetch secrets, the same way we used Consul Template for this very same task. This is a great opportunity: one less container to inject in workloads means less moving parts and latency in the process of getting your secrets ready to consume. As a side note, we also all benefit from a less complex configuration.
 
-Next release of Vault Sidecar Injector is planned for 2nd half of November. Stay tuned!
+`Vault Sidecar Injector` 4.0.0 release and associated Helm chart leverage the new Vault Agent Template feature.
 
 |Before v4.0.0 release|From v4.0.0 release|
 |---|---|
