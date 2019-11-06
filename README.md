@@ -538,18 +538,28 @@ $ make image
 
 > **Note:** as `Vault Sidecar Injector` chart makes use of Helm post-install hooks, **do not** provide Helm `--wait` flag since it will prevent post-install hooks from running and installation will fail.
 
+Two ways to install the chart:
+
+- either you download the chart archive (`vault-sidecar-injector-<release>.tgz`) from GitHub [releases](https://github.com/Talend/vault-sidecar-injector/releases)
+- or you git clone `Vault Sidecar Injector` GitHub repo and cd into `deploy/helm` directory
+
+Depending on what you chose, define a `CHART_LOCATION` env var as follows:
+
+- if you use the archive: `export CHART_LOCATION=./vault-sidecar-injector-<release>.tgz`
+- if you install from the chart folder: `export CHART_LOCATION=.`
+
 To see Chart content before installing it, perform a dry run first:
 
 ```bash
 $ cd deploy/helm
-$ helm install . --name vault-sidecar-injector --namespace <namespace for deployment> --set vault.addr=<Vault server address> --debug --dry-run
+$ helm install $CHART_LOCATION --name vault-sidecar-injector --namespace <namespace for deployment> --set vault.addr=<Vault server address> --debug --dry-run
 ```
 
 To install the chart on the cluster:
 
 ```bash
 $ cd deploy/helm
-$ helm install . --name vault-sidecar-injector --namespace <namespace for deployment> --set vault.addr=<Vault server address>
+$ helm install $CHART_LOCATION --name vault-sidecar-injector --namespace <namespace for deployment> --set vault.addr=<Vault server address>
 ```
 
 > **Note:** `Vault Sidecar Injector` should be deployed only once (except for testing purpose, see below). It will mutate any "vault-sidecar annotated" pod from any namespace.
@@ -558,7 +568,7 @@ As an example, to install `Vault Sidecar Injector` on our test cluster:
 
 ```bash
 $ cd deploy/helm
-$ helm install . --name vault-sidecar-injector --namespace kube-system --set vault.addr=http://vault:8200 --set vault.ssl.enabled=false --set vault.ssl.verify=false
+$ helm install $CHART_LOCATION --name vault-sidecar-injector --namespace kube-system --set vault.addr=http://vault:8200 --set vault.ssl.enabled=false --set vault.ssl.verify=false
 ```
 
 This command deploys the component on the Kubernetes cluster with modified configuration to target our Vault server in-cluster test instance (no tls, no verification of certificates): such settings *are no fit for production*.
@@ -571,7 +581,7 @@ In a dev environment, you may want to install your own test instance of `Vault S
 
 ```bash
 $ cd deploy/helm
-$ helm install . --name vault-sidecar-injector --namespace <your dev namespace> --set vault.addr=<your dev Vault server address> --set mutatingwebhook.namespaceSelector.namespaced=true
+$ helm install $CHART_LOCATION --name vault-sidecar-injector --namespace <your dev namespace> --set vault.addr=<your dev Vault server address> --set mutatingwebhook.namespaceSelector.namespaced=true
 ```
 
 And then **add a label on your namespace** as follows (if not done, no injection will be performed):
@@ -591,7 +601,7 @@ If you want to strictly control the list of namespaces where injection is allowe
 
 ```bash
 $ cd deploy/helm
-$ helm install . --name vault-sidecar-injector --namespace <namespace for deployment> --set vault.addr=<Vault server address> --set mutatingwebhook.namespaceSelector.boolean=true
+$ helm install $CHART_LOCATION --name vault-sidecar-injector --namespace <namespace for deployment> --set vault.addr=<Vault server address> --set mutatingwebhook.namespaceSelector.boolean=true
 ```
 
 Then apply label `vault-injection=enabled` on **all** required namespaces:
@@ -693,12 +703,12 @@ You can override these values at runtime using the `--set key=value[,key=value]`
 ```bash
 $ helm install --name vault-sidecar-injector \
                --set <parameter1>=<value1>,<parameter2>=<value2> \
-                <chart_folder_location>
+                <chart_location>
 ```
 
 > Example, to skip certificates verification when testing locally:
 >
-> `helm install . --name vault-sidecar-injector --version <chart_version> --namespace kube-system --set vault.ssl.verify=false`
+> `helm install $CHART_LOCATION --name vault-sidecar-injector --version <chart_version> --namespace kube-system --set vault.ssl.verify=false`
 
 ## Metrics
 
