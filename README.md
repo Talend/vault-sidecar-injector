@@ -536,7 +536,9 @@ $ ./init-dev-vault-server.sh
 
 #### Pulling the image from Docker Hub
 
-Official Docker images are published on Docker Hub for each `Vault Sidecar Injector` release:
+Official Docker images are published on [Talend's public Docker Hub](https://hub.docker.com/r/talend/vault-sidecar-injector) repository for each `Vault Sidecar Injector` release. Provided Helm chart will pull the image automatically if needed.  
+
+For manual pull of a specific tag:
 
 ```bash
 $ docker pull talend/vault-sidecar-injector:<tag>
