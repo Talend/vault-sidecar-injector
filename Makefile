@@ -1,4 +1,4 @@
-VERSION:=4.0.0
+VERSION:=4.0.1
 
 OWNER:=Talend
 REPO:=vault-sidecar-injector
