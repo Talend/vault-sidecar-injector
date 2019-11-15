@@ -39,7 +39,7 @@ containers:
         mountPath: /var/run/secrets/kubernetes.io/serviceaccount
         readOnly: true
   - name: tvsi-vault-agent
-    image: vault:1.3.0-beta1
+    image: vault:1.3.0
     imagePullPolicy: IfNotPresent
     env:
       - name: SKIP_SETCAP

@@ -126,7 +126,7 @@ func TestMutate(t *testing.T) {
 						Op: jsonPatchOpAdd, Path: jsonPathContainers + "/0",
 						Value: map[string]interface{}{
 							"name":  "tvsi-vault-agent",
-							"image": "vault:1.3.0-beta1",
+							"image": "vault:1.3.0",
 							"command": []interface{}{
 								"sh",
 								"-c",
