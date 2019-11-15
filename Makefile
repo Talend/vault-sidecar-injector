@@ -1,4 +1,4 @@
-VERSION:=3.0.0
+VERSION:=4.0.0
 
 OWNER:=Talend
 REPO:=vault-sidecar-injector
@@ -32,7 +32,7 @@ build: clean test
 
 image:
 	echo "Build image ..."
-	docker build -t talend/vault-sidecar-injector .
+	docker build -t talend/vault-sidecar-injector:${VERSION} .
 
 release: build
 	cd target

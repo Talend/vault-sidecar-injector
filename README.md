@@ -2,10 +2,11 @@
 # Vault Sidecar Injector
 
 - [Vault Sidecar Injector](#vault-sidecar-injector)
-  - [TL;DR](#tldr)
+  - [Announcements](#announcements)
+  - [Overview](#overview)
   - [How to invoke Vault Sidecar Injector](#how-to-invoke-vault-sidecar-injector)
     - [Annotations](#annotations)
-    - [Consul Template's template](#consul-templates-template)
+    - [Default template](#default-template)
     - [Specific requirements with K8S Jobs](#specific-requirements-with-k8s-jobs)
     - [Examples](#examples)
       - [Using Vault Kubernetes Auth Method](#using-vault-kubernetes-auth-method)
@@ -15,28 +16,33 @@
         - [Ask for secrets hook injection, custom secrets file and template](#ask-for-secrets-hook-injection-custom-secrets-file-and-template)
         - [Ask for secrets hook injection, several custom secrets files and templates](#ask-for-secrets-hook-injection-several-custom-secrets-files-and-templates)
       - [Using Vault AppRole Auth Method](#using-vault-approle-auth-method)
-  - [How to build and deploy Vault Sidecar Injector](#how-to-build-and-deploy-vault-sidecar-injector)
+  - [How to deploy Vault Sidecar Injector](#how-to-deploy-vault-sidecar-injector)
     - [Prerequisites](#prerequisites)
       - [Tiller installation](#tiller-installation)
       - [Vault server installation](#vault-server-installation)
-    - [Building Vault Sidecar Injector image](#building-vault-sidecar-injector-image)
+    - [Vault Sidecar Injector image](#vault-sidecar-injector-image)
+      - [Pulling the image from Docker Hub](#pulling-the-image-from-docker-hub)
+      - [Building the image](#building-the-image)
     - [Installing the Chart](#installing-the-chart)
       - [Installing the chart in a dev environment](#installing-the-chart-in-a-dev-environment)
       - [Restrict injection to specific namespaces](#restrict-injection-to-specific-namespaces)
     - [Uninstalling the chart](#uninstalling-the-chart)
   - [Configuration](#configuration)
   - [Metrics](#metrics)
+  - [List of changes](#list-of-changes)
 
-## TL;DR
+## Announcements
 
-**Why ?**
-Check out [Open-sourcing Vault Sidecar Injector](doc/Open-sourcing%20Vault%20Sidecar%20Injector.md).
+- 2019-11: [Vault Sidecar Injector now leverages Vault Agent Template feature](doc/Leveraging-Vault-Agent-Template.md)
+- 2019-10: [Open-sourcing Vault Sidecar Injector](doc/Open-sourcing%20Vault%20Sidecar%20Injector.md)
+
+## Overview
 
 `Vault Sidecar Injector` consists in a **Webhook Admission Server**, registered in the Kubernetes Mutating Admission Webhook Controller, that will mutate resources depending on defined criteriae. See here for more details: <https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#admission-webhooks>.
 
-This component allows **to dynamically inject both Vault Agent and Consul Template containers as sidecars** (along with configuration and volumes) in any matching pod manifest to seamlessly and dynamically fetch secrets. Pods willing to benefit from this feature just have to add some custom annotations to ask for the sidecars injection **at deployment time**.
+This component allows **to dynamically inject Vault Agent as a sidecar container** (along with configuration and volumes) in any matching pod manifest to seamlessly and dynamically fetch secrets. Pods willing to benefit from this feature just have to add some custom annotations to ask for the sidecar injection **at deployment time**.
 
-To ease deployment, a Helm chart is provided under [deploy/helm](deploy/helm) folder of this repository as well as instructions to [build the Docker image](#building-vault-sidecar-injector-image) and [deploy the chart](#installing-the-chart).
+To ease deployment, a Helm chart is provided under [deploy/helm](deploy/helm) folder of this repository as well as instructions to [install it](#installing-the-chart).
 
 > ⚠️ **Important note** ⚠️: support for sidecars in Kubernetes **jobs** suffers from limitations and issues exposed here: <https://github.com/kubernetes/kubernetes/issues/25908>.
 >
@@ -67,7 +73,7 @@ Following annotations in requesting pods are supported:
 | `sidecar.vault.talend.org/secrets-path`        | O                      | "secret/<`com.talend.application` label>/<`com.talend.service` label>" | Comma-separated strings | List of secrets engines and path. If annotation not used, path is set from labels defined by `mutatingwebhook.annotations.appLabelKey`  and `mutatingwebhook.annotations.appServiceLabelKey` keys (refer to [configuration](#configuration))      |
 | `sidecar.vault.talend.org/secrets-destination` | O                      | "secrets.properties" | Comma-separated strings  | List of secrets filenames (without path), one per secrets path |
 | `sidecar.vault.talend.org/secrets-hook` | O |  | "true" / "on" / "yes" / "y" | If set, lifecycle hooks will be added to pod's container(s) to wait for secrets files |
-| `sidecar.vault.talend.org/secrets-template` | O | Default template *(see [Consul Template's template](#consul-templates-template) section)* | Comma-separated Consul Template templates | Allow to override default Consul Template's template. Ignore `sidecar.vault.talend.org/secrets-path` annotation if set |
+| `sidecar.vault.talend.org/secrets-template` | O | [Default template](#default-template) | Comma-separated templates | Allow to override default template. Ignore `sidecar.vault.talend.org/secrets-path` annotation if set |
 | `sidecar.vault.talend.org/notify`              | O                      | ""   | Comma-separated strings  | List of commands to notify application/service of secrets change, one per secrets path |
 
 Upon successful injection, Vault Sidecar Injector will add annotation(s) to the requesting pods:
@@ -78,7 +84,7 @@ Upon successful injection, Vault Sidecar Injector will add annotation(s) to the 
 
 > **Note:** you can change the annotation prefix (set by default to `sidecar.vault.talend.org`) thanks to `mutatingwebhook.annotations.keyPrefix` key in [configuration](#configuration).
 
-### Consul Template's template
+### Default template
 
 Template below is used by default to fetch all secrets and create corresponding key/value pairs. It is generic enough and should be fine for most use cases:
 
@@ -90,7 +96,7 @@ Template below is used by default to fetch all secrets and create corresponding 
 
 Using annotation `sidecar.vault.talend.org/secrets-template` it is nevertheless possible to provide your own list of templates. For some examples have a look at the next section ([here](#ask-for-secrets-hook-injection-custom-secrets-file-and-template) and [there](#ask-for-secrets-hook-injection-several-custom-secrets-files-and-templates)).
 
-Details on template syntax:
+Details on template syntax (from Consul Template doc, same syntax supported by Vault Agent Template):
 
 - <https://github.com/hashicorp/consul-template#secret>
 - <https://github.com/hashicorp/consul-template#secrets>
@@ -111,12 +117,12 @@ Examples hereafter go further and highlight all the features of `Vault Sidecar I
 
 ##### Usage with a K8S Deployment workload
 
-Only mandatory annotation to ask for Vault Agent and Consul Template injection is `sidecar.vault.talend.org/inject`.
+Only mandatory annotation to ask for Vault Agent injection is `sidecar.vault.talend.org/inject`.
 
 It means that, with the provided manifest below:
 
 - Vault authentication done using role `test-app-1` (value of `com.talend.application` label)
-- secrets fetched from Vault's path `secret/test-app-1/test-app-1-svc` using default Consul Template's template
+- secrets fetched from Vault's path `secret/test-app-1/test-app-1-svc` using default template
 - secrets to be stored into `/opt/talend/secrets/secrets.properties`
 
 ```yaml
@@ -187,7 +193,7 @@ roleRef:
   name: job-pod-status
 ```
 
-Last point is to make sure your job is waiting for availability of secrets file(s) before starting as it can take a couple of seconds before Consul Template sidecar fetches the secrets from the Vault server. A simple polling loop is provided in the sample below.
+Last point is to make sure your job is waiting for availability of secrets file(s) before starting as it can take a couple of seconds before secrets are fetched from the Vault server. A simple polling loop is provided in the sample below.
 
 ```yaml
 apiVersion: batch/v1
@@ -242,7 +248,7 @@ spec:
 Several optional annotations to end up with:
 
 - Vault authentication using role `test-app-4` (value of `com.talend.application` label)
-- secrets fetched from Vault's path `secret/test-app-4-svc` using default Consul Template's template
+- secrets fetched from Vault's path `secret/test-app-4-svc` using default template
 - secrets to be stored into `/opt/app/secrets.properties`
 - secrets changes trigger notification command `curl localhost:8888/actuator/refresh -d {} -H 'Content-Type: application/json'`
 
@@ -287,7 +293,7 @@ Several optional annotations to end up with:
 
 - Vault authentication using role `test-app-6` (value of `com.talend.application` label)
 - hook injected in application's container(s) to wait for secrets file availability
-- secrets fetched from Vault's path `aws/creds/test-app-6` using **one custom Consul Template's template**
+- secrets fetched from Vault's path `aws/creds/test-app-6` using **one custom template**
 - secrets to be stored into `/opt/talend/secrets/creds.properties`
 
 ```yaml
@@ -340,7 +346,7 @@ Several optional annotations to end up with:
 
 - Vault authentication using role `test-app-2` (value of `com.talend.application` label)
 - hook injected in application's container(s) to wait for secrets file availability
-- secrets fetched from Vault's path `secret/test-app-2/test-app-2-svc` using **several custom Consul Template's templates**
+- secrets fetched from Vault's path `secret/test-app-2/test-app-2-svc` using **several custom templates**
 - secrets to be stored into `/opt/talend/secrets/secrets.properties` and `/opt/talend/secrets/secrets2.properties`
 
 ```yaml
@@ -446,7 +452,7 @@ spec:
             medium: Memory
 ```
 
-## How to build and deploy Vault Sidecar Injector
+## How to deploy Vault Sidecar Injector
 
 The provided [chart](deploy/helm) is intended to be deployed in a "system" namespace and only once as it handles all injection requests from any pods deployed in any namespaces. **It *shall not* be deployed in every namespaces**.
 
@@ -524,9 +530,23 @@ $ cd vault-sidecar-injector/deploy/vault
 $ ./init-dev-vault-server.sh
 ```
 
-### Building Vault Sidecar Injector image
+### Vault Sidecar Injector image
 
-Before being able to deploy `Vault Sidecar Injector` component into your Kubernetes cluster you need to build its Docker image. A [Dockerfile](Dockerfile) is provided.
+> Note: if you don't intend to perform some tests with the image you can skip this section and jump to [Installing the Chart](#installing-the-chart).
+
+#### Pulling the image from Docker Hub
+
+Official Docker images are published on [Talend's public Docker Hub](https://hub.docker.com/r/talend/vault-sidecar-injector) repository for each `Vault Sidecar Injector` release. Provided Helm chart will pull the image automatically if needed.  
+
+For manual pull of a specific tag:
+
+```bash
+$ docker pull talend/vault-sidecar-injector:<tag>
+```
+
+#### Building the image
+
+A [Dockerfile](Dockerfile) is also provided to both compile `Vault Sidecar Injector` and build the image locally if you prefer.
 
 Just run following command:
 
@@ -558,10 +578,10 @@ As an example, to install `Vault Sidecar Injector` on our test cluster:
 
 ```bash
 $ cd deploy/helm
-$ helm install . --name vault-sidecar-injector --namespace kube-system --set vault.addr=http://vault:8200 --set vault.ssl.enabled=false --set vault.ssl.verify=false
+$ helm install . --name vault-sidecar-injector --namespace kube-system --set vault.addr=http://vault:8200 --set vault.ssl.verify=false
 ```
 
-This command deploys the component on the Kubernetes cluster with modified configuration to target our Vault server in-cluster test instance (no tls, no verification of certificates): such settings *are no fit for production*.
+This command deploys the component on the Kubernetes cluster with modified configuration to target our Vault server in-cluster test instance (no verification of certificates): such settings *are no fit for production*.
 
 The [configuration](#configuration) section lists all the parameters that can be configured during installation.
 
@@ -630,15 +650,7 @@ The following tables lists the configurable parameters of the `Vault Sidecar Inj
 | image.port       | Service main port    | 8443            |
 | image.pullPolicy   | Pull policy for docker image: IfNotPresent or Always       | IfNotPresent           |
 | image.serviceNameLabel   | Service Name. Must match label com.talend.service     | talend-vault-sidecar-injector      |
-| image.tag  | Version/tag of the docker image     | latest      |
-| injectconfig.consultemplate.image.path   | Docker image path  | hashicorp/consul-template    |
-| injectconfig.consultemplate.image.pullPolicy   | Pull policy for docker image: IfNotPresent or Always  | IfNotPresent  |
-| injectconfig.consultemplate.image.tag          | Version/tag of the docker image   | 0.22.0-alpine       |
-| injectconfig.consultemplate.loglevel           | Consul Template log level: trace, debug, info, warn, err   | info       |
-| injectconfig.consultemplate.resources.limits.cpu | Consul Template sidecar CPU resource limits | 20m |
-| injectconfig.consultemplate.resources.limits.memory | Consul Template sidecar memory resource limits | 25Mi |
-| injectconfig.consultemplate.resources.requests.cpu | Consul Template sidecar CPU resource requests | 10m |
-| injectconfig.consultemplate.resources.requests.memory | Consul Template sidecar memory resource requests | 15Mi |
+| image.tag  | Version/tag of the docker image     | 4.0.0      |
 | injectconfig.jobbabysitter.image.path   | Docker image path | everpeace/curl-jq |
 | injectconfig.jobbabysitter.image.pullPolicy | Pull policy for docker image: IfNotPresent or Always | IfNotPresent |
 | injectconfig.jobbabysitter.image.tag   | Version/tag of the docker image  | latest |
@@ -648,12 +660,12 @@ The following tables lists the configurable parameters of the `Vault Sidecar Inj
 | injectconfig.jobbabysitter.resources.requests.memory | Job babysitter sidecar memory resource requests | 20Mi |
 | injectconfig.vault.image.path  | Docker image path  | vault |
 | injectconfig.vault.image.pullPolicy    | Pull policy for docker image: IfNotPresent or Always  | IfNotPresent   |
-| injectconfig.vault.image.tag  | Version/tag of the docker image | 1.2.3 |
+| injectconfig.vault.image.tag  | Version/tag of the docker image | 1.3.0 |
 | injectconfig.vault.loglevel                    | Vault log level: trace, debug, info, warn, err    | info    |
-| injectconfig.vault.resources.limits.cpu | Vault sidecar CPU resource limits | 30m |
-| injectconfig.vault.resources.limits.memory | Vault sidecar memory resource limits | 25Mi |
-| injectconfig.vault.resources.requests.cpu | Vault sidecar CPU resource requests | 30m |
-| injectconfig.vault.resources.requests.memory | Vault sidecar memory resource requests | 20Mi |
+| injectconfig.vault.resources.limits.cpu | Vault sidecar CPU resource limits | 50m |
+| injectconfig.vault.resources.limits.memory | Vault sidecar memory resource limits | 50Mi |
+| injectconfig.vault.resources.requests.cpu | Vault sidecar CPU resource requests | 40m |
+| injectconfig.vault.resources.requests.memory | Vault sidecar memory resource requests | 35Mi |
 | mutatingwebhook.annotations.appLabelKey | Annotation for application's name. Annotation's value used as Vault role by default. | com.talend.application  |
 | mutatingwebhook.annotations.appServiceLabelKey | Annotation for service's name | com.talend.service  |
 | mutatingwebhook.annotations.keyPrefix | Prefix used for all vault sidecar injector annotations | sidecar.vault.talend.org  |
@@ -669,7 +681,6 @@ The following tables lists the configurable parameters of the `Vault Sidecar Inj
 | probes.readiness.periodSeconds                  | How often (in seconds) to perform the probe       | 20   |
 | probes.readiness.successThreshold      | Minimum consecutive successes for the probe to be considered successful after having failed  | 1  |
 | probes.readiness.timeoutSecon          | Number of seconds after which the probe times out  | 5   |
-| rbac.install                        | Create RBAC resources. Must be set for any cluster configured with rbac. | true |
 | replicaCount                        | Number of replicas | 3    |
 | resources.limits.cpu                | CPU resource limits                             | 250m         |
 | resources.limits.memory             | Memory resource limits                          | 256Mi        |
@@ -685,7 +696,6 @@ The following tables lists the configurable parameters of the `Vault Sidecar Inj
 | vault.authMethods.approle.roleid_filename    | Filename for role id    | approle_roleid   |
 | vault.authMethods.approle.secretid_filename  | Filename for secret id  | approle_secretid |
 | vault.authMethods.kubernetes.path      | Path defined for Kubernetes Auth Method            | kubernetes |
-| vault.ssl.enabled              | Enable or disable secure connection with Vault server               | true |
 | vault.ssl.verify               | Enable or disable verification of certificates               | true |
 
 You can override these values at runtime using the `--set key=value[,key=value]` argument to `helm install`. For example,
@@ -725,3 +735,7 @@ Following collectors are available:
   - ...
 
 ![Grafana dashboard](doc/grafana-vault-sidecar-injector.png)
+
+## List of changes
+
+Look at changes for Vault Sidecar Injector releases in [CHANGELOG](CHANGELOG.md) file.
