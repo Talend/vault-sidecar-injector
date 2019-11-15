@@ -29,6 +29,10 @@ build: clean test
 	echo "Building ..."
 	GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -a -o $(TARGET)
 	cd target && sha512sum vaultinjector-webhook > vaultinjector-webhook.sha512
+	echo "Archive Helm chart ..."
+	mkdir -p vault-sidecar-injector && cp -R ../deploy/helm/* ./vault-sidecar-injector
+	tar czf vault-sidecar-injector-${VERSION}.tgz vault-sidecar-injector
+	rm -R vault-sidecar-injector
 
 image:
 	echo "Build image ..."
