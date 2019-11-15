@@ -85,13 +85,6 @@ Define the docker image for Vault sidecar container (image.path:image.tag).
 {{- end -}}
 
 {{/*
-Define the docker image for Consul Template sidecar container (image.path:image.tag).
-*/}}
-{{- define "talend-vault-sidecar-injector.injectconfig.consultemplate.image" -}}
-{{- printf "%s:%s" .injectconfig.consultemplate.image.path (default "latest" .injectconfig.consultemplate.image.tag) -}}
-{{- end -}}
-
-{{/*
 Define the docker image for pre-install hook (image.path:image.tag).
 */}}
 {{- define "talend-vault-sidecar-injector.hook.image" -}}
