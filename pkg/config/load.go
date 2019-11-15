@@ -36,17 +36,17 @@ func Load(whSvrParams WhSvrParameters) (*InjectionConfig, error) {
 		return nil, err
 	}
 
-	// Load Consul Template's block
-	ctTemplateBlock, err := loadString(whSvrParams.ConsulTemplateTmplBlockFile)
+	// Load template
+	templateBlock, err := loadString(whSvrParams.TemplateBlockFile)
 	if err != nil {
-		klog.Errorf("Failed to load Consul Template's template configuration: %v", err)
+		klog.Errorf("Failed to load template: %v", err)
 		return nil, err
 	}
 
-	// Load Consul Template's default template
-	ctTemplateDefaultTmpl, err := loadString(whSvrParams.ConsulTemplateTmplDefaultFile)
+	// Load default template
+	templateDefaultTmpl, err := loadString(whSvrParams.TemplateDefaultFile)
 	if err != nil {
-		klog.Errorf("Failed to load Consul Template's default template: %v", err)
+		klog.Errorf("Failed to load default template: %v", err)
 		return nil, err
 	}
 
@@ -63,8 +63,8 @@ func Load(whSvrParams WhSvrParameters) (*InjectionConfig, error) {
 		ApplicationLabelKey:              whSvrParams.AppLabelKey,
 		ApplicationServiceLabelKey:       whSvrParams.AppServiceLabelKey,
 		SidecarConfig:                    &sidecarConfig,
-		CtTemplateBlock:                  ctTemplateBlock,
-		CtTemplateDefaultTmpl:            ctTemplateDefaultTmpl,
+		TemplateBlock:                    templateBlock,
+		TemplateDefaultTmpl:              templateDefaultTmpl,
 		PodslifecycleHooks:               &hooks,
 	}, nil
 }

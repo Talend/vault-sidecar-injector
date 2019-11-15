@@ -177,13 +177,13 @@ func (vaultInjector *VaultInjector) computeSidecarsPlaceholders(podContainers []
 	annotationVaultRole := annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationRoleKey]]
 	annotationVaultSATokenPath := annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationSATokenKey]]
 	annotationVaultSecretsPath := strings.Split(annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationSecretsPathKey]], ",")
-	annotationConsulTemplateTemplate := strings.Split(annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationSecretsTemplateKey]], ",")
-	annotationConsulTemplateDest := strings.Split(annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationTemplateDestKey]], ",")
-	annotationConsulTemplateCmd := strings.Split(annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationTemplateCmdKey]], ",")
+	annotationTemplate := strings.Split(annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationSecretsTemplateKey]], ",")
+	annotationTemplateDest := strings.Split(annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationTemplateDestKey]], ",")
+	annotationTemplateCmd := strings.Split(annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationTemplateCmdKey]], ",")
 
 	annotationVaultSecretsPathNum := len(annotationVaultSecretsPath)
-	annotationConsulTemplateTemplateNum := len(annotationConsulTemplateTemplate)
-	annotationConsulTemplateDestNum := len(annotationConsulTemplateDest)
+	annotationTemplateNum := len(annotationTemplate)
+	annotationTemplateDestNum := len(annotationTemplateDest)
 
 	if annotationVaultAuthMethod == "" {
 		annotationVaultAuthMethod = vaultDefaultAuthMethod
@@ -201,47 +201,47 @@ func (vaultInjector *VaultInjector) computeSidecarsPlaceholders(podContainers []
 		annotationVaultSecretsPath[0] = vaultDefaultSecretsEnginePath + "/" + applicationLabel + "/" + applicationServiceLabel
 	}
 
-	if annotationConsulTemplateDestNum == 1 && annotationConsulTemplateDest[0] == "" { // Use default
-		annotationConsulTemplateDest[0] = consulTemplateAppSvcDefaultDestination
+	if annotationTemplateDestNum == 1 && annotationTemplateDest[0] == "" { // Use default
+		annotationTemplateDest[0] = templateAppSvcDefaultDestination
 	}
 
-	if annotationConsulTemplateTemplateNum == 1 && annotationConsulTemplateTemplate[0] == "" {
+	if annotationTemplateNum == 1 && annotationTemplate[0] == "" {
 		// We must have same numbers of secrets path & secrets destinations
-		if annotationConsulTemplateDestNum != annotationVaultSecretsPathNum {
+		if annotationTemplateDestNum != annotationVaultSecretsPathNum {
 			klog.Error("Submitted pod must contain same numbers of secrets path and secrets destinations")
 			return nil, errors.New("Submitted pod must contain same numbers of secrets path and secrets destinations")
 		}
 
-		// If no custom template(s), use default Consul Template's template
-		annotationConsulTemplateTemplate = make([]string, annotationConsulTemplateDestNum)
-		for tmplIdx := 0; tmplIdx < annotationConsulTemplateDestNum; tmplIdx++ {
-			annotationConsulTemplateTemplate[tmplIdx] = vaultInjector.CtTemplateDefaultTmpl
+		// If no custom template(s), use default template
+		annotationTemplate = make([]string, annotationTemplateDestNum)
+		for tmplIdx := 0; tmplIdx < annotationTemplateDestNum; tmplIdx++ {
+			annotationTemplate[tmplIdx] = vaultInjector.TemplateDefaultTmpl
 		}
 	} else {
 		// We must have same numbers of custom templates & secrets destinations ...
-		if annotationConsulTemplateDestNum != annotationConsulTemplateTemplateNum {
+		if annotationTemplateDestNum != annotationTemplateNum {
 			klog.Error("Submitted pod must contain same numbers of templates and secrets destinations")
 			return nil, errors.New("Submitted pod must contain same numbers of templates and secrets destinations")
 		}
 
 		// ... and we ignore content of 'secrets-path' annotation ('cause we provide full template), but we need to init an empty array
 		// to not end up with errors in the replace loop to come
-		annotationVaultSecretsPath = make([]string, annotationConsulTemplateDestNum)
+		annotationVaultSecretsPath = make([]string, annotationTemplateDestNum)
 	}
 
-	// Copy provided CT commands, if less commands than secrets destinations: remaining commands set to ""
-	consulTemplateCommands := make([]string, annotationConsulTemplateDestNum)
-	copy(consulTemplateCommands, annotationConsulTemplateCmd)
+	// Copy provided template commands, if less commands than secrets destinations: remaining commands set to ""
+	templateCommands := make([]string, annotationTemplateDestNum)
+	copy(templateCommands, annotationTemplateCmd)
 
 	var ctTemplateBlock string
 	var ctTemplates strings.Builder
 
-	for tmplIdx := 0; tmplIdx < annotationConsulTemplateDestNum; tmplIdx++ {
-		ctTemplateBlock = vaultInjector.CtTemplateBlock
-		ctTemplateBlock = strings.Replace(ctTemplateBlock, consulTemplateAppSvcDestinationPlaceholder, annotationConsulTemplateDest[tmplIdx], -1)
-		ctTemplateBlock = strings.Replace(ctTemplateBlock, consulTemplateTemplateContentPlaceholder, annotationConsulTemplateTemplate[tmplIdx], -1)
+	for tmplIdx := 0; tmplIdx < annotationTemplateDestNum; tmplIdx++ {
+		ctTemplateBlock = vaultInjector.TemplateBlock
+		ctTemplateBlock = strings.Replace(ctTemplateBlock, templateAppSvcDestinationPlaceholder, annotationTemplateDest[tmplIdx], -1)
+		ctTemplateBlock = strings.Replace(ctTemplateBlock, templateContentPlaceholder, annotationTemplate[tmplIdx], -1)
 		ctTemplateBlock = strings.Replace(ctTemplateBlock, vaultAppSvcSecretsPathPlaceholder, annotationVaultSecretsPath[tmplIdx], -1)
-		ctTemplateBlock = strings.Replace(ctTemplateBlock, consulTemplateCommandPlaceholder, consulTemplateCommands[tmplIdx], -1)
+		ctTemplateBlock = strings.Replace(ctTemplateBlock, templateCommandPlaceholder, templateCommands[tmplIdx], -1)
 
 		ctTemplates.WriteString(ctTemplateBlock)
 		ctTemplates.WriteString("\n")
@@ -314,7 +314,7 @@ func (vaultInjector *VaultInjector) addContainer(podContainers []corev1.Containe
 			container.Command[commandIdx] = strings.Replace(container.Command[commandIdx], appJobVarPlaceholder, strconv.FormatBool(jobWorkload), -1)
 			container.Command[commandIdx] = strings.Replace(container.Command[commandIdx], vaultAuthMethodPlaceholder, placeholders.vaultAuthMethod, -1)
 			container.Command[commandIdx] = strings.Replace(container.Command[commandIdx], vaultRolePlaceholder, placeholders.vaultRole, -1)
-			container.Command[commandIdx] = strings.Replace(container.Command[commandIdx], consulTemplateTemplatesPlaceholder, placeholders.consulTemplateTemplates, -1)
+			container.Command[commandIdx] = strings.Replace(container.Command[commandIdx], templateTemplatesPlaceholder, placeholders.templates, -1)
 		}
 
 		// We will modify some values here so make a copy to not change origin

@@ -12,7 +12,7 @@ data:
           - "sh"
           - "-c"
           - cat <APPSVC_SECRETS_VOL_MOUNTPATH>/* >/dev/null 2>&1
-  consultemplatetmplblock.hcl: |
+  templateblock.hcl: |
     template {
       destination = "/opt/talend/secrets/<APPSVC_SECRETS_DESTINATION>"
       contents = <<EOH
@@ -24,7 +24,7 @@ data:
         max = "2s"
       }
     }
-  consultemplatetmpldefault.ctmpl: |
+  templatedefault.tmpl: |
     {{`{{ with secret "<APPSVC_VAULT_SECRETS_PATH>" }}{{ range \$k, \$v := .Data }}
     {{ \$k }}={{ \$v }}
     {{ end }}{{ end }}`}}
@@ -36,7 +36,7 @@ data:
       {{- end }}
     {{- end }}
     containers:
-      # This container is only injected in K8S jobs to monitor app job's container termination and send signal to vault and consul template sidecars
+      # This container is only injected in K8S jobs to monitor app job's container termination and send signal to vault sidecar
       - name: tvsi-job-babysitter
         image: {{ include "talend-vault-sidecar-injector.injectconfig.jobbabysitter.image" .Values }}
         imagePullPolicy: {{ .Values.injectconfig.jobbabysitter.image.pullPolicy }}
@@ -109,6 +109,8 @@ data:
                 }
               }
             }
+
+            <APPSVC_TEMPLATES>
             EOF
             elif [ $vault_auth_method = "approle" ]; then
               cat <<EOF > vault-agent-config.hcl
@@ -129,6 +131,8 @@ data:
                 }
               }
             }
+
+            <APPSVC_TEMPLATES>
             EOF
             else
               echo "Unsupported Vault Auth Method: $vault_auth_method"
@@ -161,7 +165,7 @@ data:
         volumeMounts:
           - name: vault-token
             mountPath: /home/vault
-            # This volume must be defined in application's manifest
+            # This volume must be defined in application's manifest (used to share the secrets file(s))
           - name: secrets
             mountPath: /opt/talend/secrets
             # The name's value will be overridden by the webhook to point to container's service account volume to use for Vault authentication.
@@ -171,56 +175,6 @@ data:
         {{- if .Values.injectconfig.vault.resources }}
         resources:
 {{ toYaml .Values.injectconfig.vault.resources | indent 10 }}
-        {{- end }}
-      - name: tvsi-consul-template
-        image: {{ include "talend-vault-sidecar-injector.injectconfig.consultemplate.image" .Values }}
-        imagePullPolicy: {{ .Values.injectconfig.consultemplate.image.pullPolicy }}
-        env:
-          - name: VAULT_ADDR
-            value: {{ .Values.vault.addr }}
-        command:
-          - "sh"
-          - "-c"
-          - |
-            cat <<EOF > /consul-template/config/consul-template-config.hcl
-            vault {
-              vault_agent_token_file = "/home/vault/.vault-token"
-              renew_token = false
-              retry {
-                attempts = 0
-                backoff = "500ms"
-                max_backoff = "2s"
-              }
-              ssl {
-                enabled = {{ .Values.vault.ssl.enabled }}
-                verify = {{ .Values.vault.ssl.verify }}
-              }
-            }
-
-            <APPSVC_TEMPLATES>
-            EOF
-            workload_is_job="<APP_JOB>"
-            if [ $workload_is_job = "true" ]; then
-              docker-entrypoint.sh -config=/consul-template/config/consul-template-config.hcl -log-level={{- .Values.injectconfig.consultemplate.loglevel }} &
-              while true; do
-                if [ -f "/home/vault/vault-sidecars-signal-terminate" ]; then
-                  echo "=> exit (signal received)"
-                  exit 0
-                fi
-                sleep 2
-              done
-            else
-              docker-entrypoint.sh -config=/consul-template/config/consul-template-config.hcl -log-level={{- .Values.injectconfig.consultemplate.loglevel }}
-            fi
-        volumeMounts:
-          - name: vault-token
-            mountPath: /home/vault
-            # This volume must be defined in application's manifest (used to share the secrets file(s))
-          - name: secrets
-            mountPath: /opt/talend/secrets
-        {{- if .Values.injectconfig.consultemplate.resources }}
-        resources:
-{{ toYaml .Values.injectconfig.consultemplate.resources | indent 10 }}
         {{- end }}
     volumes:
       - name: vault-token

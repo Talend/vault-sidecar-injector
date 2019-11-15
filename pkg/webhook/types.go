@@ -45,7 +45,7 @@ type sidecarPlaceholders struct {
 	vaultInjectorSATokenVolumeName string
 	vaultAuthMethod                string
 	vaultRole                      string
-	consulTemplateTemplates        string
+	templates                      string
 }
 
 // This struct represents a JSON Patch operation (see http://jsonpatch.com/)

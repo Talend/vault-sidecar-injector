@@ -20,17 +20,17 @@ import (
 
 // WhSvrParameters : Webhook Server parameters
 type WhSvrParameters struct {
-	Port                          int    // webhook server port
-	MetricsPort                   int    // metrics server port (Prometheus)
-	CertFile                      string // path to the x509 certificate for https
-	KeyFile                       string // path to the x509 private key matching `CertFile`
-	AnnotationKeyPrefix           string // annotations key prefix
-	AppLabelKey                   string // key for application label
-	AppServiceLabelKey            string // key for application's service label
-	SidecarCfgFile                string // path to sidecar injector configuration file
-	ConsulTemplateTmplBlockFile   string // path to Consul Template's template file
-	ConsulTemplateTmplDefaultFile string // path to Consul Template's default template content file
-	PodLifecycleHooksFile         string // path to pod's lifecycle hooks file
+	Port                  int    // webhook server port
+	MetricsPort           int    // metrics server port (Prometheus)
+	CertFile              string // path to the x509 certificate for https
+	KeyFile               string // path to the x509 private key matching `CertFile`
+	AnnotationKeyPrefix   string // annotations key prefix
+	AppLabelKey           string // key for application label
+	AppServiceLabelKey    string // key for application's service label
+	SidecarCfgFile        string // path to sidecar injector configuration file
+	TemplateBlockFile     string // path to template file
+	TemplateDefaultFile   string // path to default template content file
+	PodLifecycleHooksFile string // path to pod's lifecycle hooks file
 }
 
 // SidecarConfig : resources that will be injected (read from config file)
@@ -53,7 +53,7 @@ type InjectionConfig struct {
 	ApplicationLabelKey              string            // key for application label
 	ApplicationServiceLabelKey       string            // key for application's service label
 	SidecarConfig                    *SidecarConfig    // sidecar injector configuration
-	CtTemplateBlock                  string            // Consul Template's template
-	CtTemplateDefaultTmpl            string            // Consul Template's default template content
+	TemplateBlock                    string            // template
+	TemplateDefaultTmpl              string            // default template content
 	PodslifecycleHooks               *LifecycleHooks   // pod's lifecycle hooks
 }

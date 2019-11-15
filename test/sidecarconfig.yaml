@@ -1,7 +1,7 @@
 #securityContext:
 #  fsGroup: 61000
 containers:
-  # This container is only injected in K8S jobs to monitor app job's container termination and send signal to vault and consul template sidecars
+  # This container is only injected in K8S jobs to monitor app job's container termination and send signal to vault sidecar
   - name: tvsi-job-babysitter
     image: everpeace/curl-jq
     imagePullPolicy: IfNotPresent
@@ -39,7 +39,7 @@ containers:
         mountPath: /var/run/secrets/kubernetes.io/serviceaccount
         readOnly: true
   - name: tvsi-vault-agent
-    image: vault:1.2.3
+    image: vault:1.3.0
     imagePullPolicy: IfNotPresent
     env:
       - name: SKIP_SETCAP
@@ -68,6 +68,8 @@ containers:
             }
           }
         }
+
+        <APPSVC_TEMPLATES>
         EOF
         workload_is_job="<APP_JOB>"
         if [ $workload_is_job = "true" ]; then
@@ -96,56 +98,13 @@ containers:
     volumeMounts:
       - name: vault-token
         mountPath: /home/vault
+        # This volume must be defined in application's manifest (used to share the secrets file(s))
+      - name: secrets
+        mountPath: /opt/talend/secrets
         # The name's value will be overridden by the webhook to point to container's service account volume to use for Vault authentication.
       - name: TVSI_SA_SECRETS_VOL_NAME
         mountPath: /var/run/secrets/talend/vault-sidecar-injector/serviceaccount
         readOnly: true
-  - name: tvsi-consul-template
-    image: hashicorp/consul-template:0.22.0-alpine
-    imagePullPolicy: IfNotPresent
-    env:
-      - name: VAULT_ADDR
-        value: https://vault:8200
-    command:
-      - "sh"
-      - "-c"
-      - |
-        cat <<EOF > /consul-template/config/consul-template-config.hcl
-        vault {
-          vault_agent_token_file = "/home/vault/.vault-token"
-          renew_token = false
-          retry {
-            attempts = 10
-            backoff = "2s"
-            max_backoff = "60s"
-          }
-          ssl {
-            enabled = true
-            verify = true
-          }
-        }
-
-        <APPSVC_TEMPLATES>
-        EOF
-        workload_is_job="<APP_JOB>"
-        if [ $workload_is_job = "true" ]; then
-          docker-entrypoint.sh -config=/consul-template/config/consul-template-config.hcl -log-level=info &
-          while true; do
-            if [ -f "/home/vault/vault-sidecars-signal-terminate" ]; then
-              echo "=> exit (signal received)"
-              exit 0
-            fi
-            sleep 2
-          done
-        else
-          docker-entrypoint.sh -config=/consul-template/config/consul-template-config.hcl -log-level=info
-        fi
-    volumeMounts:
-      - name: vault-token
-        mountPath: /home/vault
-        # This volume must be defined in application's manifest (used to share the secrets file(s))
-      - name: secrets
-        mountPath: /opt/talend/secrets
 volumes:
   - name: vault-token
     emptyDir:

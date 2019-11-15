@@ -9,21 +9,14 @@
 replicaCount: 3  # replicaCount defines the number of container replicas running in parallel
 revisionHistoryLimit: 3  # revision history limit in tiller / helm / k8s
 
-## ------------------------------------------------------------------------------------------------------ ##
-## RBAC
-## ------------------------------------------------------------------------------------------------------ ##
-
-rbac:
-  install: true  # create RBAC resources. Must be set for any cluster configured with rbac.
-
 # ----------------------------------------------------------------------------
 # Define image properties
 # ----------------------------------------------------------------------------
 
 image:
-  path: "talend/vault-sidecar-injector"  # the Docker image path
-  tag: "latest"  # tag defines the version/tag of the docker image
-  pullPolicy: IfNotPresent  # pullPolicy defines the pull policy for docker images: IfNotPresent or Always
+  path: "talend/vault-sidecar-injector"  # Docker image path
+  tag: "4.0.0"  # Version/tag of the docker image
+  pullPolicy: IfNotPresent  # Pull policy for docker images: IfNotPresent or Always
   port: 8443  # service main port exposed by the docker image
   metricsPort: 9000  # metricsPort defines the port exposed by the docker image for metrics collection
 
@@ -60,42 +53,29 @@ mutatingwebhook:
 injectconfig:
   jobbabysitter:
     image:
-      path: "everpeace/curl-jq" # the Docker image path
-      tag: "latest" # tag defines the version/tag of the docker image
-      pullPolicy: IfNotPresent # pullPolicy defines the pull policy for docker images: IfNotPresent or Always
+      path: "everpeace/curl-jq" # Docker image path
+      tag: "latest" # Version/tag of the docker image
+      pullPolicy: IfNotPresent # Pull policy for docker images: IfNotPresent or Always
     resources:
       limits:
-        cpu: 20m  # Vault sidecar CPU resource limits
-        memory: 25Mi  # Vault sidecar memory resource limits
+        cpu: 20m  # Job babysitter sidecar CPU resource limits
+        memory: 25Mi  # Job babysitter sidecar memory resource limits
       requests:
-        cpu: 15m  # Vault sidecar CPU resource requests
-        memory: 20Mi  # Vault sidecar memory resource requests
+        cpu: 15m  # Job babysitter sidecar CPU resource requests
+        memory: 20Mi  # Job babysitter sidecar memory resource requests
   vault:
     image:
-      path: "vault" # the Docker image path
-      tag: "1.2.3" # tag defines the version/tag of the docker image
-      pullPolicy: IfNotPresent # pullPolicy defines the pull policy for docker images: IfNotPresent or Always
+      path: "vault" # Docker image path
+      tag: "1.3.0" # Version/tag of the docker image
+      pullPolicy: IfNotPresent # Pull policy for docker images: IfNotPresent or Always
     loglevel: info # Vault log level: trace, debug, info, warn, err
     resources:
       limits:
-        cpu: 30m  # Vault sidecar CPU resource limits
-        memory: 25Mi  # Vault sidecar memory resource limits
+        cpu: 50m  # Vault sidecar CPU resource limits
+        memory: 50Mi  # Vault sidecar memory resource limits
       requests:
-        cpu: 30m  # Vault sidecar CPU resource requests
-        memory: 20Mi  # Vault sidecar memory resource requests
-  consultemplate:
-    image:
-      path: "hashicorp/consul-template" # the Docker image path
-      tag: "0.22.0-alpine" # tag defines the version/tag of the docker image
-      pullPolicy: IfNotPresent # pullPolicy defines the pull policy for docker images: IfNotPresent or Always
-    loglevel: info # Consul Template log level: trace, debug, info, warn, err
-    resources:
-      limits:
-        cpu: 20m  # Consul Template sidecar CPU resource limits
-        memory: 25Mi  # Consul Template sidecar memory resource limits
-      requests:
-        cpu: 10m  # Consul Template sidecar CPU resource requests
-        memory: 15Mi  # Consul Template sidecar memory resource requests
+        cpu: 40m  # Vault sidecar CPU resource requests
+        memory: 35Mi  # Vault sidecar memory resource requests
 
 # ----------------------------------------------------------------------------
 # Define Helm Hook properties
@@ -103,9 +83,9 @@ injectconfig:
 
 hook:
   image:
-    path: "bitnami/kubectl"  # the Docker image path
-    tag: "latest" # tag defines the version/tag of the docker image
-    pullPolicy: IfNotPresent  # pullPolicy defines the pull policy for docker images: IfNotPresent or Always
+    path: "bitnami/kubectl"  # Docker image path
+    tag: "latest" # Version/tag of the docker image
+    pullPolicy: IfNotPresent  # Pull policy for docker images: IfNotPresent or Always
 
 # ----------------------------------------------------------------------------
 # Define resources requests and limits
@@ -162,5 +142,4 @@ vault:
       roleid_filename: approle_roleid # Filename for role id
       secretid_filename: approle_secretid # Filename for secret id
   ssl:
-    enabled: true  # Enable or disable secure connection with Vault server
     verify: true  # Enable or disable verification of certificates
