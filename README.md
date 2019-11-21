@@ -88,11 +88,13 @@ Upon successful injection, Vault Sidecar Injector will add annotation(s) to the 
 
 Template below is used by default to fetch all secrets and create corresponding key/value pairs. It is generic enough and should be fine for most use cases:
 
+<!-- {% raw %} -->
 ```ct
 {{ with secret "<APPSVC_VAULT_SECRETS_PATH>" }}{{ range \$k, \$v := .Data }}
 {{ \$k }}={{ \$v }}
 {{ end }}{{ end }}
 ```
+<!-- {% endraw %}) -->
 
 Using annotation `sidecar.vault.talend.org/secrets-template` it is nevertheless possible to provide your own list of templates. For some examples have a look at the next section ([here](#ask-for-secrets-hook-injection-custom-secrets-file-and-template) and [there](#ask-for-secrets-hook-injection-several-custom-secrets-files-and-templates)).
 
