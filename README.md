@@ -562,15 +562,31 @@ $ make image
 
 Several options to install the chart:
 
-- download the chart archive (`.tgz` file) from GitHub [releases](https://github.com/Talend/vault-sidecar-injector/releases)
 - from [Helm Hub](https://hub.helm.sh/charts/talend/vault-sidecar-injector) leveraging [Talend's public Helm charts registry](https://talend.github.io/helm-charts-public)
-- or git clone `Vault Sidecar Injector` GitHub repo and cd into `deploy/helm` directory
+- by downloading the chart archive (`.tgz` file) from GitHub [releases](https://github.com/Talend/vault-sidecar-injector/releases)
+- or cloning `Vault Sidecar Injector` GitHub repo and cd into `deploy/helm` directory
 
 Depending on what you chose, define a `CHART_LOCATION` env var as follows:
 
-- if you use the archive: `export CHART_LOCATION=./vault-sidecar-injector-<x.y.z>.tgz`
-- if you use [Helm Hub](https://hub.helm.sh/charts/talend/vault-sidecar-injector) / [Talend's public Helm charts registry](https://talend.github.io/helm-charts-public): `export CHART_LOCATION=talend-public/vault-sidecar-injector`
-- if you install from the chart's folder: `export CHART_LOCATION=.`
+- if you use [Helm Hub](https://hub.helm.sh/charts/talend/vault-sidecar-injector) / [Talend's public Helm charts registry](https://talend.github.io/helm-charts-public):
+
+```bash
+$ helm repo add talend https://talend.github.io/helm-charts-public
+$ helm repo update
+$ export CHART_LOCATION=talend/vault-sidecar-injector
+```
+
+- if you use the downloaded chart archive:
+
+```bash
+$ export CHART_LOCATION=./vault-sidecar-injector-<x.y.z>.tgz
+```
+
+- if you install from the chart's folder:
+
+```bash
+$ export CHART_LOCATION=.
+```
 
 To see Chart content before installing it, perform a dry run first:
 
