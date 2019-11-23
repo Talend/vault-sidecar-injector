@@ -36,6 +36,7 @@ package:
 	mkdir -p vault-sidecar-injector && cp -R ../README.md ../deploy/helm/* ./vault-sidecar-injector
 	helm package vault-sidecar-injector
 	rm -R vault-sidecar-injector
+	helm lint ./vault-sidecar-injector-*.tgz --debug
 
 image:
 	echo "Build image from sources ..."
