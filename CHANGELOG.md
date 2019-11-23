@@ -1,5 +1,9 @@
 # Changelog for Vault Sidecar Injector
 
+## Release v4.1.0 - 2019-11-23
+
+- [VSI #12](https://github.com/Talend/vault-sidecar-injector/pull/12) - Image based on CentOS `7.7` and run as non-root, chart available on Helm Hub
+
 ## Release v4.0.0 - 2019-11-15
 
 - [VSI #9](https://github.com/Talend/vault-sidecar-injector/pull/9) - Remove Consul Template sidecar and use Vault 1.3.0 new agent template feature to fetch secrets. See announcement [here](doc/Leveraging-Vault-Agent-Template.md).

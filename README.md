@@ -33,8 +33,8 @@
 
 ## Announcements
 
-- 2019-11: [Vault Sidecar Injector now leverages Vault Agent Template feature](doc/Leveraging-Vault-Agent-Template.md)
-- 2019-10: [Open-sourcing Vault Sidecar Injector](doc/Open-sourcing%20Vault%20Sidecar%20Injector.md)
+- 2019-11: [Vault Sidecar Injector now leverages Vault Agent Template feature](https://github.com/Talend/vault-sidecar-injector/blob/master/doc/Leveraging-Vault-Agent-Template.md)
+- 2019-10: [Open-sourcing Vault Sidecar Injector](https://github.com/Talend/vault-sidecar-injector/blob/master/doc/Open-sourcing-Vault-Sidecar-Injector.md)
 
 ## Overview
 
@@ -42,7 +42,7 @@
 
 This component allows **to dynamically inject Vault Agent as a sidecar container** (along with configuration and volumes) in any matching pod manifest to seamlessly and dynamically fetch secrets. Pods willing to benefit from this feature just have to add some custom annotations to ask for the sidecar injection **at deployment time**.
 
-To ease deployment, a Helm chart is provided under [deploy/helm](deploy/helm) folder of this repository as well as instructions to [install it](#installing-the-chart).
+To ease deployment, a Helm chart is provided under [deploy/helm](https://github.com/Talend/vault-sidecar-injector/blob/master/deploy/helm) folder of this repository as well as instructions to [install it](#installing-the-chart).
 
 > ⚠️ **Important note** ⚠️: support for sidecars in Kubernetes **jobs** suffers from limitations and issues exposed here: <https://github.com/kubernetes/kubernetes/issues/25908>.
 >
@@ -57,7 +57,7 @@ Invoking `Vault Sidecar Injector` is pretty straightforward. In your application
 - Add annotation `sidecar.vault.talend.org/inject: "true"`. This is the only mandatory annotation.
 - Add volume `secrets`, setting field `emptyDir.medium` to *Memory*. Deciphered secrets will be made available in file `secrets.properties` (using format `<secret key>=<secret value>`) by default or in the secrets destination you provide with annotation `sidecar.vault.talend.org/secrets-destination`.
 
-Refer to provided [sample files](deploy/samples) and [examples](#examples) section.
+Refer to provided [sample files](https://github.com/Talend/vault-sidecar-injector/blob/master/deploy/samples) and [examples](#examples) section.
 
 ### Annotations
 
@@ -109,7 +109,7 @@ Details on template syntax (from Consul Template doc, same syntax supported by V
 
 ### Examples
 
-Ready to use sample manifests are provided under [deploy/samples](deploy/samples) folder. Just deploy them using `kubectl apply -f <sample file>`.
+Ready to use sample manifests are provided under [deploy/samples](https://github.com/Talend/vault-sidecar-injector/blob/master/deploy/samples) folder. Just deploy them using `kubectl apply -f <sample file>`.
 
 Examples hereafter go further and highlight all the features of `Vault Sidecar Injector` through the supported annotations.
 
@@ -454,7 +454,7 @@ spec:
 
 ## How to deploy Vault Sidecar Injector
 
-The provided [chart](deploy/helm) is intended to be deployed in a "system" namespace and only once as it handles all injection requests from any pods deployed in any namespaces. **It *shall not* be deployed in every namespaces**.
+The provided [chart](https://github.com/Talend/vault-sidecar-injector/blob/master/deploy/helm) is intended to be deployed in a "system" namespace and only once as it handles all injection requests from any pods deployed in any namespaces. **It *shall not* be deployed in every namespaces**.
 
 >**Note**: it is possible to deploy an instance in a given namespace **and to restrict injection to this same namespace** if necessary, **in particular in a dev environment where each team wants its own instance of `Vault Sidecar Injector` for testing purpose** with its dedicated configuration (including a dedicated Vault server). Refer to section [Installing the chart in a dev environment](#Installing-the-chart-in-a-dev-environment) below.
 
@@ -548,7 +548,7 @@ $ docker pull talend/vault-sidecar-injector:<tag>
 
 #### Building the image
 
-A [Dockerfile](Dockerfile) is also provided to both compile `Vault Sidecar Injector` and build the image locally if you prefer.
+A [Dockerfile](https://github.com/Talend/vault-sidecar-injector/blob/master/Dockerfile) is also provided to both compile `Vault Sidecar Injector` and build the image locally if you prefer.
 
 Just run following command:
 
@@ -560,15 +560,17 @@ $ make image
 
 > **Note:** as `Vault Sidecar Injector` chart makes use of Helm post-install hooks, **do not** provide Helm `--wait` flag since it will prevent post-install hooks from running and installation will fail.
 
-Two ways to install the chart:
+Several options to install the chart:
 
-- either you download the chart archive (`vault-sidecar-injector-<release>.tgz`) from GitHub [releases](https://github.com/Talend/vault-sidecar-injector/releases)
-- or you git clone `Vault Sidecar Injector` GitHub repo and cd into `deploy/helm` directory
+- download the chart archive (`.tgz` file) from GitHub [releases](https://github.com/Talend/vault-sidecar-injector/releases)
+- from [Helm Hub](https://hub.helm.sh/charts/talend/vault-sidecar-injector) leveraging [Talend public helm charts registry](https://github.com/Talend/helm-charts-public)
+- or git clone `Vault Sidecar Injector` GitHub repo and cd into `deploy/helm` directory
 
 Depending on what you chose, define a `CHART_LOCATION` env var as follows:
 
-- if you use the archive: `export CHART_LOCATION=./vault-sidecar-injector-<release>.tgz`
-- if you install from the chart folder: `export CHART_LOCATION=.`
+- if you use the archive: `export CHART_LOCATION=./vault-sidecar-injector-<x.y.z>.tgz`
+- if you use [Helm Hub](https://hub.helm.sh/charts/talend/vault-sidecar-injector) / [Talend public helm charts registry](https://github.com/Talend/helm-charts-public): `export CHART_LOCATION=talend-public/vault-sidecar-injector`
+- if you install from the chart's folder: `export CHART_LOCATION=.`
 
 To see Chart content before installing it, perform a dry run first:
 
@@ -691,7 +693,7 @@ The following tables lists the configurable parameters of the `Vault Sidecar Inj
 | image.port       | Service main port    | 8443            |
 | image.pullPolicy   | Pull policy for docker image: IfNotPresent or Always       | IfNotPresent           |
 | image.serviceNameLabel   | Service Name. Must match label com.talend.service     | talend-vault-sidecar-injector      |
-| image.tag  | Version/tag of the docker image     | 4.0.0      |
+| image.tag  | Version/tag of the docker image     | 4.1.0      |
 | injectconfig.jobbabysitter.image.path   | Docker image path | everpeace/curl-jq |
 | injectconfig.jobbabysitter.image.pullPolicy | Pull policy for docker image: IfNotPresent or Always | IfNotPresent |
 | injectconfig.jobbabysitter.image.tag   | Version/tag of the docker image  | latest |
@@ -779,8 +781,8 @@ Following collectors are available:
   - go_memstats_lookups_total
   - ...
 
-![Grafana dashboard](doc/grafana-vault-sidecar-injector.png)
+![Grafana dashboard](https://github.com/Talend/vault-sidecar-injector/blob/master/doc/grafana-vault-sidecar-injector.png)
 
 ## List of changes
 
-Look at changes for Vault Sidecar Injector releases in [CHANGELOG](CHANGELOG.md) file.
+Look at changes for Vault Sidecar Injector releases in [CHANGELOG](https://github.com/Talend/vault-sidecar-injector/blob/master/CHANGELOG.md) file.

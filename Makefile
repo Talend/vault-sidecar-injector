@@ -1,4 +1,4 @@
-VERSION:=4.0.1
+VERSION:=4.1.0
 
 OWNER:=Talend
 REPO:=vault-sidecar-injector
@@ -16,7 +16,7 @@ LDFLAGS=-ldflags "-X=main.VERSION=$(VERSION)"
 all: release
 
 clean:
-	rm -f $(TARGET)*
+	rm -f target/*
 
 fmt:
 	gofmt -l -w $(SRC)
@@ -29,16 +29,23 @@ build: clean test
 	echo "Building ..."
 	GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -a -o $(TARGET)
 	cd target && sha512sum vaultinjector-webhook > vaultinjector-webhook.sha512
+
+package:
+	mkdir -p target && cd target
 	echo "Archive Helm chart ..."
-	mkdir -p vault-sidecar-injector && cp -R ../deploy/helm/* ./vault-sidecar-injector
-	tar czf vault-sidecar-injector-${VERSION}.tgz vault-sidecar-injector
+	mkdir -p vault-sidecar-injector && cp -R ../README.md ../deploy/helm/* ./vault-sidecar-injector
+	helm package vault-sidecar-injector
 	rm -R vault-sidecar-injector
 
 image:
-	echo "Build image ..."
+	echo "Build image from sources ..."
 	docker build -t talend/vault-sidecar-injector:${VERSION} .
 
-release: build
+image-from-build: build
+	echo "Build image from local build ..."
+	docker build -f Dockerfile.local -t talend/vault-sidecar-injector:${VERSION} .
+
+release: package image-from-build
 	cd target
 	echo "Releasing artifacts ..."
 	read -p "- Github user name to use for release: " username

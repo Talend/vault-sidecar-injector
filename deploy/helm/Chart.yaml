@@ -1,16 +1,16 @@
 apiVersion: v1
-name: talend-vault-sidecar-injector
-description: A Helm chart for Talend Vault Sidecar Injector
-version: 2.0.0-oss
+name: vault-sidecar-injector
+description: A Helm chart for Talend Vault Sidecar Injector (OSS)
+version: 2.1.0
 keywords:
    - Talend
    - vault
    - sidecar
-   - talend-vault-sidecar-injector
+   - vault-sidecar-injector
 home: https://www.talend.com/products/
 sources:
-   - https://github.com/Talend/
+   - https://github.com/Talend/vault-sidecar-injector
 maintainers:
    - name: Talend
      email: support@talend.com
-appVersion: 4.0.0
+appVersion: 4.1.0

@@ -15,7 +15,7 @@ revisionHistoryLimit: 3  # revision history limit in tiller / helm / k8s
 
 image:
   path: "talend/vault-sidecar-injector"  # Docker image path
-  tag: "4.0.0"  # Version/tag of the docker image
+  tag: "4.1.0"  # Version/tag of the docker image
   pullPolicy: IfNotPresent  # Pull policy for docker images: IfNotPresent or Always
   port: 8443  # service main port exposed by the docker image
   metricsPort: 9000  # metricsPort defines the port exposed by the docker image for metrics collection
