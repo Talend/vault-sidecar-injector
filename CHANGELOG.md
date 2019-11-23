@@ -1,6 +1,6 @@
 # Changelog for Vault Sidecar Injector
 
-## Release v4.1.0 - 2019-11-23
+## Release v4.1.0 - 2019-11-24
 
 - [VSI #12](https://github.com/Talend/vault-sidecar-injector/pull/12) - Image based on CentOS `7.7` and run as non-root, chart available on Helm Hub
 
