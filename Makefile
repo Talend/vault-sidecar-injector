@@ -46,7 +46,7 @@ image-from-build: build
 	echo "Build image from local build ..."
 	docker build -f Dockerfile.local -t talend/vault-sidecar-injector:${VERSION} .
 
-release: package image-from-build
+release: image-from-build package
 	cd target
 	echo "Releasing artifacts ..."
 	read -p "- Github user name to use for release: " username
