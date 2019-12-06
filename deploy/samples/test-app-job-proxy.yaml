@@ -39,6 +39,8 @@ spec:
         sidecar.vault.talend.org/mode: "proxy"  # Enable only 'proxy' mode
         # Vault Sidecar Injector receive the pod spec: don't know whether it is a job or a deployment. Need annotation below.
         sidecar.vault.talend.org/workload: "job"
+      labels:
+        com.talend.application: test
     spec:
       restartPolicy: Never
       # custom serviceAccountName with role allowing to perform GET on pods (needed to poll for job's pod status)
@@ -51,10 +53,8 @@ spec:
             - "-c"
             - |
               set -e
-              while true; do
-                echo "Wait a while to make sure Vault Agent is started and authenticated..."
-                sleep 10
-              done
+              echo "Wait a while to make sure Vault Agent is started and authenticated..."
+              sleep 10
               echo "Job started"
               echo "Now using Vault Agent as a proxy to leverage Encryption as a Service feature"
               echo "Advantage: you do not need to deal with any Vault tokens and you just have to send requests to the local Vault Agent sidecar (available at 127.0.0.1) that will then forward everything to Vault server."
@@ -65,13 +65,13 @@ spec:
               echo
               b64Plaintext=$(echo "$plaintext" | base64)
               
-              ciphertext=$(curl -s -X POST --data "{\"plaintext\": \"$b64Plaintext\"}" http://127.0.0.1:9999/v1/transit/encrypt/test-key | jq --raw-output .data.ciphertext)
+              ciphertext=$(curl -s -X POST --data "{\"plaintext\": \"$b64Plaintext\"}" http://127.0.0.1:8200/v1/transit/encrypt/test-key | jq --raw-output .data.ciphertext)
               echo "Ciphertext"
               echo "=========="
               echo "$ciphertext"
               echo
               
-              cleartext=$(curl -s -X POST --data "{\"ciphertext\": \"$ciphertext\"}" http://127.0.0.1:9999/v1/transit/decrypt/test-key | jq --raw-output .data.plaintext)
+              cleartext=$(curl -s -X POST --data "{\"ciphertext\": \"$ciphertext\"}" http://127.0.0.1:8200/v1/transit/decrypt/test-key | jq --raw-output .data.plaintext)
               echo "Cleartext"
               echo "=========="
               echo "$cleartext" | base64 -d
