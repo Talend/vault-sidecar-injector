@@ -8,9 +8,13 @@ VAULT_POD="kubectl exec -i vault-0 -- sh -c"
 cat vault-server-policy-test.hcl | ${VAULT_POD} "VAULT_TOKEN=root vault policy write test_pol -"
 cat vault-server-policy-test2.hcl | ${VAULT_POD} "VAULT_TOKEN=root vault policy write test_pol2 -"
 
-# Enable KV v1 (K/ v2 is enabled with Vault server in dev mode whereas KV v1 is enabled in prod mode: https://www.vaultproject.io/docs/secrets/kv/kv-v2.html#setup)
+# Enable KV v1 (KV v2 is enabled with Vault server in dev mode whereas KV v1 is enabled in prod mode: https://www.vaultproject.io/docs/secrets/kv/kv-v2.html#setup)
 ${VAULT_POD} "VAULT_TOKEN=root vault secrets disable secret/"
 ${VAULT_POD} "VAULT_TOKEN=root vault secrets enable -version=1 -path=secret kv"
+
+# Enable Transit Secrets Engine and create a test key
+${VAULT_POD} "VAULT_TOKEN=root vault secrets enable transit" || true
+${VAULT_POD} "VAULT_TOKEN=root vault write -f transit/keys/test-key"
 
 # Enable Vault K8S Auth Method
 echo "-> Enable & set up Vault Kubernetes Auth Method"
@@ -38,3 +42,13 @@ ${VAULT_POD} "VAULT_TOKEN=root vault write auth/approle/role/test2 secret_id_ttl
 # Add some secrets
 ${VAULT_POD} "VAULT_TOKEN=root vault kv put secret/test/test-app-svc ttl=10s SECRET1=Batman SECRET2=BruceWayne"
 ${VAULT_POD} "VAULT_TOKEN=root vault kv put secret/test2/test-app2-svc ttl=5s SECRET1=my SECRET2=name SECRET3=is SECRET4=James"
+
+# List Auth Methods and Secrets Engines
+echo
+echo "Auth Methods"
+echo "============"
+${VAULT_POD} "VAULT_TOKEN=root vault auth list -detailed"
+echo
+echo "Secrets Engines"
+echo "==============="
+${VAULT_POD} "VAULT_TOKEN=root vault secrets list -detailed"

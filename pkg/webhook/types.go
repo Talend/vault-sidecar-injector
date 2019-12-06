@@ -19,9 +19,11 @@ import (
 	"talend/vault-sidecar-injector/pkg/config"
 )
 
-var vaultInjectorAnnotationKeys = []string{
+var vaultInjectorAnnotationKeys = [...]string{
 	vaultInjectorAnnotationInjectKey,
 	vaultInjectorAnnotationAuthMethodKey,
+	vaultInjectorAnnotationModeKey,
+	vaultInjectorAnnotationProxyPortKey,
 	vaultInjectorAnnotationRoleKey,
 	vaultInjectorAnnotationSATokenKey,
 	vaultInjectorAnnotationSecretsPathKey,
@@ -33,18 +35,25 @@ var vaultInjectorAnnotationKeys = []string{
 	vaultInjectorAnnotationStatusKey,
 }
 
+var vaultInjectorModes = [...]string{
+	vaultInjectorModeSecrets,
+	vaultInjectorModeProxy,
+}
+
 // VaultInjector : Webhook Server entity
 type VaultInjector struct {
 	*config.InjectionConfig
 	Server *http.Server
 }
 
-// Struct to carry computed placeholders' values
-type sidecarPlaceholders struct {
+// Struct to carry computed placeholders' values and context info for current injection
+type sidecarContext struct {
+	modes                          map[string]bool
 	k8sDefaultSATokenVolumeName    string
 	vaultInjectorSATokenVolumeName string
 	vaultAuthMethod                string
 	vaultRole                      string
+	proxy                          string
 	templates                      string
 }
 

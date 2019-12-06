@@ -47,6 +47,7 @@ func main() {
 	flag.StringVar(&parameters.AppLabelKey, "appLabelKey", "application.name", "key for application label")
 	flag.StringVar(&parameters.AppServiceLabelKey, "appServiceLabelKey", "service.name", "key for application's service label")
 	flag.StringVar(&parameters.SidecarCfgFile, "sidecarcfgfile", config.ConfigFilesPath+"/sidecarconfig.yaml", "file containing the mutation configuration (initcontainers, sidecars, volumes, ...)")
+	flag.StringVar(&parameters.ProxyCfgFile, "proxycfgfile", config.ConfigFilesPath+"/proxyconfig.hcl", "file containing Vault proxy configuration")
 	flag.StringVar(&parameters.TemplateBlockFile, "tmplblockfile", config.ConfigFilesPath+"/templateblock.hcl", "file containing the template block")
 	flag.StringVar(&parameters.TemplateDefaultFile, "tmpldefaultfile", config.ConfigFilesPath+"/templatedefault.tmpl", "file containing the default template")
 	flag.StringVar(&parameters.PodLifecycleHooksFile, "podlchooksfile", config.ConfigFilesPath+"/podlifecyclehooks.yaml", "file containing the lifecycle hooks to inject in the requesting pod")

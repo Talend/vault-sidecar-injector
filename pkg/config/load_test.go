@@ -23,12 +23,14 @@ import (
 )
 
 const (
+	proxyCfgFileResolved    = "cache {\n    use_auto_auth_token = true\n}\n\nlistener \"tcp\" {\n    address = \"127.0.0.1:<APPSVC_PROXY_PORT>\"\n    tls_disable = true\n}"
 	templateBlockResolved   = "template {\n    destination = \"/opt/talend/secrets/<APPSVC_SECRETS_DESTINATION>\"\n    contents = <<EOH\n    <APPSVC_TEMPLATE_CONTENT>\n    EOH\n    command = \"<APPSVC_TEMPLATE_COMMAND_TO_RUN>\"\n    wait {\n    min = \"1s\"\n    max = \"2s\"\n    }\n}"
 	templateDefaultResolved = "{{ with secret \"<APPSVC_VAULT_SECRETS_PATH>\" }}{{ range \\$k, \\$v := .Data }}\n{{ \\$k }}={{ \\$v }}\n{{ end }}{{ end }}"
 )
 
 type inputLoaded struct {
 	sidecarCfgFile        string
+	proxyCfgFile          string
 	templateBlockFile     string
 	templateDefaultFile   string
 	podLifecycleHooksFile string
@@ -36,6 +38,7 @@ type inputLoaded struct {
 
 type expectedLoad struct {
 	sidecarCfgFileResolved        string
+	proxyCfgFileResolved          string
 	templateBlockResolved         string
 	templateDefaultResolved       string
 	podLifecycleHooksFileResolved string
@@ -49,12 +52,14 @@ func TestLoadConfig(t *testing.T) {
 		{
 			inputLoaded{
 				"../../test/sidecarconfig.yaml",
+				"../../test/proxyconfig.hcl",
 				"../../test/tmplblock.hcl",
 				"../../test/tmpldefault.tmpl",
 				"../../test/podlifecyclehooks.yaml",
 			},
 			expectedLoad{
 				"../../test/sidecarconfig.yaml.resolved",
+				proxyCfgFileResolved,
 				templateBlockResolved,
 				templateDefaultResolved,
 				"../../test/podlifecyclehooks.yaml.resolved",
@@ -68,6 +73,7 @@ func TestLoadConfig(t *testing.T) {
 				0, 0, "", "",
 				"", "", "",
 				table.sidecarCfgFile,
+				table.proxyCfgFile,
 				table.templateBlockFile,
 				table.templateDefaultFile,
 				table.podLifecycleHooksFile,
@@ -78,6 +84,7 @@ func TestLoadConfig(t *testing.T) {
 		}
 
 		// Verify strings
+		assert.Equal(t, table.proxyCfgFileResolved, injectionCfg.ProxyConfig)
 		assert.Equal(t, table.templateBlockResolved, injectionCfg.TemplateBlock)
 		assert.Equal(t, table.templateDefaultResolved, injectionCfg.TemplateDefaultTmpl)
 

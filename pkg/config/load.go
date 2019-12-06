@@ -36,6 +36,13 @@ func Load(whSvrParams WhSvrParameters) (*InjectionConfig, error) {
 		return nil, err
 	}
 
+	// Load Vault proxy config
+	proxyConfig, err := loadString(whSvrParams.ProxyCfgFile)
+	if err != nil {
+		klog.Errorf("Failed to load proxy configuration: %v", err)
+		return nil, err
+	}
+
 	// Load template
 	templateBlock, err := loadString(whSvrParams.TemplateBlockFile)
 	if err != nil {
@@ -63,6 +70,7 @@ func Load(whSvrParams WhSvrParameters) (*InjectionConfig, error) {
 		ApplicationLabelKey:              whSvrParams.AppLabelKey,
 		ApplicationServiceLabelKey:       whSvrParams.AppServiceLabelKey,
 		SidecarConfig:                    &sidecarConfig,
+		ProxyConfig:                      proxyConfig,
 		TemplateBlock:                    templateBlock,
 		TemplateDefaultTmpl:              templateDefaultTmpl,
 		PodslifecycleHooks:               &hooks,

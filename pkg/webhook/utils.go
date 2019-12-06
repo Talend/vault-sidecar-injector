@@ -121,11 +121,40 @@ Loop:
 	}
 
 	if secretsVolMountPath == "" {
-		klog.Errorf("Volume %s not found in submitted pod", appSvcSecretsVolName)
-		return "", fmt.Errorf("Volume %s not found in submitted pod", appSvcSecretsVolName)
+		klog.Errorf("Volume Mount %s not found in submitted pod", appSvcSecretsVolName)
+		return "", fmt.Errorf("Volume Mount %s not found in submitted pod", appSvcSecretsVolName)
 	}
 
 	return secretsVolMountPath, nil
+}
+
+func getModes(requestedModes []string, modes map[string]bool) {
+	// Init modes for current injection context
+	for _, mode := range vaultInjectorModes {
+		modes[mode] = false
+	}
+
+	requestedModesNum := len(requestedModes)
+
+	if requestedModesNum > 0 {
+		if requestedModesNum == 1 && requestedModes[0] == "" { // If no mode(s) provided then only enable "secrets" mode
+			modes[vaultInjectorModeSecrets] = true
+		} else {
+			// Look at requested modes, ignore and remove unsupported values
+			for _, requestedMode := range requestedModes {
+				switch requestedMode {
+				case vaultInjectorModeSecrets, vaultInjectorModeProxy:
+					modes[requestedMode] = true
+				default:
+					klog.Warningf("Ignore unsupported requested Vault Sidecar Injector mode: %s", requestedMode)
+				}
+			}
+		}
+	} else { // If no mode(s) provided then only enable "secrets" mode
+		modes[vaultInjectorModeSecrets] = true
+	}
+
+	klog.Infof("Modes: %+v", modes)
 }
 
 func updateAnnotation(target map[string]string, added map[string]string) (patch []patchOperation) {
