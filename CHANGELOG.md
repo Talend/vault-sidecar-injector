@@ -1,6 +1,6 @@
 # Changelog for Vault Sidecar Injector
 
-## Release v5.0.0 - 2019-12-xx
+## Release v5.0.0 - 2019-12-06
 
 - [VSI #13](https://github.com/Talend/vault-sidecar-injector/pull/13) - New [Proxy](https://github.com/Talend/vault-sidecar-injector/blob/master/doc/Discovering-Vault-Sidecar-Injector-Proxy.md) mode. Injected Vault Agent sidecar can act as a local proxy forwarding application requests to Vault server.
 
