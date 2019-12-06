@@ -3,16 +3,16 @@ containers:
   - sh
   - -c
   - |
-    podDesc=$(curl -s -X GET -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt https://$KUBERNETES_SERVICE_HOST/api/v1/namespaces/$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)/pods/$POD_NAME?pretty=false)
-    retCode=$(echo $podDesc | jq .code)
+    jwt_sa_token=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+    pod_ns=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
+    retCode=$(curl -s -X GET -H "Authorization: Bearer $jwt_sa_token" --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt https://$KUBERNETES_SERVICE_HOST/api/v1/namespaces/$pod_ns/pods/$POD_NAME?pretty=false | jq .code)
     if [ $retCode = "403" ]; then
-      echo $podDesc | jq .message
+      curl -s -X GET -H "Authorization: Bearer $jwt_sa_token" --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt https://$KUBERNETES_SERVICE_HOST/api/v1/namespaces/$pod_ns/pods/$POD_NAME?pretty=false | jq .message
       exit 1
     fi
 
     while true; do
-      cntStatus=$(curl -s -X GET -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt https://$KUBERNETES_SERVICE_HOST/api/v1/namespaces/$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)/pods/$POD_NAME?pretty=false | jq -c --raw-output '.status.containerStatuses[] | select(.name == "<APP_JOB_CNT_NAME>").state | keys[0]')
-      #echo $cntStatus
+      cntStatus=$(curl -s -X GET -H "Authorization: Bearer $jwt_sa_token" --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt https://$KUBERNETES_SERVICE_HOST/api/v1/namespaces/$pod_ns/pods/$POD_NAME?pretty=false | jq -c --raw-output '.status.containerStatuses[] | select(.name == "<APP_JOB_CNT_NAME>").state | keys[0]')
       if [ $cntStatus = "terminated" ]; then
         echo "=> job container terminated: send signal"
         touch /home/vault/vault-sidecars-signal-terminate
@@ -57,6 +57,8 @@ containers:
         }
       }
     }
+
+    <APPSVC_PROXY_CONFIG>
 
     <APPSVC_TEMPLATES>
     EOF
@@ -106,3 +108,6 @@ volumes:
 - emptyDir:
     medium: Memory
   name: vault-token
+- emptyDir:
+    medium: Memory
+  name: secrets

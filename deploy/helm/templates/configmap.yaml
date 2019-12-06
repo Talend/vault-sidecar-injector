@@ -28,6 +28,15 @@ data:
     {{`{{ with secret "<APPSVC_VAULT_SECRETS_PATH>" }}{{ range \$k, \$v := .Data }}
     {{ \$k }}={{ \$v }}
     {{ end }}{{ end }}`}}
+  proxyconfig.hcl: |
+    cache {
+      use_auto_auth_token = true
+    }
+
+    listener "tcp" {
+      address = "127.0.0.1:<APPSVC_PROXY_PORT>"
+      tls_disable = true
+    }
   sidecarconfig.yaml: |
     {{- if .Values.injectconfig.securityContext }}
     securityContext:
@@ -110,6 +119,8 @@ data:
               }
             }
 
+            <APPSVC_PROXY_CONFIG>
+
             <APPSVC_TEMPLATES>
             EOF
             elif [ $vault_auth_method = "approle" ]; then
@@ -131,6 +142,8 @@ data:
                 }
               }
             }
+
+            <APPSVC_PROXY_CONFIG>
 
             <APPSVC_TEMPLATES>
             EOF
@@ -163,9 +176,11 @@ data:
                   export VAULT_TOKEN=$(cat /home/vault/.vault-token);
                   vault token revoke {{ include "talend-vault-sidecar-injector.vault.cert.skip.verify" .Values }} -self;
         volumeMounts:
+            # Mount path where Vault token retrieved by Vault Agent is stored
           - name: vault-token
             mountPath: /home/vault
-            # This volume must be defined in application's manifest (used to share the secrets file(s))
+            # Mount path used to share secrets. The associated volume is expected to be defined in application's manifest but in case it is not,
+            # a default 'secrets' volume will be injected in the requesting pod (see definition below) so that mutation process does not fail.
           - name: secrets
             mountPath: /opt/talend/secrets
             # The name's value will be overridden by the webhook to point to container's service account volume to use for Vault authentication.
@@ -180,3 +195,7 @@ data:
       - name: vault-token
         emptyDir:
           medium: Memory
+      # Note: if 'secrets' volume is defined in pod's manifest then it will be considered instead of the default definition below
+      - name: secrets
+          emptyDir:
+            medium: Memory

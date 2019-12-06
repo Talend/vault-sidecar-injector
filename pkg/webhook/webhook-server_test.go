@@ -42,6 +42,7 @@ func TestMutate(t *testing.T) {
 			0, 0, "", "",
 			"sidecar.vault.talend.org", "com.talend.application", "com.talend.service",
 			"../../test/sidecarconfig.yaml",
+			"../../test/proxyconfig.hcl",
 			"../../test/tmplblock.hcl",
 			"../../test/tmpldefault.tmpl",
 			"../../test/podlifecyclehooks.yaml",
@@ -130,7 +131,7 @@ func TestMutate(t *testing.T) {
 							"command": []interface{}{
 								"sh",
 								"-c",
-								"cat \u003c\u003cEOF \u003e vault-agent-config.hcl\npid_file = \"/home/vault/pidfile\"\n\nauto_auth {\n  method \"kubernetes\" {\n    mount_path = \"auth/kubernetes\"\n    config = {\n      role = \"test-app-1\"\n      token_path = \"/var/run/secrets/talend/vault-sidecar-injector/serviceaccount/token\"\n    }\n  }\n\n  sink \"file\" {\n    config = {\n      path = \"/home/vault/.vault-token\"\n    }\n  }\n}\n\ntemplate {\n    destination = \"/opt/talend/secrets/secrets.properties\"\n    contents = <<EOH\n    {{ with secret \"secret/test-app-1/test-app-1-svc\" }}{{ range \\$k, \\$v := .Data }}\n{{ \\$k }}={{ \\$v }}\n{{ end }}{{ end }}\n    EOH\n    command = \"\"\n    wait {\n    min = \"1s\"\n    max = \"2s\"\n    }\n}\n\nEOF\nworkload_is_job=\"false\"\nif [ $workload_is_job = \"true\" ]; then\n  docker-entrypoint.sh agent -config=vault-agent-config.hcl -log-level=info &\n  while true; do\n    if [ -f \"/home/vault/vault-sidecars-signal-terminate\" ]; then\n      echo \"=> exit (signal received)\"\n      export VAULT_TOKEN=$(cat /home/vault/.vault-token);\n      vault token revoke -self;\n      exit 0\n    fi\n    sleep 2\n  done\nelse\n  docker-entrypoint.sh agent -config=vault-agent-config.hcl -log-level=info\nfi\n",
+								"cat \u003c\u003cEOF \u003e vault-agent-config.hcl\npid_file = \"/home/vault/pidfile\"\n\nauto_auth {\n  method \"kubernetes\" {\n    mount_path = \"auth/kubernetes\"\n    config = {\n      role = \"test-app-1\"\n      token_path = \"/var/run/secrets/talend/vault-sidecar-injector/serviceaccount/token\"\n    }\n  }\n\n  sink \"file\" {\n    config = {\n      path = \"/home/vault/.vault-token\"\n    }\n  }\n}\n\n\n\ntemplate {\n    destination = \"/opt/talend/secrets/secrets.properties\"\n    contents = <<EOH\n    {{ with secret \"secret/test-app-1/test-app-1-svc\" }}{{ range \\$k, \\$v := .Data }}\n{{ \\$k }}={{ \\$v }}\n{{ end }}{{ end }}\n    EOH\n    command = \"\"\n    wait {\n    min = \"1s\"\n    max = \"2s\"\n    }\n}\n\nEOF\nworkload_is_job=\"false\"\nif [ $workload_is_job = \"true\" ]; then\n  docker-entrypoint.sh agent -config=vault-agent-config.hcl -log-level=info &\n  while true; do\n    if [ -f \"/home/vault/vault-sidecars-signal-terminate\" ]; then\n      echo \"=> exit (signal received)\"\n      export VAULT_TOKEN=$(cat /home/vault/.vault-token);\n      vault token revoke -self;\n      exit 0\n    fi\n    sleep 2\n  done\nelse\n  docker-entrypoint.sh agent -config=vault-agent-config.hcl -log-level=info\nfi\n",
 							},
 							"env": []interface{}{
 								map[string]interface{}{"name": "SKIP_SETCAP", "value": "true"},

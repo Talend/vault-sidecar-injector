@@ -28,6 +28,7 @@ type WhSvrParameters struct {
 	AppLabelKey           string // key for application label
 	AppServiceLabelKey    string // key for application's service label
 	SidecarCfgFile        string // path to sidecar injector configuration file
+	ProxyCfgFile          string // path to Vault proxy configuration file
 	TemplateBlockFile     string // path to template file
 	TemplateDefaultFile   string // path to default template content file
 	PodLifecycleHooksFile string // path to pod's lifecycle hooks file
@@ -53,6 +54,7 @@ type InjectionConfig struct {
 	ApplicationLabelKey              string            // key for application label
 	ApplicationServiceLabelKey       string            // key for application's service label
 	SidecarConfig                    *SidecarConfig    // sidecar injector configuration
+	ProxyConfig                      string            // Vault proxy configuration
 	TemplateBlock                    string            // template
 	TemplateDefaultTmpl              string            // default template content
 	PodslifecycleHooks               *LifecycleHooks   // pod's lifecycle hooks

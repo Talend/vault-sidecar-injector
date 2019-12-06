@@ -14,16 +14,16 @@ containers:
       - "sh"
       - "-c"
       - |
-        podDesc=$(curl -s -X GET -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt https://$KUBERNETES_SERVICE_HOST/api/v1/namespaces/$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)/pods/$POD_NAME?pretty=false)
-        retCode=$(echo $podDesc | jq .code)
+        jwt_sa_token=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+        pod_ns=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
+        retCode=$(curl -s -X GET -H "Authorization: Bearer $jwt_sa_token" --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt https://$KUBERNETES_SERVICE_HOST/api/v1/namespaces/$pod_ns/pods/$POD_NAME?pretty=false | jq .code)
         if [ $retCode = "403" ]; then
-          echo $podDesc | jq .message
+          curl -s -X GET -H "Authorization: Bearer $jwt_sa_token" --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt https://$KUBERNETES_SERVICE_HOST/api/v1/namespaces/$pod_ns/pods/$POD_NAME?pretty=false | jq .message
           exit 1
         fi
 
         while true; do
-          cntStatus=$(curl -s -X GET -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt https://$KUBERNETES_SERVICE_HOST/api/v1/namespaces/$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)/pods/$POD_NAME?pretty=false | jq -c --raw-output '.status.containerStatuses[] | select(.name == "<APP_JOB_CNT_NAME>").state | keys[0]')
-          #echo $cntStatus
+          cntStatus=$(curl -s -X GET -H "Authorization: Bearer $jwt_sa_token" --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt https://$KUBERNETES_SERVICE_HOST/api/v1/namespaces/$pod_ns/pods/$POD_NAME?pretty=false | jq -c --raw-output '.status.containerStatuses[] | select(.name == "<APP_JOB_CNT_NAME>").state | keys[0]')
           if [ $cntStatus = "terminated" ]; then
             echo "=> job container terminated: send signal"
             touch /home/vault/vault-sidecars-signal-terminate
@@ -69,6 +69,8 @@ containers:
           }
         }
 
+        <APPSVC_PROXY_CONFIG>
+
         <APPSVC_TEMPLATES>
         EOF
         workload_is_job="<APP_JOB>"
@@ -96,9 +98,11 @@ containers:
               export VAULT_TOKEN=$(cat /home/vault/.vault-token);
               vault token revoke -self;
     volumeMounts:
+      # Mount path where Vault token retrieved by Vault Agent is stored
       - name: vault-token
         mountPath: /home/vault
-        # This volume must be defined in application's manifest (used to share the secrets file(s))
+        # Mount path used to share secrets. The associated volume is expected to be defined in application's manifest but in case it is not,
+        # a default 'secrets' volume will be injected in the requesting pod (see definition below) so that mutation process does not fail.
       - name: secrets
         mountPath: /opt/talend/secrets
         # The name's value will be overridden by the webhook to point to container's service account volume to use for Vault authentication.
@@ -107,5 +111,9 @@ containers:
         readOnly: true
 volumes:
   - name: vault-token
+    emptyDir:
+      medium: Memory
+  # Note: if 'secrets' volume is defined in pod's manifest then it will be considered instead of the default definition below
+  - name: secrets
     emptyDir:
       medium: Memory
