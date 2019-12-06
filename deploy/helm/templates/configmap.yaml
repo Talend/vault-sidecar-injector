@@ -70,14 +70,15 @@ data:
               cntStatus=$(curl -s -X GET -H "Authorization: Bearer $jwt_sa_token" --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt https://$KUBERNETES_SERVICE_HOST/api/v1/namespaces/$pod_ns/pods/$POD_NAME?pretty=false | jq -c --raw-output '.status.containerStatuses[] | select(.name == "<APP_JOB_CNT_NAME>").state | keys[0]')
               if [ $cntStatus = "terminated" ]; then
                 echo "=> job container terminated: send signal"
-                touch /home/vault/vault-sidecars-signal-terminate
+                touch /opt/talend/tvsi/vault-sidecars-signal-terminate
                 exit 0
               fi
               sleep 2
             done
         volumeMounts:
-          - name: vault-token
-            mountPath: /home/vault
+            # Mount path used by injected sidecars to share data
+          - name: tvsi-shared
+            mountPath: /opt/talend/tvsi
             # The name's value will be overridden by the webhook
           - name: K8S_SA_SECRETS_VOL_NAME
             mountPath: /var/run/secrets/kubernetes.io/serviceaccount
@@ -155,7 +156,7 @@ data:
             if [ $workload_is_job = "true" ]; then
               docker-entrypoint.sh agent -config=vault-agent-config.hcl {{ include "talend-vault-sidecar-injector.vault.cert.skip.verify" .Values }} -log-level={{- .Values.injectconfig.vault.loglevel }} &
               while true; do
-                if [ -f "/home/vault/vault-sidecars-signal-terminate" ]; then
+                if [ -f "/opt/talend/tvsi/vault-sidecars-signal-terminate" ]; then
                   echo "=> exit (signal received)"
                   export VAULT_TOKEN=$(cat /home/vault/.vault-token);
                   vault token revoke {{ include "talend-vault-sidecar-injector.vault.cert.skip.verify" .Values }} -self;
@@ -176,9 +177,9 @@ data:
                   export VAULT_TOKEN=$(cat /home/vault/.vault-token);
                   vault token revoke {{ include "talend-vault-sidecar-injector.vault.cert.skip.verify" .Values }} -self;
         volumeMounts:
-            # Mount path where Vault token retrieved by Vault Agent is stored
-          - name: vault-token
-            mountPath: /home/vault
+            # Mount path used by injected sidecars to share data
+          - name: tvsi-shared
+            mountPath: /opt/talend/tvsi
             # Mount path used to share secrets. The associated volume is expected to be defined in application's manifest but in case it is not,
             # a default 'secrets' volume will be injected in the requesting pod (see definition below) so that mutation process does not fail.
           - name: secrets
@@ -192,7 +193,7 @@ data:
 {{ toYaml .Values.injectconfig.vault.resources | indent 10 }}
         {{- end }}
     volumes:
-      - name: vault-token
+      - name: tvsi-shared
         emptyDir:
           medium: Memory
       # Note: if 'secrets' volume is defined in pod's manifest then it will be considered instead of the default definition below

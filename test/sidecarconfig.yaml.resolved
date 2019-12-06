@@ -15,7 +15,7 @@ containers:
       cntStatus=$(curl -s -X GET -H "Authorization: Bearer $jwt_sa_token" --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt https://$KUBERNETES_SERVICE_HOST/api/v1/namespaces/$pod_ns/pods/$POD_NAME?pretty=false | jq -c --raw-output '.status.containerStatuses[] | select(.name == "<APP_JOB_CNT_NAME>").state | keys[0]')
       if [ $cntStatus = "terminated" ]; then
         echo "=> job container terminated: send signal"
-        touch /home/vault/vault-sidecars-signal-terminate
+        touch /opt/talend/tvsi/vault-sidecars-signal-terminate
         exit 0
       fi
       sleep 2
@@ -30,8 +30,8 @@ containers:
   name: tvsi-job-babysitter
   resources: {}
   volumeMounts:
-  - mountPath: /home/vault
-    name: vault-token
+  - mountPath: /opt/talend/tvsi
+    name: tvsi-shared
   - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
     name: K8S_SA_SECRETS_VOL_NAME
     readOnly: true
@@ -66,7 +66,7 @@ containers:
     if [ $workload_is_job = "true" ]; then
       docker-entrypoint.sh agent -config=vault-agent-config.hcl -log-level=info &
       while true; do
-        if [ -f "/home/vault/vault-sidecars-signal-terminate" ]; then
+        if [ -f "/opt/talend/tvsi/vault-sidecars-signal-terminate" ]; then
           echo "=> exit (signal received)"
           export VAULT_TOKEN=$(cat /home/vault/.vault-token);
           vault token revoke -self;
@@ -95,8 +95,8 @@ containers:
   name: tvsi-vault-agent
   resources: {}
   volumeMounts:
-  - mountPath: /home/vault
-    name: vault-token
+  - mountPath: /opt/talend/tvsi
+    name: tvsi-shared
   - mountPath: /opt/talend/secrets
     name: secrets
   - mountPath: /var/run/secrets/talend/vault-sidecar-injector/serviceaccount
@@ -107,7 +107,7 @@ securityContext: null
 volumes:
 - emptyDir:
     medium: Memory
-  name: vault-token
+  name: tvsi-shared
 - emptyDir:
     medium: Memory
   name: secrets
