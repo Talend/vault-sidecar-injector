@@ -197,5 +197,5 @@ data:
           medium: Memory
       # Note: if 'secrets' volume is defined in pod's manifest then it will be considered instead of the default definition below
       - name: secrets
-          emptyDir:
-            medium: Memory
+        emptyDir:
+          medium: Memory
