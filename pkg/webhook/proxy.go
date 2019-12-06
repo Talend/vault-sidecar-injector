@@ -16,8 +16,6 @@ package webhook
 
 import (
 	"strings"
-
-	"k8s.io/klog"
 )
 
 // Vault Sidecar Injector: Proxy Mode
@@ -29,11 +27,6 @@ func (vaultInjector *VaultInjector) proxyMode(annotations map[string]string) (st
 	}
 
 	proxyConfig := strings.Replace(vaultInjector.ProxyConfig, vaultProxyPortPlaceholder, proxyPort, -1)
-
-	// TODO - to remove
-	klog.Infof("vaultInjector.ProxyConfig: %s", vaultInjector.ProxyConfig)
-	klog.Infof("proxyConfig: %s", proxyConfig)
-	// TODO - to remove
 
 	return proxyConfig, nil
 }
