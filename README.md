@@ -814,7 +814,7 @@ This command removes all the Kubernetes components associated with the chart and
 
 ## Configuration
 
-The following tables lists the configurable parameters of the `Vault Sidecar Injector` chart and their default values.
+The following table lists the configurable parameters of the `Vault Sidecar Injector` chart and their default values.
 
 | Parameter    | Description          | Default                                                         |
 |:-------------|:---------------------|:----------------------------------------------------------------|
@@ -868,7 +868,7 @@ The following tables lists the configurable parameters of the `Vault Sidecar Inj
 | service.name                                    | Service name            | talend-vault-sidecar-injector                                   |
 | service.prefixWithHelmRelease                   | Service name to be prefixed with Helm release name                                       | false                                                           |
 | service.type                        | Kubernetes service type: ClusterIP, NodePort, LoadBalancer, ExternalName  | ClusterIP    |
-| vault.addr                                      | Address of Vault server    | https://vault:8200       |
+| vault.addr                          | Address of Vault server    | `null` - To be provided at deployment time (e.g.: https://vault:8200)   |
 | vault.authMethods.approle.path      | Path defined for AppRole Auth Method            | approle |
 | vault.authMethods.approle.roleid_filename    | Filename for role id    | approle_roleid   |
 | vault.authMethods.approle.secretid_filename  | Filename for secret id  | approle_secretid |

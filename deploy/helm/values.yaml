@@ -133,7 +133,7 @@ probes:
 # ----------------------------------------------------------------------------
 
 vault:
-  addr: https://vault:8200  # Address of Vault server
+  addr: ~  # Address of Vault server
   authMethods:
     kubernetes:
       path: kubernetes # Path defined for Kubernetes Auth Method

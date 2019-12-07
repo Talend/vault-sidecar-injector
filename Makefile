@@ -1,12 +1,13 @@
-VERSION:=5.0.0
+RELEASE_VERSION:=5.0.1	# Release version
+VSI_VERSION:=5.0.0		# Version of VSI binary and image
 
 OWNER:=Talend
 REPO:=vault-sidecar-injector
 TARGET:=target/vaultinjector-webhook
 SRC:=$(shell find . -type f -name '*.go' -not -path "./vendor/*")
 
-# Inject version into code at build time
-LDFLAGS=-ldflags "-X=main.VERSION=$(VERSION)"
+# Inject VSI version into code at build time
+LDFLAGS=-ldflags "-X=main.VERSION=$(VSI_VERSION)"
 
 .SILENT: ;  	# No need for @
 .ONESHELL: ; 	# Single shell for a target (required to properly use all of our local variables)
@@ -40,18 +41,18 @@ package:
 
 image:
 	echo "Build image from sources ..."
-	docker build -t talend/vault-sidecar-injector:${VERSION} .
+	docker build -t talend/vault-sidecar-injector:${VSI_VERSION} .
 
 image-from-build: build
 	echo "Build image from local build ..."
-	docker build -f Dockerfile.local -t talend/vault-sidecar-injector:${VERSION} .
+	docker build -f Dockerfile.local -t talend/vault-sidecar-injector:${VSI_VERSION} .
 
 release: image-from-build package
 	cd target
 	echo "Releasing artifacts ..."
 	read -p "- Github user name to use for release: " username
 	echo "- Creating release"
-	id=$$(curl -u $$username -s -X POST "https://api.github.com/repos/${OWNER}/${REPO}/releases" -d '{"tag_name": "v'${VERSION}'", "name": "v'${VERSION}'", "draft": true, "body": ""}' | jq '.id')
+	id=$$(curl -u $$username -s -X POST "https://api.github.com/repos/${OWNER}/${REPO}/releases" -d '{"tag_name": "v'${RELEASE_VERSION}'", "name": "v'${RELEASE_VERSION}'", "draft": true, "body": ""}' | jq '.id')
 	if [ "$$?" -ne 0 ]; then \
 		echo "Unable to create release"; \
 		echo $$id; \
