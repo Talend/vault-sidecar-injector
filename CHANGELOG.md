@@ -1,6 +1,6 @@
 # Changelog for Vault Sidecar Injector
 
-## Release v5.1.0 - 2019-12-xx
+## Release v5.1.0 - 2019-12-09
 
 - [VSI #14](https://github.com/Talend/vault-sidecar-injector/pull/14) - Minor updates to Helm chart and documentation.
 
