@@ -16,6 +16,8 @@ spec:
       name: "{{ include "talend-vault-sidecar-injector.fullname" . }}-certs"
     spec:
       restartPolicy: Never
+      imagePullSecrets:
+        - name: {{ include "talend-vault-sidecar-injector.registryKey" .Values }}
       serviceAccountName: talend-vault-sidecar-injector
       containers:
       - name: "{{.Release.Name}}-job-certs"

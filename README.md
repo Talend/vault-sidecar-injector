@@ -828,6 +828,7 @@ The following table lists the configurable parameters of the `Vault Sidecar Inje
 | image.pullPolicy   | Pull policy for docker image: IfNotPresent or Always       | IfNotPresent           |
 | image.serviceNameLabel   | Service Name. Must match label com.talend.service     | talend-vault-sidecar-injector      |
 | image.tag  | Version/tag of the docker image     | 5.0.0      |
+| imageRegistry  | Image registry |   |
 | injectconfig.jobbabysitter.image.path   | Docker image path | everpeace/curl-jq |
 | injectconfig.jobbabysitter.image.pullPolicy | Pull policy for docker image: IfNotPresent or Always | IfNotPresent |
 | injectconfig.jobbabysitter.image.tag   | Version/tag of the docker image  | latest |
@@ -858,6 +859,7 @@ The following table lists the configurable parameters of the `Vault Sidecar Inje
 | probes.readiness.periodSeconds                  | How often (in seconds) to perform the probe       | 20   |
 | probes.readiness.successThreshold      | Minimum consecutive successes for the probe to be considered successful after having failed  | 1  |
 | probes.readiness.timeoutSecon          | Number of seconds after which the probe times out  | 5   |
+| registryKey         | Name of Kubernetes secret for image registry                        |  |
 | replicaCount                        | Number of replicas | 3    |
 | resources.limits.cpu                | CPU resource limits                             | 250m         |
 | resources.limits.memory             | Memory resource limits                          | 256Mi        |

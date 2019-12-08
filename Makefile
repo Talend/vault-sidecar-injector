@@ -1,4 +1,4 @@
-RELEASE_VERSION:=5.0.1	# Release version
+RELEASE_VERSION:=5.1.0	# Release version
 VSI_VERSION:=5.0.0		# Version of VSI binary and image
 
 OWNER:=Talend
