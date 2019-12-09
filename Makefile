@@ -1,5 +1,5 @@
-RELEASE_VERSION:=5.1.0	# Release version
-VSI_VERSION:=5.0.0		# Version of VSI binary and image
+RELEASE_VERSION:=5.1.0
+VSI_VERSION:=5.0.0
 
 OWNER:=Talend
 REPO:=vault-sidecar-injector
@@ -58,6 +58,7 @@ release: image-from-build package
 		echo $$id; \
 		exit 1; \
 	fi
+	echo "- Release id=$$id"
 	echo
 	echo "- Publishing release binary"
 	for asset_file in $(shell ls ./target); do \
