@@ -16,6 +16,10 @@ spec:
       name: "{{ include "talend-vault-sidecar-injector.fullname" . }}-del"
     spec:
       restartPolicy: Never
+      {{- if .Values.registryKey }}
+      imagePullSecrets:
+        - name: {{ .Values.registryKey }}
+      {{- end }}
       serviceAccountName: talend-vault-sidecar-injector
       containers:
       - name: "{{.Release.Name}}-job-del"

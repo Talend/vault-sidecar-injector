@@ -814,7 +814,7 @@ This command removes all the Kubernetes components associated with the chart and
 
 ## Configuration
 
-The following tables lists the configurable parameters of the `Vault Sidecar Injector` chart and their default values.
+The following table lists the configurable parameters of the `Vault Sidecar Injector` chart and their default values.
 
 | Parameter    | Description          | Default                                                         |
 |:-------------|:---------------------|:----------------------------------------------------------------|
@@ -828,6 +828,7 @@ The following tables lists the configurable parameters of the `Vault Sidecar Inj
 | image.pullPolicy   | Pull policy for docker image: IfNotPresent or Always       | IfNotPresent           |
 | image.serviceNameLabel   | Service Name. Must match label com.talend.service     | talend-vault-sidecar-injector      |
 | image.tag  | Version/tag of the docker image     | 5.0.0      |
+| imageRegistry  | Image registry |   |
 | injectconfig.jobbabysitter.image.path   | Docker image path | everpeace/curl-jq |
 | injectconfig.jobbabysitter.image.pullPolicy | Pull policy for docker image: IfNotPresent or Always | IfNotPresent |
 | injectconfig.jobbabysitter.image.tag   | Version/tag of the docker image  | latest |
@@ -858,6 +859,7 @@ The following tables lists the configurable parameters of the `Vault Sidecar Inj
 | probes.readiness.periodSeconds                  | How often (in seconds) to perform the probe       | 20   |
 | probes.readiness.successThreshold      | Minimum consecutive successes for the probe to be considered successful after having failed  | 1  |
 | probes.readiness.timeoutSecon          | Number of seconds after which the probe times out  | 5   |
+| registryKey         | Name of Kubernetes secret for image registry                        |  |
 | replicaCount                        | Number of replicas | 3    |
 | resources.limits.cpu                | CPU resource limits                             | 250m         |
 | resources.limits.memory             | Memory resource limits                          | 256Mi        |
@@ -868,7 +870,7 @@ The following tables lists the configurable parameters of the `Vault Sidecar Inj
 | service.name                                    | Service name            | talend-vault-sidecar-injector                                   |
 | service.prefixWithHelmRelease                   | Service name to be prefixed with Helm release name                                       | false                                                           |
 | service.type                        | Kubernetes service type: ClusterIP, NodePort, LoadBalancer, ExternalName  | ClusterIP    |
-| vault.addr                                      | Address of Vault server    | https://vault:8200       |
+| vault.addr                          | Address of Vault server    | `null` - To be provided at deployment time (e.g.: https://vault:8200)   |
 | vault.authMethods.approle.path      | Path defined for AppRole Auth Method            | approle |
 | vault.authMethods.approle.roleid_filename    | Filename for role id    | approle_roleid   |
 | vault.authMethods.approle.secretid_filename  | Filename for secret id  | approle_secretid |

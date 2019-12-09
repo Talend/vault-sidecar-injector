@@ -94,7 +94,7 @@ data:
           - name: SKIP_SETCAP
             value: "true"
           - name: VAULT_ADDR
-            value: {{ .Values.vault.addr }}
+            value: {{ required "Vault server's address must be specified" .Values.vault.addr | quote }}
         command:
           - "sh"
           - "-c"

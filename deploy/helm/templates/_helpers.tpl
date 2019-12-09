@@ -67,28 +67,28 @@ heritage: {{ .Release.Service }}
 Define the docker image (image.path:image.tag).
 */}}
 {{- define "talend-vault-sidecar-injector.image" -}}
-{{- printf "%s:%s" .image.path (default "latest" .image.tag) -}}
+{{- printf "%s%s:%s" (default "" .imageRegistry) .image.path (default "latest" .image.tag) -}}
 {{- end -}}
 
 {{/*
 Define the docker image for Job Babysitter sidecar container (image.path:image.tag).
 */}}
 {{- define "talend-vault-sidecar-injector.injectconfig.jobbabysitter.image" -}}
-{{- printf "%s:%s" .injectconfig.jobbabysitter.image.path (default "latest" .injectconfig.jobbabysitter.image.tag) -}}
+{{- printf "%s%s:%s" (default "" .imageRegistry) .injectconfig.jobbabysitter.image.path (default "latest" .injectconfig.jobbabysitter.image.tag) -}}
 {{- end -}}
 
 {{/*
 Define the docker image for Vault sidecar container (image.path:image.tag).
 */}}
 {{- define "talend-vault-sidecar-injector.injectconfig.vault.image" -}}
-{{- printf "%s:%s" .injectconfig.vault.image.path (default "latest" .injectconfig.vault.image.tag) -}}
+{{- printf "%s%s:%s" (default "" .imageRegistry) .injectconfig.vault.image.path (default "latest" .injectconfig.vault.image.tag) -}}
 {{- end -}}
 
 {{/*
 Define the docker image for pre-install hook (image.path:image.tag).
 */}}
 {{- define "talend-vault-sidecar-injector.hook.image" -}}
-{{- printf "%s:%s" .hook.image.path (default "latest" .hook.image.tag) -}}
+{{- printf "%s%s:%s" (default "" .imageRegistry) .hook.image.path (default "latest" .hook.image.tag) -}}
 {{- end -}}
 
 {{/*
