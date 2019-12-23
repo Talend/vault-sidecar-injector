@@ -120,7 +120,7 @@ Template below is used by default to fetch all secrets and create corresponding 
 ```
 <!-- {% endraw %}) -->
 
-Using annotation `sidecar.vault.talend.org/secrets-template` it is nevertheless possible to provide your own list of templates. For some examples have a look at the next section ([here](https://github.com/Talend/vault-sidecar-injector/blob/master/README.md#ask-for-secrets-hook-injection-custom-secrets-file-and-template) and [there](https://github.com/Talend/vault-sidecar-injector/blob/master/README.md#ask-for-secrets-hook-injection-several-custom-secrets-files-and-templates)).
+Using annotation `sidecar.vault.talend.org/secrets-template` it is nevertheless possible to provide your own list of templates. For some examples have a look at the next section ([here](https://github.com/Talend/vault-sidecar-injector/blob/master/README.md#secrets-mode---ask-for-secrets-hook-injection-custom-secrets-file-and-template) and [there](https://github.com/Talend/vault-sidecar-injector/blob/master/README.md#secrets-mode---ask-for-secrets-hook-injection-several-custom-secrets-files-and-templates)).
 
 #### Template's Syntax
 
@@ -575,7 +575,7 @@ spec:
 
 The provided [chart](https://github.com/Talend/vault-sidecar-injector/blob/master/deploy/helm) is intended to be deployed in a "system" namespace and only once as it handles all injection requests from any pods deployed in any namespaces. **It *shall not* be deployed in every namespaces**.
 
->**Note**: it is possible to deploy an instance in a given namespace **and to restrict injection to this same namespace** if necessary, **in particular in a dev environment where each team wants its own instance of `Vault Sidecar Injector` for testing purpose** with its dedicated configuration (including a dedicated Vault server). Refer to section [Installing the chart in a dev environment](https://github.com/Talend/vault-sidecar-injector/blob/master/README.md#Installing-the-chart-in-a-dev-environment) below.
+>**Note**: it is possible to deploy an instance in a given namespace **and to restrict injection to this same namespace** if necessary, **in particular in a dev environment where each team wants its own instance of `Vault Sidecar Injector` for testing purpose** with its dedicated configuration (including a dedicated Vault server). Refer to section [Installing the chart in a dev environment](https://github.com/Talend/vault-sidecar-injector/blob/master/README.md#installing-the-chart-in-a-dev-environment) below.
 
 ### Prerequisites
 
