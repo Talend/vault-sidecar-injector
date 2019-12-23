@@ -54,12 +54,11 @@ const (
 	templateTemplatesPlaceholder         = "<APPSVC_TEMPLATES>"
 	appSvcSecretsVolMountPathPlaceholder = "<APPSVC_SECRETS_VOL_MOUNTPATH>"
 
-	vaultK8sAuthMethod                = "kubernetes"         // Default auth method used by Vault Agent
-	appSvcSecretsVolName              = "secrets"            // Name of the volume shared between containers to store secrets file(s)
-	templateAppSvcDefaultDestination  = "secrets.properties" // Default secrets destination
-	k8sDefaultServiceAccountTokenPath = "/var/run/secrets/kubernetes.io/serviceaccount/token"
-	vaultDefaultSecretsEnginePath     = "secret" // Default path for Vault K/V Secrets Engine if no 'secrets-path' annotation
-	vaultProxyDefaultPort             = "8200"   // Default port to access local Vault proxy
+	vaultK8sAuthMethod               = "kubernetes"         // Default auth method used by Vault Agent
+	appSvcSecretsVolName             = "secrets"            // Name of the volume shared between containers to store secrets file(s)
+	templateAppSvcDefaultDestination = "secrets.properties" // Default secrets destination
+	vaultDefaultSecretsEnginePath    = "secret"             // Default path for Vault K/V Secrets Engine if no 'secrets-path' annotation
+	vaultProxyDefaultPort            = "8200"               // Default port to access local Vault proxy
 
 	//--- Job handling - Temporary mechanism until KEP https://github.com/kubernetes/enhancements/blob/master/keps/sig-apps/sidecarcontainers.md is implemented (and we migrate on appropriate version of k8s)
 	jobMonitoringContainerName     = "tvsi-job-babysitter" // Name of our specific sidecar container to inject in submitted jobs
