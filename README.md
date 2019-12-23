@@ -828,7 +828,7 @@ The following table lists the configurable parameters of the `Vault Sidecar Inje
 | image.port       | Service main port    | 8443            |
 | image.pullPolicy   | Pull policy for docker image: IfNotPresent or Always       | IfNotPresent           |
 | image.serviceNameLabel   | Service Name. Must match label com.talend.service     | talend-vault-sidecar-injector      |
-| image.tag  | Version/tag of the docker image     | 5.0.0      |
+| image.tag  | Version/tag of the docker image     | 5.0.1      |
 | imageRegistry  | Image registry |   |
 | injectconfig.jobbabysitter.image.path   | Docker image path | everpeace/curl-jq |
 | injectconfig.jobbabysitter.image.pullPolicy | Pull policy for docker image: IfNotPresent or Always | IfNotPresent |
