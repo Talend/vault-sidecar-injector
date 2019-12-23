@@ -13,6 +13,7 @@ spec:
     metadata:
       annotations:
         sidecar.vault.talend.org/inject: "true"
+        sidecar.vault.talend.org/role: "test"
         # This is the default template so no need to use 'secrets-template' annotation (only for regression testing here)
         sidecar.vault.talend.org/secrets-template: |
           {{ with secret "secret/test/test-app-svc" }}{{ range \$k, \$v := .Data }}
