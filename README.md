@@ -692,7 +692,7 @@ Depending on what you chose, define a `CHART_LOCATION` env var as follows:
 - if you use [Helm Hub](https://hub.helm.sh/charts/talend/vault-sidecar-injector) / [Talend's public Helm charts registry](https://talend.github.io/helm-charts-public):
 
 ```bash
-$ helm repo add talend https://talend.github.io/helm-charts-public
+$ helm repo add talend https://talend.github.io/helm-charts-public/stable
 $ helm repo update
 $ export CHART_LOCATION=talend/vault-sidecar-injector
 ```
