@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-app4
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      com.talend.application: test4
+      com.talend.service: test-app4-svc
+  template:
+    metadata:
+      annotations:
+        sidecar.vault.talend.org/inject: "true"
+        sidecar.vault.talend.org/role: "test"
+        # This is the default template so no need to use 'secrets-template' annotation (only for regression testing here)
+        sidecar.vault.talend.org/secrets-template: |
+          {{ with secret "secret/test/test-app-svc" }}{{ range \$k, \$v := .Data }}
+          {{ \$k }}={{ \$v }}
+          {{ end }}{{ end }}
+      labels:
+        com.talend.application: test4
+        com.talend.service: test-app4-svc
+    spec:
+      serviceAccountName: default
+      containers:
+        - name: test-app4-container
+          image: busybox:1.28
+          command:
+            - "sh"
+            - "-c"
+            - >
+              while true;do echo "My secrets are: $(cat /opt/talend/secrets/secrets.properties)"; sleep 5; done
+          volumeMounts:
+            - name: secrets
+              mountPath: /opt/talend/secrets
+      volumes:
+        - name: secrets
+          emptyDir:
+            medium: Memory

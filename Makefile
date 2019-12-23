@@ -1,5 +1,5 @@
-RELEASE_VERSION:=5.1.0
-VSI_VERSION:=5.0.0
+RELEASE_VERSION:=5.1.1
+VSI_VERSION:=5.0.1
 
 OWNER:=Talend
 REPO:=vault-sidecar-injector

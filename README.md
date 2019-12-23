@@ -95,7 +95,7 @@ Following annotations in requesting pods are supported:
 | `sidecar.vault.talend.org/secrets-destination` | O     | secrets   | "secrets.properties" | Comma-separated strings  | List of secrets filenames (without path), one per secrets path |
 | `sidecar.vault.talend.org/secrets-hook`        | O     | secrets   | | "true" / "on" / "yes" / "y" | If set, lifecycle hooks will be added to pod's container(s) to wait for secrets files |
 | `sidecar.vault.talend.org/secrets-path`        | O     | secrets   | "secret/<`com.talend.application` label>/<`com.talend.service` label>" | Comma-separated strings | List of secrets engines and path. If annotation not used, path is set from labels defined by `mutatingwebhook.annotations.appLabelKey`  and `mutatingwebhook.annotations.appServiceLabelKey` keys (refer to [configuration](https://github.com/Talend/vault-sidecar-injector/blob/master/README.md#configuration))      |
-| `sidecar.vault.talend.org/secrets-template`    | O     | secrets   | [Default template](https://github.com/Talend/vault-sidecar-injector/blob/master/README.md#default-template) | Comma-separated templates | Allow to override default template. Ignore `sidecar.vault.talend.org/secrets-path` annotation if set |
+| `sidecar.vault.talend.org/secrets-template`    | O     | secrets   | [Default template](https://github.com/Talend/vault-sidecar-injector/blob/master/README.md#default-template) | templates separated with `---` | Allow to override default template. Ignore `sidecar.vault.talend.org/secrets-path` annotation if set |
 | `sidecar.vault.talend.org/workload`   | O      | N/A               |  | "job" | Type of submitted workload |
 
 Upon successful injection, Vault Sidecar Injector will add annotation(s) to the requesting pods:
@@ -465,8 +465,8 @@ Several optional annotations to end up with:
 
 - Vault authentication using role `test-app-2` (value of `com.talend.application` label)
 - hook injected in application's container(s) to wait for secrets file availability
-- secrets fetched from Vault's path `secret/test-app-2/test-app-2-svc` using **several custom templates**
-- secrets to be stored into `/opt/talend/secrets/secrets.properties` and `/opt/talend/secrets/secrets2.properties`
+- secrets fetched from Vault's path `secret/test-app-2/test-app-2-svc` using **several custom templates** (use `---` as separation between them)
+- secrets to be stored into `/opt/talend/secrets/secrets.properties` (using first template) and `/opt/talend/secrets/secrets2.properties` (using second template)
 
 ```yaml
 apiVersion: apps/v1
@@ -490,7 +490,8 @@ spec:
           {{ if .Data.SECRET1 }}
           my_custom_key_name1={{ .Data.SECRET1 }}
           {{ end }}
-          {{ end }},
+          {{ end }}
+          ---
           {{ with secret "secret/test-app-2/test-app-2-svc" }}
           {{ if .Data.SECRET2 }}
           my_custom_key_name2={{ .Data.SECRET2 }}
@@ -829,7 +830,7 @@ The following table lists the configurable parameters of the `Vault Sidecar Inje
 | image.port       | Service main port    | 8443            |
 | image.pullPolicy   | Pull policy for docker image: IfNotPresent or Always       | IfNotPresent           |
 | image.serviceNameLabel   | Service Name. Must match label com.talend.service     | talend-vault-sidecar-injector      |
-| image.tag  | Version/tag of the docker image     | 5.0.0      |
+| image.tag  | Version/tag of the docker image     | 5.0.1      |
 | imageRegistry  | Image registry |   |
 | injectconfig.jobbabysitter.image.path   | Docker image path | everpeace/curl-jq |
 | injectconfig.jobbabysitter.image.pullPolicy | Pull policy for docker image: IfNotPresent or Always | IfNotPresent |
@@ -840,7 +841,7 @@ The following table lists the configurable parameters of the `Vault Sidecar Inje
 | injectconfig.jobbabysitter.resources.requests.memory | Job babysitter sidecar memory resource requests | 20Mi |
 | injectconfig.vault.image.path  | Docker image path  | vault |
 | injectconfig.vault.image.pullPolicy    | Pull policy for docker image: IfNotPresent or Always  | IfNotPresent   |
-| injectconfig.vault.image.tag  | Version/tag of the docker image | 1.3.0 |
+| injectconfig.vault.image.tag  | Version/tag of the docker image | 1.3.1 |
 | injectconfig.vault.loglevel                    | Vault log level: trace, debug, info, warn, err    | info    |
 | injectconfig.vault.resources.limits.cpu | Vault sidecar CPU resource limits | 50m |
 | injectconfig.vault.resources.limits.memory | Vault sidecar memory resource limits | 50Mi |

@@ -25,7 +25,7 @@ import (
 // Vault Sidecar Injector: Secrets Mode
 func (vaultInjector *VaultInjector) secretsMode(labels, annotations map[string]string) (string, error) {
 	secretsPath := strings.Split(annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationSecretsPathKey]], ",")
-	secretsTemplate := strings.Split(annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationSecretsTemplateKey]], ",")
+	secretsTemplate := strings.Split(annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationSecretsTemplateKey]], "---")
 	templateDest := strings.Split(annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationTemplateDestKey]], ",")
 	templateCmd := strings.Split(annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationTemplateCmdKey]], ",")
 

@@ -1,5 +1,16 @@
 # Changelog for Vault Sidecar Injector
 
+## Release v5.1.1 - 2019-12-23
+
+**Added**
+
+- [VSI #18](https://github.com/Talend/vault-sidecar-injector/pull/18) - Basis for new inline injection feature
+
+**Fixed**
+
+- [VSI #16](https://github.com/Talend/vault-sidecar-injector/issues/16) - secrets-template with >1 templates that include range statement causes dest/template mismatch [Thanks @smurfralf]
+- [VSI #15](https://github.com/Talend/vault-sidecar-injector/issues/15) - Document requirement for configured certificates api [Thanks @drpebcak]
+
 ## Release v5.1.0 - 2019-12-09
 
 - [VSI #14](https://github.com/Talend/vault-sidecar-injector/pull/14) - Minor updates to Helm chart and documentation.
