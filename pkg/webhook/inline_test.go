@@ -16,16 +16,21 @@ package webhook
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
+	"path/filepath"
+	"strings"
 	"talend/vault-sidecar-injector/pkg/config"
 	"testing"
 
 	"k8s.io/api/admission/v1beta1"
 	appsv1 "k8s.io/api/apps/v1"
 	authenticationv1 "k8s.io/api/authentication/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/klog"
 
 	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
@@ -33,7 +38,7 @@ import (
 
 type testResource struct {
 	manifest        string
-	workload        string
+	workloadType    string
 	podTemplateSpec *corev1.PodTemplateSpec
 }
 
@@ -42,40 +47,60 @@ func TestInlineInjector(t *testing.T) {
 		config.WhSvrParameters{
 			0, 0, "", "",
 			"sidecar.vault.talend.org", "com.talend.application", "com.talend.service",
-			"../../test/sidecarconfig.yaml",
-			"../../test/proxyconfig.hcl",
-			"../../test/tmplblock.hcl",
-			"../../test/tmpldefault.tmpl",
-			"../../test/podlifecyclehooks.yaml",
+			"../../test/config/sidecarconfig.yaml",
+			"../../test/config/proxyconfig.hcl",
+			"../../test/config/tmplblock.hcl",
+			"../../test/config/tmpldefault.tmpl",
+			"../../test/config/podlifecyclehooks.yaml",
 		},
 	)
 	if err != nil {
 		t.Errorf("Loading error \"%s\"", err)
 	}
 
-	ar, err := (&testResource{
-		manifest: "../../test/test-app-deployment.yaml",
-		workload: "deployment",
-	}).load()
-	if err != nil {
-		t.Errorf("Error creating AR \"%s\"", err)
-	}
-
+	// Create webhook instance
 	vaultInjector := New(injectionCfg, nil)
 
-	// Mutate pod
-	resp := vaultInjector.mutate(ar)
-
-	assert.Equal(t, true, resp.Allowed)
-	assert.Nil(t, resp.Result)
-	assert.NotNil(t, resp.Patch)
-
-	var patch []patchOperation
-	if err = yaml.Unmarshal(resp.Patch, &patch); err != nil {
-		t.Errorf("JSON Patch unmarshal error \"%s\"", err)
+	// Get all test workloads
+	workloads, err := filepath.Glob("../../test/workloads/*.yaml")
+	if err != nil {
+		t.Errorf("Fail listing files: %s", err)
 	}
 
-	//klog.Infof("JSON Patch=%+v", patch)
+	// Loop on all test workloads: mutate and display JSON Patch structure
+	for _, workloadManifest := range workloads {
+		klog.Infof("Loading workload %s", workloadManifest)
+
+		ar, err := (&testResource{
+			manifest: workloadManifest,
+			workloadType: func(w string) string {
+				if strings.HasSuffix(w, "-deployment.yaml") {
+					return "deployment"
+				} else if strings.HasSuffix(w, "-job.yaml") {
+					return "job"
+				} else {
+					return ""
+				}
+			}(workloadManifest),
+		}).load()
+		if err != nil {
+			t.Errorf("Error creating AR \"%s\"", err)
+		}
+
+		// Mutate pod
+		resp := vaultInjector.mutate(ar)
+
+		assert.Equal(t, true, resp.Allowed)
+		assert.Nil(t, resp.Result)
+		assert.NotNil(t, resp.Patch)
+
+		var patch []patchOperation
+		if err = yaml.Unmarshal(resp.Patch, &patch); err != nil {
+			t.Errorf("JSON Patch unmarshal error \"%s\"", err)
+		}
+
+		klog.Infof("JSON Patch=%+v", patch)
+	}
 }
 
 func (tr *testResource) load() (*v1beta1.AdmissionReview, error) {
@@ -84,28 +109,34 @@ func (tr *testResource) load() (*v1beta1.AdmissionReview, error) {
 	if err != nil {
 		return nil, err
 	}
-	resource := appsv1.Deployment{}
-	/*if tr.workload == "deployment" {
+
+	if tr.workloadType == "deployment" {
 		resource := appsv1.Deployment{}
-	} else if tr.workload == "job" {
+		_, _, err = deserializer.Decode(data, nil, &resource)
+		if err != nil {
+			return nil, err
+		}
+
+		tr.podTemplateSpec = &resource.Spec.Template
+	} else if tr.workloadType == "job" {
 		resource := batchv1.Job{}
+		_, _, err = deserializer.Decode(data, nil, &resource)
+		if err != nil {
+			return nil, err
+		}
+
+		tr.podTemplateSpec = &resource.Spec.Template
 	} else {
 		return nil, errors.New("Worload not supported")
-	}*/
-
-	_, _, err = deserializer.Decode(data, nil, &resource)
-	if err != nil {
-		return nil, err
 	}
 
-	tr.podTemplateSpec = &resource.Spec.Template
 	tr.addSATokenVolume()
 	return tr.createAdmissionReview()
 }
 
 func (tr *testResource) addSATokenVolume() {
 	// We expect to find serviceaccount token volume. It is dynamically added to the pod by the Service Account Admission Controller.
-	// So we'll add it manually here to pass the check
+	// Add it manually here to pass internal check.
 	saTokenVolumeMount := corev1.VolumeMount{
 		Name:      "default-token-1234",
 		ReadOnly:  true,

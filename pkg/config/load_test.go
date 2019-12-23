@@ -51,18 +51,18 @@ func TestLoadConfig(t *testing.T) {
 	}{
 		{
 			inputLoaded{
-				"../../test/sidecarconfig.yaml",
-				"../../test/proxyconfig.hcl",
-				"../../test/tmplblock.hcl",
-				"../../test/tmpldefault.tmpl",
-				"../../test/podlifecyclehooks.yaml",
+				"../../test/config/sidecarconfig.yaml",
+				"../../test/config/proxyconfig.hcl",
+				"../../test/config/tmplblock.hcl",
+				"../../test/config/tmpldefault.tmpl",
+				"../../test/config/podlifecyclehooks.yaml",
 			},
 			expectedLoad{
-				"../../test/sidecarconfig.yaml.resolved",
+				"../../test/config/sidecarconfig.yaml.resolved",
 				proxyCfgFileResolved,
 				templateBlockResolved,
 				templateDefaultResolved,
-				"../../test/podlifecyclehooks.yaml.resolved",
+				"../../test/config/podlifecyclehooks.yaml.resolved",
 			},
 		},
 	}
