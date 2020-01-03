@@ -415,6 +415,7 @@ Several optional annotations to end up with:
 - secrets fetched from Vault's path `aws/creds/test-app-6` using **one custom template**
 - secrets to be stored into `/opt/talend/secrets/creds.properties`
 
+<!-- {% raw %} -->
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -458,6 +459,7 @@ spec:
           emptyDir:
             medium: Memory
 ```
+<!-- {% endraw %}) -->
 
 ##### Secrets mode - Ask for secrets hook injection, several custom secrets files and templates
 
@@ -468,6 +470,7 @@ Several optional annotations to end up with:
 - secrets fetched from Vault's path `secret/test-app-2/test-app-2-svc` using **several custom templates** (use `---` as separation between them)
 - secrets to be stored into `/opt/talend/secrets/secrets.properties` (using first template) and `/opt/talend/secrets/secrets2.properties` (using second template)
 
+<!-- {% raw %} -->
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -514,6 +517,7 @@ spec:
           emptyDir:
             medium: Memory
 ```
+<!-- {% endraw %}) -->
 
 #### Using Vault AppRole Auth Method
 
