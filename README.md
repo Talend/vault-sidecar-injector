@@ -113,10 +113,10 @@ Upon successful injection, Vault Sidecar Injector will add annotation(s) to the 
 Template below is used by default to fetch all secrets and create corresponding key/value pairs. It is generic enough and should be fine for most use cases:
 
 <!-- {% raw %} -->
-```ct
- {{ with secret "<APPSVC_VAULT_SECRETS_PATH>" }}{{ range \$k, \$v := .Data }}
- {{ \$k }}={{ \$v }}
- {{ end }}{{ end }}
+```yaml
+{{ with secret "<APPSVC_VAULT_SECRETS_PATH>" }}{{ range \$k, \$v := .Data }}
+{{ \$k }}={{ \$v }}
+{{ end }}{{ end }}
 ```
 <!-- {% endraw %}) -->
 
