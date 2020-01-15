@@ -1,8 +1,8 @@
 
 # Vault Sidecar Injector
 
-![GitHub All Releases](https://img.shields.io/github/downloads/Talend/vault-sidecar-injector/total?style=for-the-badge)
-![Docker Pulls](https://img.shields.io/docker/pulls/talend/vault-sidecar-injector?style=for-the-badge)
+[![GitHub All Releases](https://img.shields.io/github/downloads/Talend/vault-sidecar-injector/total?style=for-the-badge)](https://github.com/Talend/vault-sidecar-injector/releases)
+[![Docker Pulls](https://img.shields.io/docker/pulls/talend/vault-sidecar-injector?style=for-the-badge)](https://hub.docker.com/r/talend/vault-sidecar-injector)
 
 - [Vault Sidecar Injector](#vault-sidecar-injector)
   - [Announcements](#announcements)
