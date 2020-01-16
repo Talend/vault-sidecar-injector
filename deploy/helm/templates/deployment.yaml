@@ -33,10 +33,11 @@ spec:
           args:
             - -port={{ .Values.image.port }}
             - -metricsport={{ .Values.image.metricsPort }}
-            - -annotationKeyPrefix={{ .Values.mutatingwebhook.annotations.keyPrefix }}
-            - -appLabelKey={{ .Values.mutatingwebhook.annotations.appLabelKey }}
-            - -appServiceLabelKey={{ .Values.mutatingwebhook.annotations.appServiceLabelKey }}
-            - -sidecarcfgfile=/opt/talend/webhook/config/sidecarconfig.yaml
+            - -annotationkeyprefix={{ .Values.mutatingwebhook.annotations.keyPrefix }}
+            - -applabelkey={{ .Values.mutatingwebhook.annotations.appLabelKey }}
+            - -appservicelabelkey={{ .Values.mutatingwebhook.annotations.appServiceLabelKey }}
+            - -dynsecretscfgfile=/opt/talend/webhook/config/dynamicsecrets.yaml
+            - -statsecretscfgfile=/opt/talend/webhook/config/staticsecrets.yaml
             - -proxycfgfile=/opt/talend/webhook/config/proxyconfig.hcl
             - -tmplblockfile=/opt/talend/webhook/config/templateblock.hcl
             - -tmpldefaultfile=/opt/talend/webhook/config/templatedefault.tmpl

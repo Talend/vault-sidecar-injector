@@ -1,5 +1,9 @@
 # Changelog for Vault Sidecar Injector
 
+## Release v6.0.0 - 2020-xx-xx
+
+TODO
+
 ## Release v5.1.1 - 2019-12-23
 
 **Added**

@@ -37,7 +37,9 @@ data:
       address = "127.0.0.1:<APPSVC_PROXY_PORT>"
       tls_disable = true
     }
-  sidecarconfig.yaml: |
+  staticsecrets.yaml: |
+    TODO
+  dynamicsecrets.yaml: |
     {{- if .Values.injectconfig.securityContext }}
     securityContext:
       {{- if .Values.injectconfig.securityContext.fsGroup }}

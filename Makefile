@@ -1,5 +1,8 @@
-RELEASE_VERSION:=5.1.1
-VSI_VERSION:=5.0.1
+SHELL=/bin/bash
+
+RELEASE_VERSION:=$(shell cat VERSION_RELEASE)
+VSI_VERSION:=$(shell cat VERSION_VSI)
+CHART_VERSION:=$(shell cat VERSION_CHART)
 
 OWNER:=Talend
 REPO:=vault-sidecar-injector
@@ -10,7 +13,7 @@ SRC:=$(shell find . -type f -name '*.go' -not -path "./vendor/*")
 LDFLAGS=-ldflags "-X=main.VERSION=$(VSI_VERSION)"
 
 .SILENT: ;  	# No need for @
-.ONESHELL: ; 	# Single shell for a target (required to properly use all of our local variables)
+.ONESHELL: ; 	# Single shell for a target (required to properly use local variables)
 .PHONY: all clean fmt test build release image
 .DEFAULT_GOAL := build
 
@@ -32,9 +35,13 @@ build: clean test
 	cd target && sha512sum vaultinjector-webhook > vaultinjector-webhook.sha512
 
 package:
+	set -e
 	mkdir -p target && cd target
 	echo "Archive Helm chart ..."
 	mkdir -p vault-sidecar-injector && cp -R ../README.md ../deploy/helm/* ./vault-sidecar-injector
+	sed -i "s/version: 0.0.0/version: ${CHART_VERSION}/;s/appVersion: 0.0.0/appVersion: ${VSI_VERSION}/" ./vault-sidecar-injector/Chart.yaml
+	sed -i "s/tag: \"latest\"  # VSI image tag/tag: \"${VSI_VERSION}\"  # VSI image tag/" ./vault-sidecar-injector/values.yaml
+	sed -i "s/latest \*(local testing)\*, \[VERSION_VSI\](VERSION_VSI) \*(release)\*/${VSI_VERSION}/" ./vault-sidecar-injector/README.md
 	helm package vault-sidecar-injector
 	rm -R vault-sidecar-injector
 	helm lint ./vault-sidecar-injector-*.tgz --debug
@@ -42,12 +49,28 @@ package:
 image:
 	echo "Build image from sources ..."
 	docker build -t talend/vault-sidecar-injector:${VSI_VERSION} .
+	docker tag talend/vault-sidecar-injector:${VSI_VERSION} talend/vault-sidecar-injector
 
 image-from-build: build
 	echo "Build image from local build ..."
 	docker build -f Dockerfile.local -t talend/vault-sidecar-injector:${VSI_VERSION} .
+	docker tag talend/vault-sidecar-injector:${VSI_VERSION} talend/vault-sidecar-injector
 
 release: image-from-build package
+	read -p "Publish image on Docker Hub (y/n)? " answer
+	case $$answer in \
+	y|Y ) \
+		docker login; \
+		docker push talend/vault-sidecar-injector:${VSI_VERSION}; \
+		if [ "$$?" -ne 0 ]; then \
+			echo "Unable to publish image"; \
+			exit 1; \
+		fi; \
+	;; \
+	* ) \
+		echo "Image not published on Docker Hub"; \
+	;; \
+	esac
 	cd target
 	echo "Releasing artifacts ..."
 	read -p "- Github user name to use for release: " username

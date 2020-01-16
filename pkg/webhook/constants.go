@@ -26,6 +26,7 @@ const (
 	vaultInjectorAnnotationSecretsTemplateKey = "secrets-template"    // Optional. Allow to override default template. Ignore 'secrets-path' annotation. Several values separated by ','.
 	vaultInjectorAnnotationTemplateDestKey    = "secrets-destination" // Optional. If not set, secrets will be stored in file "secrets.properties". Several values separated by ','.
 	vaultInjectorAnnotationLifecycleHookKey   = "secrets-hook"        // Optional. If set, lifecycle hooks loaded from config will be added to pod's container(s)
+	vaultInjectorAnnotationSecretsTypeKey     = "secrets-type"        // Optional. Type of secrets to handle: dynamic (default) or static
 	vaultInjectorAnnotationTemplateCmdKey     = "notify"              // Optional. Command to run after template is rendered. Several values separated by ','.
 	vaultInjectorAnnotationWorkloadKey        = "workload"            // Optional. If set to "job", supplementary container and signaling mechanism will also be injected to properly handle k8s job
 	vaultInjectorAnnotationStatusKey          = "status"              // Not to be set by requesting pods: set by the Webhook Admission Controller if injection ok

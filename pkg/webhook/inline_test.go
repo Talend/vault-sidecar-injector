@@ -47,7 +47,7 @@ func TestInlineInjector(t *testing.T) {
 		config.WhSvrParameters{
 			0, 0, "", "",
 			"sidecar.vault.talend.org", "com.talend.application", "com.talend.service",
-			"../../test/config/sidecarconfig.yaml",
+			"../../test/config/dynamicsecrets.yaml",
 			"../../test/config/proxyconfig.hcl",
 			"../../test/config/tmplblock.hcl",
 			"../../test/config/tmpldefault.tmpl",

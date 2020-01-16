@@ -51,14 +51,14 @@ func TestLoadConfig(t *testing.T) {
 	}{
 		{
 			inputLoaded{
-				"../../test/config/sidecarconfig.yaml",
+				"../../test/config/dynamicsecrets.yaml",
 				"../../test/config/proxyconfig.hcl",
 				"../../test/config/tmplblock.hcl",
 				"../../test/config/tmpldefault.tmpl",
 				"../../test/config/podlifecyclehooks.yaml",
 			},
 			expectedLoad{
-				"../../test/config/sidecarconfig.yaml.resolved",
+				"../../test/config/dynamicsecrets.yaml.resolved",
 				proxyCfgFileResolved,
 				templateBlockResolved,
 				templateDefaultResolved,

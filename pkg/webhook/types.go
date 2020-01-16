@@ -30,6 +30,7 @@ var vaultInjectorAnnotationKeys = [...]string{
 	vaultInjectorAnnotationSecretsTemplateKey,
 	vaultInjectorAnnotationTemplateDestKey,
 	vaultInjectorAnnotationLifecycleHookKey,
+	vaultInjectorAnnotationSecretsTypeKey,
 	vaultInjectorAnnotationTemplateCmdKey,
 	vaultInjectorAnnotationWorkloadKey,
 	vaultInjectorAnnotationStatusKey,
