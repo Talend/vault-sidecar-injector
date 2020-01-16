@@ -41,6 +41,7 @@
 
 ## Announcements
 
+- 2020-xx: [Static vs Dynamic secrets](https://github.com/Talend/vault-sidecar-injector/blob/master/doc/Static-vs-Dynamic-Secrets.md)
 - 2019-12: [Discovering Vault Sidecar Injector's Proxy feature](https://github.com/Talend/vault-sidecar-injector/blob/master/doc/Discovering-Vault-Sidecar-Injector-Proxy.md)
 - 2019-11: [Vault Sidecar Injector now leverages Vault Agent Template feature](https://github.com/Talend/vault-sidecar-injector/blob/master/doc/Leveraging-Vault-Agent-Template.md)
 - 2019-10: [Open-sourcing Vault Sidecar Injector](https://github.com/Talend/vault-sidecar-injector/blob/master/doc/Open-sourcing-Vault-Sidecar-Injector.md)
@@ -65,7 +66,7 @@ To ease deployment, a Helm chart is provided under [deploy/helm](https://github.
 
 `Vault Sidecar Injector` supports several high-level features or *modes*:
 
-- [**secrets**](https://github.com/Talend/vault-sidecar-injector/blob/master/README.md#secrets-mode), the primary mode allowing to continuously retrieve secrets from Vault server's stores, coping with secrets rotations (ie any change will be propagated and updated values made available to consume by applications).
+- [**secrets**](https://github.com/Talend/vault-sidecar-injector/blob/master/README.md#secrets-mode), the primary mode allowing to retrieve secrets from Vault server's stores, either once (for **static secrets**) or continuously (for **dynamic secrets**), coping with secrets rotations (ie any change will be propagated and updated values made available to consume by applications).
 - [**proxy**](https://github.com/Talend/vault-sidecar-injector/blob/master/README.md#proxy-mode), to enable the injected Vault Agent as a local, authenticated gateway to the remote Vault server. As an example, with this mode on, applications can easily leverage Vault's Transit Engine to cipher/decipher payloads by just sending data to the local proxy without dealing themselves with Vault authentication and tokens.
 
 ### Requirements
@@ -91,15 +92,16 @@ Following annotations in requesting pods are supported:
 | `sidecar.vault.talend.org/inject`     | M           |    N/A          |                      | "true" / "on" / "yes" / "y"    | Ask for sidecar injection to get secrets from Vault    |
 | `sidecar.vault.talend.org/auth`       | O           |    N/A          | "kubernetes"   | "kubernetes" / "approle" | Vault Auth Method to use |
 | `sidecar.vault.talend.org/mode`       | O           |    N/A          | "secrets"      | "secrets" / "proxy" / Comma-separated values (eg "secrets,proxy") | Enable provided mode(s)   |
-| `sidecar.vault.talend.org/notify`     | O           |    secrets      | ""   | Comma-separated strings  | List of commands to notify application/service of secrets change, one per secrets path |
+| `sidecar.vault.talend.org/notify`     | O           |    secrets   | ""   | Comma-separated strings  | List of commands to notify application/service of secrets change, one per secrets path. **Only used for dynamic secrets** |
 | `sidecar.vault.talend.org/proxy-port` | O           |    proxy        | "8200"    | Any allowed port value  | Port for local Vault proxy |
 | `sidecar.vault.talend.org/role`       | O           |    N/A          | "\<`com.talend.application` label\>" | Any string    | **Only used with "kubernetes" Vault Auth Method**. Vault role associated to requesting pod. If annotation not used, role is read from label defined by `mutatingwebhook.annotations.appLabelKey` key (refer to [configuration](https://github.com/Talend/vault-sidecar-injector/blob/master/README.md#configuration)) which is `com.talend.application` by default |
 | `sidecar.vault.talend.org/sa-token`   | O           |    N/A         | "/var/run/secrets/kubernetes.io/serviceaccount/token" | Any string | Full path to service account token used for Vault Kubernetes authentication |
-| `sidecar.vault.talend.org/secrets-destination` | O     | secrets   | "secrets.properties" | Comma-separated strings  | List of secrets filenames (without path), one per secrets path |
-| `sidecar.vault.talend.org/secrets-hook`        | O     | secrets   | | "true" / "on" / "yes" / "y" | If set, lifecycle hooks will be added to pod's container(s) to wait for secrets files |
-| `sidecar.vault.talend.org/secrets-path`        | O     | secrets   | "secret/<`com.talend.application` label>/<`com.talend.service` label>" | Comma-separated strings | List of secrets engines and path. If annotation not used, path is set from labels defined by `mutatingwebhook.annotations.appLabelKey`  and `mutatingwebhook.annotations.appServiceLabelKey` keys (refer to [configuration](https://github.com/Talend/vault-sidecar-injector/blob/master/README.md#configuration))      |
-| `sidecar.vault.talend.org/secrets-template`    | O     | secrets   | [Default template](https://github.com/Talend/vault-sidecar-injector/blob/master/README.md#default-template) | templates separated with `---` | Allow to override default template. Ignore `sidecar.vault.talend.org/secrets-path` annotation if set |
-| `sidecar.vault.talend.org/workload`   | O      | N/A               |  | "job" | Type of submitted workload |
+| `sidecar.vault.talend.org/secrets-destination` | O     | secrets | "secrets.properties" | Comma-separated strings  | List of secrets filenames (without path), one per secrets path |
+| `sidecar.vault.talend.org/secrets-hook`        | O     | secrets | | "true" / "on" / "yes" / "y" | If set, lifecycle hooks will be added to pod's container(s) to wait for secrets files. **Only used for dynamic secrets** |
+| `sidecar.vault.talend.org/secrets-path`        | O     | secrets | "secret/<`com.talend.application` label>/<`com.talend.service` label>" | Comma-separated strings | List of secrets engines and path. If annotation not used, path is set from labels defined by `mutatingwebhook.annotations.appLabelKey`  and `mutatingwebhook.annotations.appServiceLabelKey` keys (refer to [configuration](https://github.com/Talend/vault-sidecar-injector/blob/master/README.md#configuration))      |
+| `sidecar.vault.talend.org/secrets-template`    | O     | secrets  | [Default template](https://github.com/Talend/vault-sidecar-injector/blob/master/README.md#default-template) | templates separated with `---` | Allow to override default template. Ignore `sidecar.vault.talend.org/secrets-path` annotation if set |
+| `sidecar.vault.talend.org/secrets-type` | O  | secrets | "dynamic" | "static" / "dynamic" | Type of secrets to handle |
+| `sidecar.vault.talend.org/workload`   | O      | secrets |  | "job" | Type of submitted workload. **Only used for dynamic secrets** |
 
 Upon successful injection, Vault Sidecar Injector will add annotation(s) to the requesting pods:
 
