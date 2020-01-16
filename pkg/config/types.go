@@ -36,10 +36,9 @@ type WhSvrParameters struct {
 
 // SidecarConfig : resources that will be injected (read from config file)
 type SidecarConfig struct {
-	SecurityContext *corev1.PodSecurityContext `yaml:"securityContext" json:"securityContext"`
-	InitContainers  []corev1.Container         `yaml:"initContainers" json:"initContainers"`
-	Containers      []corev1.Container         `yaml:"containers" json:"containers"`
-	Volumes         []corev1.Volume            `yaml:"volumes" json:"volumes"`
+	InitContainers []corev1.Container `yaml:"initContainers" json:"initContainers"`
+	Containers     []corev1.Container `yaml:"containers" json:"containers"`
+	Volumes        []corev1.Volume    `yaml:"volumes" json:"volumes"`
 }
 
 // LifecycleHooks : lifecycle hooks to inject in requesting pod

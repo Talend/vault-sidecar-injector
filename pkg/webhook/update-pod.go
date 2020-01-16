@@ -25,19 +25,6 @@ import (
 )
 
 func (vaultInjector *VaultInjector) updatePodSpec(pod *corev1.Pod) (patch []patchOperation, err error) {
-	// Add Security Context (if provided)
-	if vaultInjector.SidecarConfig.SecurityContext != nil {
-		var op string
-
-		if pod.Spec.SecurityContext == nil {
-			op = jsonPatchOpAdd
-		} else {
-			op = jsonPatchOpReplace
-		}
-
-		patch = append(patch, patchOperation{Op: op, Path: jsonPathSecurityCtx, Value: *vaultInjector.SidecarConfig.SecurityContext})
-	}
-
 	// Extract labels and annotations to compute values for placeholders in sidecars' configuration
 	context, err := vaultInjector.computeContext(pod.Spec.Containers, pod.Labels, pod.Annotations)
 	if err == nil {

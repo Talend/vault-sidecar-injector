@@ -38,12 +38,6 @@ data:
       tls_disable = true
     }
   staticsecrets.yaml: |
-    {{- if .Values.injectconfig.securityContext }}
-    securityContext:
-      {{- if .Values.injectconfig.securityContext.fsGroup }}
-      fsGroup: {{ .Values.injectconfig.securityContext.fsGroup }}
-      {{- end }}
-    {{- end }}
     initContainers:
       - name: tvsi-vault-agent
         image: {{ include "talend-vault-sidecar-injector.injectconfig.vault.image" .Values }}
@@ -133,12 +127,6 @@ data:
         emptyDir:
           medium: Memory
   dynamicsecrets.yaml: |
-    {{- if .Values.injectconfig.securityContext }}
-    securityContext:
-      {{- if .Values.injectconfig.securityContext.fsGroup }}
-      fsGroup: {{ .Values.injectconfig.securityContext.fsGroup }}
-      {{- end }}
-    {{- end }}
     containers:
       # This container is only injected in K8S jobs to monitor app job's container termination and send signal to vault sidecar
       - name: tvsi-job-babysitter

@@ -72,7 +72,6 @@ const (
 
 	//--- JSON Path
 	jsonPathAnnotations    = "/metadata/annotations"
-	jsonPathSecurityCtx    = "/spec/securityContext"
 	jsonPathInitContainers = "/spec/initContainers"
 	jsonPathContainers     = "/spec/containers"
 	jsonPathVolumes        = "/spec/volumes"
