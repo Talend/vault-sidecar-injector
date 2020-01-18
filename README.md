@@ -765,7 +765,7 @@ To see Chart content before installing it, perform a dry run first:
 ```bash
 $ cd deploy/helm
 
-# If using Helm 2.x
+# If using Helm 2
 $ helm install $CHART_LOCATION --name vault-sidecar-injector --namespace <namespace for deployment> --set vault.addr=<Vault server address> --debug --dry-run
 
 # If using Helm 3
@@ -777,7 +777,7 @@ To install the chart on the cluster:
 ```bash
 $ cd deploy/helm
 
-# If using Helm 2.x
+# If using Helm 2
 $ helm install $CHART_LOCATION --name vault-sidecar-injector --namespace <namespace for deployment> --set vault.addr=<Vault server address>
 
 # If using Helm 3
@@ -791,7 +791,7 @@ As an example, to install `Vault Sidecar Injector` on our test cluster:
 ```bash
 $ cd deploy/helm
 
-# If using Helm 2.x
+# If using Helm 2
 $ helm install $CHART_LOCATION --name vault-sidecar-injector --namespace kube-system --set vault.addr=http://vault:8200 --set vault.ssl.verify=false
 
 # If using Helm 3
@@ -809,7 +809,7 @@ In a dev environment, you may want to install your own test instance of `Vault S
 ```bash
 $ cd deploy/helm
 
-# If using Helm 2.x
+# If using Helm 2
 $ helm install $CHART_LOCATION --name vault-sidecar-injector --namespace <your dev namespace> --set vault.addr=<your dev Vault server address> --set mutatingwebhook.namespaceSelector.namespaced=true
 
 # If using Helm 3
@@ -834,7 +834,7 @@ If you want to strictly control the list of namespaces where injection is allowe
 ```bash
 $ cd deploy/helm
 
-# If using Helm 2.x
+# If using Helm 2
 $ helm install $CHART_LOCATION --name vault-sidecar-injector --namespace <namespace for deployment> --set vault.addr=<Vault server address> --set mutatingwebhook.namespaceSelector.boolean=true
 
 # If using Helm 3
@@ -855,7 +855,7 @@ $ kubectl get namespace -L vault-injection
 To uninstall/delete the `Vault Sidecar Injector` deployment:
 
 ```bash
-# If using Helm 2.x
+# If using Helm 2
 $ helm delete --purge vault-sidecar-injector
 
 # If using Helm 3
@@ -934,7 +934,7 @@ The following table lists the configurable parameters of the `Vault Sidecar Inje
 You can override these values at runtime using the `--set key=value[,key=value]` argument to `helm install`. For example,
 
 ```bash
-# If using Helm 2.x
+# If using Helm 2
 $ helm install <chart_folder_location> \
                --name vault-sidecar-injector \
                --namespace <your namespace> \
