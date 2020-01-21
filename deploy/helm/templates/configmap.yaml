@@ -5,10 +5,8 @@ metadata:
   labels:
 {{ include "talend-vault-sidecar-injector.labels" . | indent 4 }}
 data:
-  staticsecrets.yaml: |
-{{ (tpl (.Files.Get "config/staticsecrets.yaml") . ) | indent 4 }}
-  dynamicsecrets.yaml: |
-{{ (tpl (.Files.Get "config/dynamicsecrets.yaml") . ) | indent 4 }}
+  injectionconfig.yaml: |
+{{ (tpl (.Files.Get "config/injectionconfig.yaml") . ) | indent 4 }}
 {{ (tpl (.Files.Glob "config/podlifecyclehooks.yaml").AsConfig . ) | indent 2 }}
 {{ (tpl (.Files.Glob "config/*.hcl").AsConfig . ) | indent 2 }}
 {{ (tpl (.Files.Glob "config/*.tmpl").AsConfig . ) | indent 2 }}

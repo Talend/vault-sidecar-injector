@@ -41,7 +41,7 @@ var ignoredNamespaces = []string{
 }
 
 // New : init new VaultInjector type
-func New(cfg *config.InjectionConfig, server *http.Server) *VaultInjector {
+func New(cfg *config.VSIConfig, server *http.Server) *VaultInjector {
 	// Compute FQ annotations
 	cfg.VaultInjectorAnnotationsFQ = make(map[string]string, len(vaultInjectorAnnotationKeys))
 	for _, vaultAnnotationKey := range vaultInjectorAnnotationKeys {
@@ -53,8 +53,13 @@ func New(cfg *config.InjectionConfig, server *http.Server) *VaultInjector {
 	}
 
 	return &VaultInjector{
-		InjectionConfig: cfg,
-		Server:          server,
+		VSIConfig: cfg,
+		Server:    server,
+		// Register Modes functions (using trick to be able to use function pointers to methods, see https://stackoverflow.com/a/31561683)
+		ModesFunc: map[string]func(vaultInjector *VaultInjector, labels, annotations map[string]string) (modeConfig, error){
+			vaultInjectorModeSecrets: (*VaultInjector).secretsMode,
+			vaultInjectorModeProxy:   (*VaultInjector).proxyMode,
+		},
 	}
 }
 
@@ -121,7 +126,7 @@ func (vaultInjector *VaultInjector) mutate(ar *v1beta1.AdmissionReview) *v1beta1
 		}
 	}
 
-	annotations := map[string]string{vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationStatusKey]: vaultInjectorAnnotationStatusValue}
+	annotations := map[string]string{vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationStatusKey]: vaultInjectorStatusInjected}
 	patchBytes, err := vaultInjector.createPatch(&pod, annotations)
 	if err != nil {
 		return &v1beta1.AdmissionResponse{

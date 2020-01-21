@@ -36,8 +36,7 @@ spec:
             - -annotationkeyprefix={{ .Values.mutatingwebhook.annotations.keyPrefix }}
             - -applabelkey={{ .Values.mutatingwebhook.annotations.appLabelKey }}
             - -appservicelabelkey={{ .Values.mutatingwebhook.annotations.appServiceLabelKey }}
-            - -dynsecretscfgfile=/opt/talend/webhook/config/dynamicsecrets.yaml
-            - -statsecretscfgfile=/opt/talend/webhook/config/staticsecrets.yaml
+            - -injectioncfgfile=/opt/talend/webhook/config/injectionconfig.yaml
             - -proxycfgfile=/opt/talend/webhook/config/proxyconfig.hcl
             - -tmplblockfile=/opt/talend/webhook/config/templateblock.hcl
             - -tmpldefaultfile=/opt/talend/webhook/config/templatedefault.tmpl

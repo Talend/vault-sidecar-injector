@@ -71,7 +71,7 @@ func mutationRequired(ignoredList []string, vaultInjectorAnnotations map[string]
 
 	// determine whether to perform mutation based on annotation for the target resource
 	var required bool
-	if strings.ToLower(status) == vaultInjectorAnnotationStatusValue {
+	if strings.ToLower(status) == vaultInjectorStatusInjected {
 		required = false
 	} else {
 		switch strings.ToLower(annotations[vaultInjectorAnnotations[vaultInjectorAnnotationInjectKey]]) {
@@ -100,8 +100,9 @@ Loop:
 	}
 
 	if k8sSaSecretsVolName == "" {
-		klog.Errorf("Volume Mount for path %s not found in submitted pod", saTokenPath)
-		return "", fmt.Errorf("Volume Mount for path %s not found in submitted pod", saTokenPath)
+		err := fmt.Errorf("Volume Mount for path %s not found in submitted pod", saTokenPath)
+		klog.Error(err.Error())
+		return "", err
 	}
 
 	return k8sSaSecretsVolName, nil
@@ -121,8 +122,9 @@ Loop:
 	}
 
 	if secretsVolMountPath == "" {
-		klog.Errorf("Volume Mount %s not found in submitted pod", appSvcSecretsVolName)
-		return "", fmt.Errorf("Volume Mount %s not found in submitted pod", appSvcSecretsVolName)
+		err := fmt.Errorf("Volume Mount %s not found in submitted pod", appSvcSecretsVolName)
+		klog.Error(err.Error())
+		return "", err
 	}
 
 	return secretsVolMountPath, nil

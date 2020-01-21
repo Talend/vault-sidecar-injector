@@ -1,3 +1,54 @@
+initContainers:
+  - name: tvsi-vault-agent
+    image: {{ include "talend-vault-sidecar-injector.injectconfig.vault.image" .Values }}
+    imagePullPolicy: {{ .Values.injectconfig.vault.image.pullPolicy }}
+    env:
+      - name: SKIP_SETCAP
+        value: "true"
+      - name: VAULT_ADDR
+        value: {{ required "Vault server's address must be specified" .Values.vault.addr | quote }}
+    command:
+      - "sh"
+      - "-c"
+      - |
+        cat <<EOF > vault-agent-config.hcl
+        pid_file = "/home/vault/pidfile"
+
+        auto_auth {
+          method "kubernetes" {
+            mount_path = "auth/{{ .Values.vault.authMethods.kubernetes.path }}"
+            config = {
+              role = "<APP_VAULT_ROLE>"
+              token_path = "/var/run/secrets/talend/vault-sidecar-injector/serviceaccount/token"
+            }
+          }
+
+          sink "file" {
+            config = {
+              path = "/home/vault/.vault-token"
+            }
+          }
+        }
+
+        <APPSVC_TEMPLATES>
+        EOF
+        
+        docker-entrypoint.sh agent -config=vault-agent-config.hcl -exit-after-auth=true {{ include "talend-vault-sidecar-injector.vault.cert.skip.verify" .Values }} -log-level={{- .Values.injectconfig.vault.loglevel }}
+        export VAULT_TOKEN=$(cat /home/vault/.vault-token)
+        vault token revoke {{ include "talend-vault-sidecar-injector.vault.cert.skip.verify" .Values }} -self
+    volumeMounts:
+        # Mount path used to share secrets. The associated volume is expected to be defined in application's manifest but in case it is not,
+        # a default 'secrets' volume will be injected in the requesting pod (see definition below) so that mutation process does not fail.
+      - name: secrets
+        mountPath: /opt/talend/secrets
+        # The name's value will be overridden by the webhook to point to container's service account volume to use for Vault authentication.
+      - name: TVSI_SA_SECRETS_VOL_NAME
+        mountPath: /var/run/secrets/talend/vault-sidecar-injector/serviceaccount
+        readOnly: true
+    {{- if .Values.injectconfig.vault.resources }}
+    resources:
+{{ toYaml .Values.injectconfig.vault.resources | indent 6 }}
+    {{- end }}
 containers:
   # This container is only injected in K8S jobs to monitor app job's container termination and send signal to vault sidecar
   - name: tvsi-job-babysitter

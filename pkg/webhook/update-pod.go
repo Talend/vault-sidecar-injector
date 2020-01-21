@@ -25,7 +25,7 @@ import (
 )
 
 func (vaultInjector *VaultInjector) updatePodSpec(pod *corev1.Pod) (patch []patchOperation, err error) {
-	// Extract labels and annotations to compute values for placeholders in sidecars' configuration
+	// Extract labels and annotations to compute values for placeholders in injection configuration
 	context, err := vaultInjector.computeContext(pod.Spec.Containers, pod.Labels, pod.Annotations)
 	if err == nil {
 		// Add lifecycle hooks to requesting pod's container(s) if needed
@@ -33,12 +33,12 @@ func (vaultInjector *VaultInjector) updatePodSpec(pod *corev1.Pod) (patch []patc
 		if err == nil {
 			patch = append(patch, patchHooks...)
 
-			// Add sidecars' initcontainers
+			// Add init containers
 			patchInitContainers, err := vaultInjector.addContainer(pod.Spec.InitContainers, pod.Annotations, jsonPathInitContainers, *context)
 			if err == nil {
 				patch = append(patch, patchInitContainers...)
 
-				// Add sidecars' containers
+				// Add sidecars containers
 				patchContainers, err := vaultInjector.addContainer(pod.Spec.Containers, pod.Annotations, jsonPathContainers, *context)
 				if err == nil {
 					patch = append(patch, patchContainers...)
@@ -54,8 +54,8 @@ func (vaultInjector *VaultInjector) updatePodSpec(pod *corev1.Pod) (patch []patc
 	return nil, err
 }
 
-func (vaultInjector *VaultInjector) computeContext(podContainers []corev1.Container, labels, annotations map[string]string) (*sidecarContext, error) {
-	var k8sSaSecretsVolName, vaultInjectorSaSecretsVolName, proxyConfig, secretsTemplates string
+func (vaultInjector *VaultInjector) computeContext(podContainers []corev1.Container, labels, annotations map[string]string) (*injectionContext, error) {
+	var k8sSaSecretsVolName, vaultInjectorSaSecretsVolName string
 
 	// Get enabled Vault Sidecar Injector modes
 	modes := make(map[string]bool, len(vaultInjectorModes))
@@ -74,8 +74,9 @@ func (vaultInjector *VaultInjector) computeContext(podContainers []corev1.Contai
 		vaultRole = labels[vaultInjector.ApplicationLabelKey]
 
 		if vaultRole == "" {
-			klog.Errorf("Submitted pod must contain label %s", vaultInjector.ApplicationLabelKey)
-			return nil, fmt.Errorf("Submitted pod must contain label %s", vaultInjector.ApplicationLabelKey)
+			err := fmt.Errorf("Submitted pod must contain label %s", vaultInjector.ApplicationLabelKey)
+			klog.Error(err.Error())
+			return nil, err
 		}
 	}
 
@@ -97,82 +98,85 @@ func (vaultInjector *VaultInjector) computeContext(podContainers []corev1.Contai
 		}
 	}
 
-	// Proxy mode
-	if modes[vaultInjectorModeProxy] {
-		proxyConfig, err = vaultInjector.proxyMode(annotations)
-		if err != nil {
-			return nil, err
+	// Loop through enabled modes and call associated "Mode function" to compute configs
+	modesConfig := make(map[string]modeConfig, len(vaultInjectorModes))
+
+	for mode, enabled := range modes {
+		if enabled {
+			modesConfig[mode], err = vaultInjector.ModesFunc[mode](vaultInjector, labels, annotations)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
-	// Secrets mode
-	if modes[vaultInjectorModeSecrets] {
-		secretsTemplates, err = vaultInjector.secretsMode(labels, annotations)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return &sidecarContext{modes, k8sSaSecretsVolName, vaultInjectorSaSecretsVolName, vaultAuthMethod, vaultRole, proxyConfig, secretsTemplates}, nil
+	return &injectionContext{modes, k8sSaSecretsVolName, vaultInjectorSaSecretsVolName, vaultAuthMethod, vaultRole, modesConfig}, nil
 }
 
-func (vaultInjector *VaultInjector) addLifecycleHooks(podContainers []corev1.Container, annotations map[string]string, context sidecarContext) (patch []patchOperation, err error) {
+func (vaultInjector *VaultInjector) addLifecycleHooks(podContainers []corev1.Container, annotations map[string]string, context injectionContext) (patch []patchOperation, err error) {
+	// Only for Secrets mode and dynamic secrets
 	if context.modes[vaultInjectorModeSecrets] {
-		switch strings.ToLower(annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationLifecycleHookKey]]) {
-		default:
-			return patch, nil
-		case "y", "yes", "true", "on":
-			if vaultInjector.PodslifecycleHooks.PostStart != nil {
-				// As we inject hooks, there should have existing containers so len(podContainers) shoud be > 0
-				if len(podContainers) == 0 {
-					klog.Error("Submitted pod must contain at least one container")
-					return nil, errors.New("Submitted pod must contain at least one container")
-				}
-
-				secretsVolMountPath, err := getMountPathOfSecretsVolume(podContainers)
-				if err != nil {
-					return nil, err
-				}
-
-				if vaultInjector.PodslifecycleHooks.PostStart.Exec == nil {
-					klog.Error("Unsupported lifecycle hook. Only support Exec type")
-					return nil, errors.New("Unsupported lifecycle hook. Only support Exec type")
-				}
-
-				// We will modify some values here so make a copy to not change origin
-				hookCommand := make([]string, len(vaultInjector.PodslifecycleHooks.PostStart.Exec.Command))
-				copy(hookCommand, vaultInjector.PodslifecycleHooks.PostStart.Exec.Command)
-
-				for commandIdx := range hookCommand {
-					hookCommand[commandIdx] = strings.Replace(hookCommand[commandIdx], appSvcSecretsVolMountPathPlaceholder, secretsVolMountPath, -1)
-				}
-
-				postStartHook := &corev1.Handler{Exec: &corev1.ExecAction{Command: hookCommand}}
-
-				// Add hooks to container(s) of requesting pod
-				for podCntIdx, podCnt := range podContainers {
-					if podCnt.Lifecycle != nil {
-						if podCnt.Lifecycle.PostStart != nil {
-							klog.Warningf("Replacing existing postStart hook for container %s", podCnt.Name)
-						}
-
-						podCnt.Lifecycle.PostStart = postStartHook
-					} else {
-						podCnt.Lifecycle = &corev1.Lifecycle{
-							PostStart: postStartHook,
-						}
+		if secretsType, err := getSecretsType(context.modesConfig[vaultInjectorModeSecrets]); err == nil && secretsType == vaultInjectorSecretsTypeDynamic {
+			switch strings.ToLower(annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationLifecycleHookKey]]) {
+			default:
+				return patch, nil
+			case "y", "yes", "true", "on":
+				if vaultInjector.PodslifecycleHooks.PostStart != nil {
+					// As we inject hooks, there should have existing containers so len(podContainers) shoud be > 0
+					if len(podContainers) == 0 {
+						err = errors.New("Submitted pod must contain at least one container")
+						klog.Error(err.Error())
+						return nil, err
 					}
 
-					// Here we have to use 'replace' JSON Patch operation
-					patch = append(patch, patchOperation{
-						Op:    jsonPatchOpReplace,
-						Path:  jsonPathContainers + "/" + strconv.Itoa(podCntIdx),
-						Value: podCnt,
-					})
-				}
-			}
+					secretsVolMountPath, err := getMountPathOfSecretsVolume(podContainers)
+					if err != nil {
+						return nil, err
+					}
 
-			return patch, nil
+					if vaultInjector.PodslifecycleHooks.PostStart.Exec == nil {
+						err = errors.New("Unsupported lifecycle hook. Only support Exec type")
+						klog.Error(err.Error())
+						return nil, err
+					}
+
+					// We will modify some values here so make a copy to not change origin
+					hookCommand := make([]string, len(vaultInjector.PodslifecycleHooks.PostStart.Exec.Command))
+					copy(hookCommand, vaultInjector.PodslifecycleHooks.PostStart.Exec.Command)
+
+					for commandIdx := range hookCommand {
+						hookCommand[commandIdx] = strings.Replace(hookCommand[commandIdx], appSvcSecretsVolMountPathPlaceholder, secretsVolMountPath, -1)
+					}
+
+					postStartHook := &corev1.Handler{Exec: &corev1.ExecAction{Command: hookCommand}}
+
+					// Add hooks to container(s) of requesting pod
+					for podCntIdx, podCnt := range podContainers {
+						if podCnt.Lifecycle != nil {
+							if podCnt.Lifecycle.PostStart != nil {
+								klog.Warningf("Replacing existing postStart hook for container %s", podCnt.Name)
+							}
+
+							podCnt.Lifecycle.PostStart = postStartHook
+						} else {
+							podCnt.Lifecycle = &corev1.Lifecycle{
+								PostStart: postStartHook,
+							}
+						}
+
+						// Here we have to use 'replace' JSON Patch operation
+						patch = append(patch, patchOperation{
+							Op:    jsonPatchOpReplace,
+							Path:  jsonPathContainers + "/" + strconv.Itoa(podCntIdx),
+							Value: podCnt,
+						})
+					}
+				}
+
+				return patch, nil
+			}
+		} else {
+			return nil, err
 		}
 	} else {
 		return patch, nil
@@ -180,48 +184,50 @@ func (vaultInjector *VaultInjector) addLifecycleHooks(podContainers []corev1.Con
 }
 
 // Deal with both InitContainers & Containers
-func (vaultInjector *VaultInjector) addContainer(podContainers []corev1.Container, annotations map[string]string, basePath string, context sidecarContext) (patch []patchOperation, err error) {
+func (vaultInjector *VaultInjector) addContainer(podContainers []corev1.Container, annotations map[string]string, basePath string, context injectionContext) (patch []patchOperation, err error) {
 	var first bool
 	var value interface{}
-	var sidecarCfgContainers []corev1.Container
+	var injectionCfgContainers []corev1.Container
 
 	initContainer := (basePath == jsonPathInitContainers)
-	jobWorkload := (annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationWorkloadKey]] == vaultInjectorAnnotationWorkloadJobValue)
+	jobWorkload := (annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationWorkloadKey]] == vaultInjectorWorkloadJob)
 
 	// As we inject containers to a pod, there should have existing containers so len(podContainers) shoud be > 0
 	if !initContainer && len(podContainers) == 0 {
-		klog.Error("Submitted pod must contain at least one container")
-		return nil, errors.New("Submitted pod must contain at least one container")
+		err = errors.New("Submitted pod must contain at least one container")
+		klog.Error(err.Error())
+		return nil, err
 	}
 
 	if initContainer {
 		// there may be no initContainers in the requesting pod
 		first = len(podContainers) == 0
-		sidecarCfgContainers = vaultInjector.SidecarConfig.InitContainers
+		injectionCfgContainers = vaultInjector.InjectionConfig.InitContainers
 	} else {
 		first = false
-		sidecarCfgContainers = vaultInjector.SidecarConfig.Containers
+		injectionCfgContainers = vaultInjector.InjectionConfig.Containers
 
 		// If workload is a job we expect only one container (good assumption given current limitations using job with sidecars)
 		// Limitation to remove when KEP https://github.com/kubernetes/enhancements/blob/master/keps/sig-apps/sidecarcontainers.md is implemented and supported on our clusters
 		if jobWorkload && len(podContainers) > 1 {
-			klog.Error("Submitted pod contains more than one container: not supported for job workload")
-			return nil, errors.New("Submitted pod contains more than one container: not supported for job workload")
+			err = errors.New("Submitted pod contains more than one container: not supported for job workload")
+			klog.Error(err.Error())
+			return nil, err
 		}
 	}
 
 	// Add our injected containers/initContainers to the submitted pod
-	sidecarCntIdx := 0
-	for _, sidecarCnt := range sidecarCfgContainers {
-		if !jobWorkload && sidecarCnt.Name == jobMonitoringContainerName {
+	injectionCntIdx := 0
+	for _, injectionCnt := range injectionCfgContainers {
+		if !jobWorkload && injectionCnt.Name == jobMonitoringContainerName {
 			// Workload is not a job so do not inject our job specific sidecar
 			continue
 		}
-		container := sidecarCnt
+		container := injectionCnt
 
 		// We will modify some values here so make a copy to not change origin
-		container.Command = make([]string, len(sidecarCnt.Command))
-		copy(container.Command, sidecarCnt.Command)
+		container.Command = make([]string, len(injectionCnt.Command))
+		copy(container.Command, injectionCnt.Command)
 
 		for commandIdx := range container.Command {
 			if !initContainer && jobWorkload {
@@ -230,13 +236,17 @@ func (vaultInjector *VaultInjector) addContainer(podContainers []corev1.Containe
 			container.Command[commandIdx] = strings.Replace(container.Command[commandIdx], appJobVarPlaceholder, strconv.FormatBool(jobWorkload), -1)
 			container.Command[commandIdx] = strings.Replace(container.Command[commandIdx], vaultAuthMethodPlaceholder, context.vaultAuthMethod, -1)
 			container.Command[commandIdx] = strings.Replace(container.Command[commandIdx], vaultRolePlaceholder, context.vaultRole, -1)
-			container.Command[commandIdx] = strings.Replace(container.Command[commandIdx], vaultProxyConfigPlaceholder, context.proxy, -1)
-			container.Command[commandIdx] = strings.Replace(container.Command[commandIdx], templateTemplatesPlaceholder, context.templates, -1)
+			if context.modes[vaultInjectorModeProxy] {
+				container.Command[commandIdx] = strings.Replace(container.Command[commandIdx], vaultProxyConfigPlaceholder, context.modesConfig[vaultInjectorModeProxy].getTemplate(), -1)
+			}
+			if context.modes[vaultInjectorModeSecrets] {
+				container.Command[commandIdx] = strings.Replace(container.Command[commandIdx], templateTemplatesPlaceholder, context.modesConfig[vaultInjectorModeSecrets].getTemplate(), -1)
+			}
 		}
 
 		// We will modify some values here so make a copy to not change origin
-		container.VolumeMounts = make([]corev1.VolumeMount, len(sidecarCnt.VolumeMounts))
-		copy(container.VolumeMounts, sidecarCnt.VolumeMounts)
+		container.VolumeMounts = make([]corev1.VolumeMount, len(injectionCnt.VolumeMounts))
+		copy(container.VolumeMounts, injectionCnt.VolumeMounts)
 
 		// Loop to set proper volume names (extracted values from submitted pod)
 		for volMountIdx := range container.VolumeMounts {
@@ -261,8 +271,8 @@ func (vaultInjector *VaultInjector) addContainer(podContainers []corev1.Containe
 			first = false
 			value = []corev1.Container{container}
 		} else {
-			// JSON Patch: use '/<index of sidecar>' to add our container/initContainer at the beginning of the array
-			path = path + "/" + strconv.Itoa(sidecarCntIdx)
+			// JSON Patch: use '/<index of container>' to add our container/initContainer at the beginning of the array
+			path = path + "/" + strconv.Itoa(injectionCntIdx)
 		}
 
 		patch = append(patch, patchOperation{
@@ -271,7 +281,7 @@ func (vaultInjector *VaultInjector) addContainer(podContainers []corev1.Containe
 			Value: value,
 		})
 
-		sidecarCntIdx++
+		injectionCntIdx++
 	}
 
 	return patch, nil
@@ -283,7 +293,7 @@ func (vaultInjector *VaultInjector) addVolume(podVolumes []corev1.Volume, basePa
 
 	var value interface{}
 
-	for _, sidecarVol := range vaultInjector.SidecarConfig.Volumes {
+	for _, sidecarVol := range vaultInjector.InjectionConfig.Volumes {
 		// Do not inject the 'secrets' volume we define in our injector config if the pod we mutate already has a definition for such volume
 		if sidecarVol.Name == appSvcSecretsVolName && len(podVolumes) > 0 {
 			for _, podVol := range podVolumes {

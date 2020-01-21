@@ -43,11 +43,11 @@ type testResource struct {
 }
 
 func TestInlineInjector(t *testing.T) {
-	injectionCfg, err := config.Load(
+	vsiCfg, err := config.Load(
 		config.WhSvrParameters{
 			0, 0, "", "",
 			"sidecar.vault.talend.org", "com.talend.application", "com.talend.service",
-			"../../test/config/dynamicsecrets.yaml",
+			"../../test/config/injectionconfig.yaml",
 			"../../test/config/proxyconfig.hcl",
 			"../../test/config/tmplblock.hcl",
 			"../../test/config/tmpldefault.tmpl",
@@ -59,7 +59,7 @@ func TestInlineInjector(t *testing.T) {
 	}
 
 	// Create webhook instance
-	vaultInjector := New(injectionCfg, nil)
+	vaultInjector := New(vsiCfg, nil)
 
 	// Get all test workloads
 	workloads, err := filepath.Glob("../../test/workloads/*.yaml")

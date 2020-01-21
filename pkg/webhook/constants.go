@@ -30,19 +30,52 @@ const (
 	vaultInjectorAnnotationTemplateCmdKey     = "notify"              // Optional. Command to run after template is rendered. Several values separated by ','.
 	vaultInjectorAnnotationWorkloadKey        = "workload"            // Optional. If set to "job", supplementary container and signaling mechanism will also be injected to properly handle k8s job
 	vaultInjectorAnnotationStatusKey          = "status"              // Not to be set by requesting pods: set by the Webhook Admission Controller if injection ok
+)
 
-	//--- Vault Sidecar Injector annotation values
-	vaultInjectorAnnotationStatusValue      = "injected"
-	vaultInjectorAnnotationWorkloadJobValue = "job"
+const (
+	//--- Vault Sidecar Injector status
+	vaultInjectorStatusInjected = "injected"
+)
 
+const (
+	//--- Vault Sidecar Injector workloads
+	vaultInjectorWorkloadJob = "job"
+)
+
+const (
 	//--- Vault Sidecar Injector supported modes
 	vaultInjectorModeSecrets = "secrets" // Enable dynamic fetching of secrets from Vault store
 	vaultInjectorModeProxy   = "proxy"   // Enable local Vault proxy
+)
 
+const (
+	//--- Vault Sidecar Injector secrets type
+	vaultInjectorSecretsTypeDynamic = "dynamic"
+	vaultInjectorSecretsTypeStatic  = "static"
+)
+
+const (
 	//--- Vault Sidecar Injector mount path for service accounts
 	vaultInjectorSATokenVolMountPath = "/var/run/secrets/talend/vault-sidecar-injector/serviceaccount"
 	k8sDefaultSATokenVolMountPath    = "/var/run/secrets/kubernetes.io/serviceaccount"
+)
 
+const (
+	vaultK8sAuthMethod               = "kubernetes"         // Default auth method used by Vault Agent
+	appSvcSecretsVolName             = "secrets"            // Name of the volume shared between containers to store secrets file(s)
+	templateAppSvcDefaultDestination = "secrets.properties" // Default secrets destination
+	vaultDefaultSecretsEnginePath    = "secret"             // Default path for Vault K/V Secrets Engine if no 'secrets-path' annotation
+	vaultProxyDefaultPort            = "8200"               // Default port to access local Vault proxy
+)
+
+const (
+	//--- Job handling - Temporary mechanism until KEP https://github.com/kubernetes/enhancements/blob/master/keps/sig-apps/sidecarcontainers.md is implemented (and we migrate on appropriate version of k8s)
+	jobMonitoringContainerName     = "tvsi-job-babysitter" // Name of our specific sidecar container to inject in submitted jobs
+	appJobContainerNamePlaceholder = "<APP_JOB_CNT_NAME>"  // Name of the app job's container
+	appJobVarPlaceholder           = "<APP_JOB>"           // Special script var set to "true" if submitted workload is a k8s job
+)
+
+const (
 	//--- Vault Agent placeholders
 	vaultRolePlaceholder                 = "<APP_VAULT_ROLE>"
 	vaultAuthMethodPlaceholder           = "<APPSVC_VAULT_AUTH_METHOD>"
@@ -54,22 +87,15 @@ const (
 	templateCommandPlaceholder           = "<APPSVC_TEMPLATE_COMMAND_TO_RUN>"
 	templateTemplatesPlaceholder         = "<APPSVC_TEMPLATES>"
 	appSvcSecretsVolMountPathPlaceholder = "<APPSVC_SECRETS_VOL_MOUNTPATH>"
+)
 
-	vaultK8sAuthMethod               = "kubernetes"         // Default auth method used by Vault Agent
-	appSvcSecretsVolName             = "secrets"            // Name of the volume shared between containers to store secrets file(s)
-	templateAppSvcDefaultDestination = "secrets.properties" // Default secrets destination
-	vaultDefaultSecretsEnginePath    = "secret"             // Default path for Vault K/V Secrets Engine if no 'secrets-path' annotation
-	vaultProxyDefaultPort            = "8200"               // Default port to access local Vault proxy
-
-	//--- Job handling - Temporary mechanism until KEP https://github.com/kubernetes/enhancements/blob/master/keps/sig-apps/sidecarcontainers.md is implemented (and we migrate on appropriate version of k8s)
-	jobMonitoringContainerName     = "tvsi-job-babysitter" // Name of our specific sidecar container to inject in submitted jobs
-	appJobContainerNamePlaceholder = "<APP_JOB_CNT_NAME>"  // Name of the app job's container
-	appJobVarPlaceholder           = "<APP_JOB>"           // Special script var set to "true" if submitted workload is a k8s job
-
+const (
 	//--- JSON Patch operations
 	jsonPatchOpAdd     = "add"
 	jsonPatchOpReplace = "replace"
+)
 
+const (
 	//--- JSON Path
 	jsonPathAnnotations    = "/metadata/annotations"
 	jsonPathInitContainers = "/spec/initContainers"

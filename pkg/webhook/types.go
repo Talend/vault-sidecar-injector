@@ -41,21 +41,39 @@ var vaultInjectorModes = [...]string{
 	vaultInjectorModeProxy,
 }
 
+var vaultInjectorSecretsTypes = [...]string{
+	vaultInjectorSecretsTypeDynamic,
+	vaultInjectorSecretsTypeStatic,
+}
+
 // VaultInjector : Webhook Server entity
 type VaultInjector struct {
-	*config.InjectionConfig
-	Server *http.Server
+	*config.VSIConfig
+	Server    *http.Server
+	ModesFunc map[string]func(vaultInjector *VaultInjector, labels, annotations map[string]string) (modeConfig, error)
 }
 
 // Struct to carry computed placeholders' values and context info for current injection
-type sidecarContext struct {
+type injectionContext struct {
 	modes                          map[string]bool
 	k8sDefaultSATokenVolumeName    string
 	vaultInjectorSATokenVolumeName string
 	vaultAuthMethod                string
 	vaultRole                      string
-	proxy                          string
-	templates                      string
+	modesConfig                    map[string]modeConfig
+}
+
+type modeConfig interface {
+	getTemplate() string
+}
+
+type proxyModeConfig struct {
+	template string
+}
+
+type secretsModeConfig struct {
+	secretsType string
+	template    string
 }
 
 // This struct represents a JSON Patch operation (see http://jsonpatch.com/)

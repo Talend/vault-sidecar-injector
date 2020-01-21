@@ -29,7 +29,7 @@ const (
 )
 
 type inputLoaded struct {
-	sidecarCfgFile        string
+	injectionCfgFile      string
 	proxyCfgFile          string
 	templateBlockFile     string
 	templateDefaultFile   string
@@ -37,7 +37,7 @@ type inputLoaded struct {
 }
 
 type expectedLoad struct {
-	sidecarCfgFileResolved        string
+	injectionCfgFileResolved      string
 	proxyCfgFileResolved          string
 	templateBlockResolved         string
 	templateDefaultResolved       string
@@ -51,14 +51,14 @@ func TestLoadConfig(t *testing.T) {
 	}{
 		{
 			inputLoaded{
-				"../../test/config/dynamicsecrets.yaml",
+				"../../test/config/injectionconfig.yaml",
 				"../../test/config/proxyconfig.hcl",
 				"../../test/config/tmplblock.hcl",
 				"../../test/config/tmpldefault.tmpl",
 				"../../test/config/podlifecyclehooks.yaml",
 			},
 			expectedLoad{
-				"../../test/config/dynamicsecrets.yaml.resolved",
+				"../../test/config/injectionconfig.yaml.resolved",
 				proxyCfgFileResolved,
 				templateBlockResolved,
 				templateDefaultResolved,
@@ -68,11 +68,11 @@ func TestLoadConfig(t *testing.T) {
 	}
 
 	for _, table := range tables {
-		injectionCfg, err := Load(
+		vsiCfg, err := Load(
 			WhSvrParameters{
 				0, 0, "", "",
 				"", "", "",
-				table.sidecarCfgFile,
+				table.injectionCfgFile,
 				table.proxyCfgFile,
 				table.templateBlockFile,
 				table.templateDefaultFile,
@@ -84,13 +84,13 @@ func TestLoadConfig(t *testing.T) {
 		}
 
 		// Verify strings
-		assert.Equal(t, table.proxyCfgFileResolved, injectionCfg.ProxyConfig)
-		assert.Equal(t, table.templateBlockResolved, injectionCfg.TemplateBlock)
-		assert.Equal(t, table.templateDefaultResolved, injectionCfg.TemplateDefaultTmpl)
+		assert.Equal(t, table.proxyCfgFileResolved, vsiCfg.ProxyConfig)
+		assert.Equal(t, table.templateBlockResolved, vsiCfg.TemplateBlock)
+		assert.Equal(t, table.templateDefaultResolved, vsiCfg.TemplateDefaultTmpl)
 
 		// Verify yaml by marshalling the object into yaml again
-		assert.Equal(t, stringFromYamlFile(t, table.sidecarCfgFileResolved), stringFromYamlObj(t, injectionCfg.SidecarConfig))
-		assert.Equal(t, stringFromYamlFile(t, table.podLifecycleHooksFileResolved), stringFromYamlObj(t, injectionCfg.PodslifecycleHooks))
+		assert.Equal(t, stringFromYamlFile(t, table.injectionCfgFileResolved), stringFromYamlObj(t, vsiCfg.InjectionConfig))
+		assert.Equal(t, stringFromYamlFile(t, table.podLifecycleHooksFileResolved), stringFromYamlObj(t, vsiCfg.PodslifecycleHooks))
 	}
 }
 

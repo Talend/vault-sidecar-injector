@@ -19,14 +19,18 @@ import (
 )
 
 // Vault Sidecar Injector: Proxy Mode
-func (vaultInjector *VaultInjector) proxyMode(annotations map[string]string) (string, error) {
+func (vaultInjector *VaultInjector) proxyMode(labels, annotations map[string]string) (modeConfig, error) {
 	proxyPort := annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationProxyPortKey]]
 
 	if proxyPort == "" { // Default port
 		proxyPort = vaultProxyDefaultPort
 	}
 
-	proxyConfig := strings.Replace(vaultInjector.ProxyConfig, vaultProxyPortPlaceholder, proxyPort, -1)
+	template := strings.Replace(vaultInjector.ProxyConfig, vaultProxyPortPlaceholder, proxyPort, -1)
 
-	return proxyConfig, nil
+	return &proxyModeConfig{template}, nil
+}
+
+func (proxyModeCfg *proxyModeConfig) getTemplate() string {
+	return proxyModeCfg.template
 }

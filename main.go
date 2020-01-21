@@ -46,7 +46,7 @@ func main() {
 	flag.StringVar(&parameters.AnnotationKeyPrefix, "annotationkeyprefix", "sidecar.vault", "annotations key prefix")
 	flag.StringVar(&parameters.AppLabelKey, "applabelkey", "application.name", "key for application label")
 	flag.StringVar(&parameters.AppServiceLabelKey, "appservicelabelkey", "service.name", "key for application's service label")
-	flag.StringVar(&parameters.SidecarCfgFile, "dynsecretscfgfile", config.ConfigFilesPath+"/dynamicsecrets.yaml", "file containing the mutation configuration (initcontainers, sidecars, volumes, ...) for dynamic secrets")
+	flag.StringVar(&parameters.InjectionCfgFile, "injectioncfgfile", config.ConfigFilesPath+"/injectionconfig.yaml", "file containing the mutation configuration (initcontainers, sidecars, volumes, ...)")
 	flag.StringVar(&parameters.ProxyCfgFile, "proxycfgfile", config.ConfigFilesPath+"/proxyconfig.hcl", "file containing Vault proxy configuration")
 	flag.StringVar(&parameters.TemplateBlockFile, "tmplblockfile", config.ConfigFilesPath+"/templateblock.hcl", "file containing the template block")
 	flag.StringVar(&parameters.TemplateDefaultFile, "tmpldefaultfile", config.ConfigFilesPath+"/templatedefault.tmpl", "file containing the default template")
@@ -74,7 +74,7 @@ func main() {
 	}
 
 	// Load webhook admission server's config
-	injectionCfg, err := config.Load(parameters)
+	vsiCfg, err := config.Load(parameters)
 	if err != nil {
 		os.Exit(1)
 	}
@@ -86,7 +86,7 @@ func main() {
 	}
 
 	vaultInjector := webhook.New(
-		injectionCfg,
+		vsiCfg,
 		&http.Server{
 			Addr:      fmt.Sprintf(":%v", parameters.Port),
 			TLSConfig: &tls.Config{Certificates: []tls.Certificate{pair}},

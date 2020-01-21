@@ -2,7 +2,7 @@
 
 ## Release v6.0.0 - 2020-xx-xx
 
-TODO
+- Static secrets: only support Vault Kubernetes Auth, inject initContainer only
 
 ## Release v5.1.1 - 2019-12-23
 
