@@ -1,8 +1,10 @@
 # Changelog for Vault Sidecar Injector
 
-## Release v6.0.0 - 2020-xx-xx
+## Release v6.0.0 - 2020-02-xx
 
-- Static secrets: only support Vault Kubernetes Auth, inject initContainer only
+**Added**
+
+- [VSI #20](https://github.com/Talend/vault-sidecar-injector/pull/20) - Static secrets (only support Vault Kubernetes Auth, inject init container). Feature announcement [here](https://github.com/Talend/vault-sidecar-injector/blob/master/doc/Static-vs-Dynamic-Secrets.md).
 
 ## Release v5.1.1 - 2019-12-23
 

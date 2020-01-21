@@ -41,7 +41,7 @@
 
 ## Announcements
 
-- 2020-xx: [Static vs Dynamic secrets](https://github.com/Talend/vault-sidecar-injector/blob/master/doc/Static-vs-Dynamic-Secrets.md)
+- 2020-02: [Static vs Dynamic secrets](https://github.com/Talend/vault-sidecar-injector/blob/master/doc/Static-vs-Dynamic-Secrets.md)
 - 2019-12: [Discovering Vault Sidecar Injector's Proxy feature](https://github.com/Talend/vault-sidecar-injector/blob/master/doc/Discovering-Vault-Sidecar-Injector-Proxy.md)
 - 2019-11: [Vault Sidecar Injector now leverages Vault Agent Template feature](https://github.com/Talend/vault-sidecar-injector/blob/master/doc/Leveraging-Vault-Agent-Template.md)
 - 2019-10: [Open-sourcing Vault Sidecar Injector](https://github.com/Talend/vault-sidecar-injector/blob/master/doc/Open-sourcing-Vault-Sidecar-Injector.md)
