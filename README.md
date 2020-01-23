@@ -15,6 +15,7 @@
       - [Default template](#default-template)
       - [Template's Syntax](#templates-syntax)
     - [Proxy Mode](#proxy-mode)
+    - [Modes & Injection Config Overview](#modes--injection-config-overview)
     - [Examples](#examples)
       - [Using Vault Kubernetes Auth Method](#using-vault-kubernetes-auth-method)
         - [Secrets mode - Usage with a K8S Deployment workload](#secrets-mode---usage-with-a-k8s-deployment-workload)
@@ -26,14 +27,8 @@
       - [Using Vault AppRole Auth Method](#using-vault-approle-auth-method)
   - [How to deploy Vault Sidecar Injector](#how-to-deploy-vault-sidecar-injector)
     - [Prerequisites](#prerequisites)
-      - [Helm 2: Tiller installation](#helm-2-tiller-installation)
-      - [Vault server installation](#vault-server-installation)
     - [Vault Sidecar Injector image](#vault-sidecar-injector-image)
-      - [Pulling the image from Docker Hub](#pulling-the-image-from-docker-hub)
-      - [Building the image](#building-the-image)
     - [Installing the Chart](#installing-the-chart)
-      - [Installing the chart in a dev environment](#installing-the-chart-in-a-dev-environment)
-      - [Restrict injection to specific namespaces](#restrict-injection-to-specific-namespaces)
     - [Uninstalling the chart](#uninstalling-the-chart)
   - [Configuration](#configuration)
   - [Metrics](#metrics)
@@ -138,6 +133,43 @@ Details on template syntax can be found in Consul Template's documentation (same
 ### Proxy Mode
 
 This mode opens the gate to virtually any Vault features for requesting applications. A [blog entry](https://github.com/Talend/vault-sidecar-injector/blob/master/doc/Discovering-Vault-Sidecar-Injector-Proxy.md) introduces this mode and examples are provided.
+
+### Modes & Injection Config Overview
+
+Depending on the modes you decide to enable and whether you opt for static or dynamic secrets (when **secrets** mode is selected), the configuration injected into your pod varies. The following table provides a quick glance at the different configurations.
+
+<table>
+  <colgroup span="3"></colgroup>
+  <colgroup span="2"></colgroup>
+  <tr>
+    <th colspan="3" scope="colgroup">Enabled Mode(s)</th>
+    <th colspan="2" scope="colgroup">Injected Configuration</th>
+  </tr>
+  <tr>
+    <th scope="col"><b>secrets</b> <i>(static)</i></th>
+    <th scope="col"><b>secrets</b> <i>(dynamic)</i></th>
+    <th scope="col"><b>proxy</b></th>
+    <th scope="col">Init Container</th>
+    <th scope="col">Sidecar(s)</th>
+  </tr>
+  <tr>
+    <td align="center">X</td><td/><td/><td align="center" bgcolor="grey">X</td><td bgcolor="grey"/>
+  </tr>
+  <tr>
+    <td/><td align="center">X</td><td/><td bgcolor="grey"/><td align="center" bgcolor="grey">X</td>
+  </tr>
+  <tr>
+    <td/><td/><td align="center">X</td><td bgcolor="grey"/><td align="center" bgcolor="grey">X</td>
+  </tr>
+  <tr>
+    <td align="center">X</td><td/><td align="center">X</td><td align="center" bgcolor="grey">X (secrets)</td><td align="center" bgcolor="grey">X (proxy)</td>
+  </tr>
+  <tr>
+    <td/><td align="center">X</td><td align="center">X</td><td bgcolor="grey"/><td align="center" bgcolor="grey">X</td>
+  </tr>
+</table>
+
+> Note on number of injected sidecars: for Kubernetes **Deployment** workloads, **only one sidecar container** is added to your pod to handle dynamic secrets and/or proxy. For Kubernetes **Job** workloads, **two sidecars** are required.
 
 ### Examples
 
@@ -562,6 +594,8 @@ spec:
 
 #### Using Vault AppRole Auth Method
 
+> ⚠️ AppRole Auth Method can only be used with **dynamic** secrets.
+
 <details>
 <summary>
 Show example
@@ -641,7 +675,10 @@ Runtime:
 
 - Vault server deployed (either *in cluster* with official chart <https://github.com/hashicorp/vault-helm> or *out of cluster*), started and reachable through Kubernetes service & endpoint deployed into cluster
 
-#### Helm 2: Tiller installation
+<details>
+<summary>
+<b>Helm 2: Tiller installation</b>
+</summary>
 
 > Note: this step does not apply if you are using Helm 3.
 
@@ -676,8 +713,12 @@ For details on using Tiller with RBAC:
 
 - <https://v2.helm.sh/docs/using_helm/#tiller-and-user-permissions>
 - <https://v2.helm.sh/docs/using_helm/#tiller-and-role-based-access-control>
+</details>
 
-#### Vault server installation
+<details>
+<summary>
+<b>Vault Server installation</b>
+</summary>
 
 > **Note:** this step is optional if you already have a running Vault server. This section helps you setup a test Vault server with ready to use configuration.
 
@@ -703,12 +744,16 @@ $ kubectl logs vault-0
 $ cd vault-sidecar-injector/deploy/vault
 $ ./init-dev-vault-server.sh
 ```
+</details>
 
 ### Vault Sidecar Injector image
 
 > Note: if you don't intend to perform some tests with the image you can skip this section and jump to [Installing the Chart](https://github.com/Talend/vault-sidecar-injector/blob/master/README.md#installing-the-chart).
 
-#### Pulling the image from Docker Hub
+<details>
+<summary>
+<b>Pulling the image from Docker Hub</b>
+</summary>
 
 Official Docker images are published on [Talend's public Docker Hub](https://hub.docker.com/r/talend/vault-sidecar-injector) repository for each `Vault Sidecar Injector` release. Provided Helm chart will pull the image automatically if needed.  
 
@@ -717,8 +762,12 @@ For manual pull of a specific tag:
 ```bash
 $ docker pull talend/vault-sidecar-injector:<tag>
 ```
+</details>
 
-#### Building the image
+<details>
+<summary>
+<b>Building the image</b>
+</summary>
 
 A [Dockerfile](https://github.com/Talend/vault-sidecar-injector/blob/master/Dockerfile) is also provided to both compile `Vault Sidecar Injector` and build the image locally if you prefer.
 
@@ -727,6 +776,7 @@ Just run following command:
 ```bash
 $ make image
 ```
+</details>
 
 ### Installing the Chart
 
@@ -802,7 +852,10 @@ This command deploys the component on the Kubernetes cluster with modified confi
 
 The [configuration](https://github.com/Talend/vault-sidecar-injector/blob/master/README.md#configuration) section lists all the parameters that can be configured during installation.
 
-#### Installing the chart in a dev environment
+<details>
+<summary>
+<b>Installing the chart in a dev environment</b>
+</summary>
 
 In a dev environment, you may want to install your own test instance of `Vault Sidecar Injector`, connected to your own Vault server and limiting injection to a given namespace. To do so, use following options:
 
@@ -824,8 +877,12 @@ $ kubectl label namespace <your dev namespace> vault-injection=<your dev namespa
 # check label on namespace
 $ kubectl get namespace -L vault-injection
 ```
+</details>
 
-#### Restrict injection to specific namespaces
+<details>
+<summary>
+<b>Restrict injection to specific namespaces</b>
+</summary>
 
 By default `Vault Sidecar Injector` monitors all namespaces (except `kube-system` and `kube-public`) and looks afer annotations in submitted pods.
 
@@ -849,6 +906,7 @@ $ kubectl label namespace <namespace> vault-injection=enabled
 # check label on namespace
 $ kubectl get namespace -L vault-injection
 ```
+</details>
 
 ### Uninstalling the chart
 
