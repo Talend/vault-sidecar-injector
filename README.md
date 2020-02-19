@@ -281,7 +281,7 @@ This sample demonstrates how to enable the proxy mode in addition to the secrets
 
 Key annotation to use is `sidecar.vault.talend.org/mode` to let `Vault Sidecar Injector` knows that proxy mode must be enabled. Optional `sidecar.vault.talend.org/proxy-port` annotation can be handy if default proxy port has to be customized.
 
-Once enabled, your application container can directly intereact with the Vault server by sending requests to the injected Vault Agent sidecar that now also acts as a proxy handling authentication with the server. The proxy is available at `http://127.0.0.1:<proxy port>`.
+Once enabled, your application container can directly interact with the Vault server by sending requests to the injected Vault Agent sidecar that now also acts as a proxy handling authentication with the server. The proxy is available at `http://127.0.0.1:<proxy port>`.
 
 ```yaml
 apiVersion: v1
@@ -783,7 +783,7 @@ $ kubectl get namespace -L vault-injection
 
 #### Restrict injection to specific namespaces
 
-By default `Vault Sidecar Injector` monitors all namespaces (except `kube-system` and `kube-public`) and looks afer annotations in submitted pods.
+By default `Vault Sidecar Injector` monitors all namespaces (except `kube-system` and `kube-public`) and looks after annotations in submitted pods.
 
 If you want to strictly control the list of namespaces where injection is allowed, set value `mutatingwebhook.namespaceSelector.boolean=true` when installing the chart as follows:
 
