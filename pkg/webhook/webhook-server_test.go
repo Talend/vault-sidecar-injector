@@ -1,4 +1,4 @@
-// Copyright © 2019 Talend
+// Copyright © 2019-2020 Talend - www.talend.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,10 +17,13 @@ package webhook
 import (
 	"encoding/json"
 	"errors"
+	"flag"
 	"io/ioutil"
+	"os"
 	"path/filepath"
-	"strings"
-	"talend/vault-sidecar-injector/pkg/config"
+	"strconv"
+	cfg "talend/vault-sidecar-injector/pkg/config"
+	ctx "talend/vault-sidecar-injector/pkg/context"
 	"testing"
 
 	"k8s.io/api/admission/v1beta1"
@@ -42,9 +45,112 @@ type testResource struct {
 	podTemplateSpec *corev1.PodTemplateSpec
 }
 
-func TestInlineInjector(t *testing.T) {
-	vsiCfg, err := config.Load(
-		config.WhSvrParameters{
+func TestWebhookServerOK(t *testing.T) {
+	// Create webhook instance
+	vaultInjector, err := createVaultInjector()
+	if err != nil {
+		t.Fatalf("Loading error \"%s\"", err)
+	}
+
+	// Get all test workloads
+	workloads, err := filepath.Glob("../../test/workloads/ok/*.yaml")
+	if err != nil {
+		t.Fatalf("Fail listing files: %s", err)
+	}
+
+	// Loop on all test workloads: mutate and display JSON Patch structure
+	for _, workloadManifest := range workloads {
+		klog.Info("\n\n ")
+		klog.Infof("Loading workload %s", workloadManifest)
+
+		ar, err := (&testResource{
+			manifest: workloadManifest,
+			workloadType: func(w string) string {
+				if bMatched, _ := filepath.Match("*-dep-*.yaml", filepath.Base(w)); bMatched {
+					return "deployment"
+				} else if bMatched, _ := filepath.Match("*-job-*.yaml", filepath.Base(w)); bMatched {
+					return "job"
+				} else {
+					return ""
+				}
+			}(workloadManifest),
+		}).load()
+		if err != nil {
+			t.Fatalf("Error creating AR \"%s\"", err)
+		}
+
+		// Mutate pod
+		resp := vaultInjector.mutate(ar)
+
+		assert.Equal(t, true, resp.Allowed)
+		assert.Nil(t, resp.Result)
+		assert.NotNil(t, resp.Patch)
+
+		var patch []ctx.PatchOperation
+		if err = yaml.Unmarshal(resp.Patch, &patch); err != nil {
+			t.Errorf("JSON Patch unmarshal error \"%s\"", err)
+		}
+
+		klog.Infof("JSON Patch=%+v", patch)
+	}
+}
+
+func TestWebhookServerKO(t *testing.T) {
+	// Create webhook instance
+	vaultInjector, err := createVaultInjector()
+	if err != nil {
+		t.Fatalf("Loading error \"%s\"", err)
+	}
+
+	// Get all test workloads
+	workloads, err := filepath.Glob("../../test/workloads/ko/*.yaml")
+	if err != nil {
+		t.Fatalf("Fail listing files: %s", err)
+	}
+
+	// Loop on all test workloads: mutate and display JSON Patch structure
+	for _, workloadManifest := range workloads {
+		klog.Info("\n\n ")
+		klog.Infof("Loading workload %s", workloadManifest)
+
+		ar, err := (&testResource{
+			manifest: workloadManifest,
+			workloadType: func(w string) string {
+				if bMatched, _ := filepath.Match("*-dep-*.yaml", filepath.Base(w)); bMatched {
+					return "deployment"
+				} else if bMatched, _ := filepath.Match("*-job-*.yaml", filepath.Base(w)); bMatched {
+					return "job"
+				} else {
+					return ""
+				}
+			}(workloadManifest),
+		}).load()
+		if err != nil {
+			t.Fatalf("Error creating AR \"%s\"", err)
+		}
+
+		// Mutate pod
+		resp := vaultInjector.mutate(ar)
+
+		assert.Equal(t, false, resp.Allowed)
+		assert.NotNil(t, resp.Result)
+		assert.Nil(t, resp.Patch)
+
+		klog.Infof("Result=%+v", resp.Result)
+	}
+}
+
+func createVaultInjector() (*VaultInjector, error) {
+	verbose, _ := strconv.ParseBool(os.Getenv("VERBOSE"))
+	if verbose {
+		// Set Klog verbosity level to have detailed logs from our webhook (where we use level 5+ to log such info)
+		klogFlags := flag.NewFlagSet("klog", flag.ExitOnError)
+		klog.InitFlags(klogFlags)
+		klogFlags.Set("v", "5")
+	}
+
+	vsiCfg, err := cfg.Load(
+		cfg.WhSvrParameters{
 			0, 0, "", "",
 			"sidecar.vault.talend.org", "com.talend.application", "com.talend.service",
 			"../../test/config/injectionconfig.yaml",
@@ -55,52 +161,11 @@ func TestInlineInjector(t *testing.T) {
 		},
 	)
 	if err != nil {
-		t.Errorf("Loading error \"%s\"", err)
+		return nil, err
 	}
 
 	// Create webhook instance
-	vaultInjector := New(vsiCfg, nil)
-
-	// Get all test workloads
-	workloads, err := filepath.Glob("../../test/workloads/*.yaml")
-	if err != nil {
-		t.Errorf("Fail listing files: %s", err)
-	}
-
-	// Loop on all test workloads: mutate and display JSON Patch structure
-	for _, workloadManifest := range workloads {
-		klog.Infof("Loading workload %s", workloadManifest)
-
-		ar, err := (&testResource{
-			manifest: workloadManifest,
-			workloadType: func(w string) string {
-				if strings.HasSuffix(w, "-deployment.yaml") {
-					return "deployment"
-				} else if strings.HasSuffix(w, "-job.yaml") {
-					return "job"
-				} else {
-					return ""
-				}
-			}(workloadManifest),
-		}).load()
-		if err != nil {
-			t.Errorf("Error creating AR \"%s\"", err)
-		}
-
-		// Mutate pod
-		resp := vaultInjector.mutate(ar)
-
-		assert.Equal(t, true, resp.Allowed)
-		assert.Nil(t, resp.Result)
-		assert.NotNil(t, resp.Patch)
-
-		var patch []patchOperation
-		if err = yaml.Unmarshal(resp.Patch, &patch); err != nil {
-			t.Errorf("JSON Patch unmarshal error \"%s\"", err)
-		}
-
-		klog.Infof("JSON Patch=%+v", patch)
-	}
+	return New(vsiCfg, nil), nil
 }
 
 func (tr *testResource) load() (*v1beta1.AdmissionReview, error) {
@@ -152,7 +217,10 @@ func (tr *testResource) addSATokenVolume() {
 		},
 	}
 
-	tr.podTemplateSpec.Spec.Containers[0].VolumeMounts = append(tr.podTemplateSpec.Spec.Containers[0].VolumeMounts, saTokenVolumeMount)
+	if len(tr.podTemplateSpec.Spec.Containers) > 0 {
+		tr.podTemplateSpec.Spec.Containers[0].VolumeMounts = append(tr.podTemplateSpec.Spec.Containers[0].VolumeMounts, saTokenVolumeMount)
+	}
+
 	tr.podTemplateSpec.Spec.Volumes = append(tr.podTemplateSpec.Spec.Volumes, saTokenVolume)
 }
 

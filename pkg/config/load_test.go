@@ -1,4 +1,4 @@
-// Copyright © 2019 Talend
+// Copyright © 2019-2020 Talend - www.talend.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,9 +23,9 @@ import (
 )
 
 const (
-	proxyCfgFileResolved    = "cache {\n    use_auto_auth_token = true\n}\n\nlistener \"tcp\" {\n    address = \"127.0.0.1:<APPSVC_PROXY_PORT>\"\n    tls_disable = true\n}"
-	templateBlockResolved   = "template {\n    destination = \"/opt/talend/secrets/<APPSVC_SECRETS_DESTINATION>\"\n    contents = <<EOH\n    <APPSVC_TEMPLATE_CONTENT>\n    EOH\n    command = \"<APPSVC_TEMPLATE_COMMAND_TO_RUN>\"\n    wait {\n    min = \"1s\"\n    max = \"2s\"\n    }\n}"
-	templateDefaultResolved = "{{ with secret \"<APPSVC_VAULT_SECRETS_PATH>\" }}{{ range \\$k, \\$v := .Data }}\n{{ \\$k }}={{ \\$v }}\n{{ end }}{{ end }}"
+	proxyCfgFileResolved    = "cache {\n    use_auto_auth_token = true\n}\n\nlistener \"tcp\" {\n    address = \"127.0.0.1:<VSI_PROXY_PORT>\"\n    tls_disable = true\n}"
+	templateBlockResolved   = "template {\n    destination = \"/opt/talend/secrets/<VSI_SECRETS_DESTINATION>\"\n    contents = <<EOH\n    <VSI_SECRETS_TEMPLATE_CONTENT>\n    EOH\n    command = \"<VSI_SECRETS_TEMPLATE_COMMAND_TO_RUN>\"\n    wait {\n    min = \"1s\"\n    max = \"2s\"\n    }\n}"
+	templateDefaultResolved = "{{ with secret \"<VSI_SECRETS_VAULT_SECRETS_PATH>\" }}{{ range \\$k, \\$v := .Data }}\n{{ \\$k }}={{ \\$v }}\n{{ end }}{{ end }}"
 )
 
 type inputLoaded struct {
@@ -80,7 +80,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		)
 		if err != nil {
-			t.Errorf("Loading error \"%s\"", err)
+			t.Fatalf("Loading error \"%s\"", err)
 		}
 
 		// Verify strings

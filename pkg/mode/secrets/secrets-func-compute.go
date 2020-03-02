@@ -1,4 +1,4 @@
-// Copyright © 2019 Talend
+// Copyright © 2019-2020 Talend - www.talend.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,23 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package webhook
+package secrets
 
 import (
-	"errors"
 	"fmt"
 	"strings"
+	cfg "talend/vault-sidecar-injector/pkg/config"
+	ctx "talend/vault-sidecar-injector/pkg/context"
 
 	"k8s.io/klog"
 )
 
-// Vault Sidecar Injector: Secrets Mode
-func (vaultInjector *VaultInjector) secretsMode(labels, annotations map[string]string) (modeConfig, error) {
-	secretsType := annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationSecretsTypeKey]]
-	secretsPath := strings.Split(annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationSecretsPathKey]], ",")
-	secretsTemplate := strings.Split(annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationSecretsTemplateKey]], "---")
-	templateDest := strings.Split(annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationTemplateDestKey]], ",")
-	templateCmd := strings.Split(annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationTemplateCmdKey]], ",")
+func secretsModeCompute(config *cfg.VSIConfig, labels, annotations map[string]string) (ctx.ModeConfig, error) {
+	secretsType := annotations[config.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationSecretsTypeKey]]
+	secretsPath := strings.Split(annotations[config.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationSecretsPathKey]], ",")
+	secretsTemplate := strings.Split(annotations[config.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationSecretsTemplateKey]], "---")
+	templateDest := strings.Split(annotations[config.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationTemplateDestKey]], ",")
+	templateCmd := strings.Split(annotations[config.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationTemplateCmdKey]], ",")
 
 	secretsPathNum := len(secretsPath)
 	secretsTemplateNum := len(secretsTemplate)
@@ -46,18 +46,18 @@ func (vaultInjector *VaultInjector) secretsMode(labels, annotations map[string]s
 		}
 
 		if !secretsTypeSupported {
-			err := fmt.Errorf("Submitted pod makes use of unsupported secrets type %s", secretsType)
+			err := fmt.Errorf("[%s] Submitted pod makes use of unsupported secrets type %s", vaultInjectorModeSecrets, secretsType)
 			klog.Error(err.Error())
 			return nil, err
 		}
 	}
 
 	if secretsPathNum == 1 && secretsPath[0] == "" { // Build default secrets path: "secret/<application label>/<service label>"
-		applicationLabel := labels[vaultInjector.ApplicationLabelKey]
-		applicationServiceLabel := labels[vaultInjector.ApplicationServiceLabelKey]
+		applicationLabel := labels[config.ApplicationLabelKey]
+		applicationServiceLabel := labels[config.ApplicationServiceLabelKey]
 
 		if applicationLabel == "" || applicationServiceLabel == "" {
-			err := fmt.Errorf("Submitted pod must contain labels %s and %s", vaultInjector.ApplicationLabelKey, vaultInjector.ApplicationServiceLabelKey)
+			err := fmt.Errorf("[%s] Submitted pod must contain labels %s and %s", vaultInjectorModeSecrets, config.ApplicationLabelKey, config.ApplicationServiceLabelKey)
 			klog.Error(err.Error())
 			return nil, err
 		}
@@ -72,7 +72,7 @@ func (vaultInjector *VaultInjector) secretsMode(labels, annotations map[string]s
 	if secretsTemplateNum == 1 && secretsTemplate[0] == "" {
 		// We must have same numbers of secrets path & secrets destinations
 		if templateDestNum != secretsPathNum {
-			err := errors.New("Submitted pod must contain same numbers of secrets path and secrets destinations")
+			err := fmt.Errorf("[%s] Submitted pod must contain same numbers of secrets path and secrets destinations", vaultInjectorModeSecrets)
 			klog.Error(err.Error())
 			return nil, err
 		}
@@ -80,12 +80,12 @@ func (vaultInjector *VaultInjector) secretsMode(labels, annotations map[string]s
 		// If no custom template(s), use default template
 		secretsTemplate = make([]string, templateDestNum)
 		for tmplIdx := 0; tmplIdx < templateDestNum; tmplIdx++ {
-			secretsTemplate[tmplIdx] = vaultInjector.TemplateDefaultTmpl
+			secretsTemplate[tmplIdx] = config.TemplateDefaultTmpl
 		}
 	} else {
 		// We must have same numbers of custom templates & secrets destinations ...
 		if templateDestNum != secretsTemplateNum {
-			err := errors.New("Submitted pod must contain same numbers of templates and secrets destinations")
+			err := fmt.Errorf("[%s] Submitted pod must contain same numbers of templates and secrets destinations", vaultInjectorModeSecrets)
 			klog.Error(err.Error())
 			return nil, err
 		}
@@ -103,31 +103,15 @@ func (vaultInjector *VaultInjector) secretsMode(labels, annotations map[string]s
 	var templates strings.Builder
 
 	for tmplIdx := 0; tmplIdx < templateDestNum; tmplIdx++ {
-		templateBlock = vaultInjector.TemplateBlock
-		templateBlock = strings.Replace(templateBlock, templateAppSvcDestinationPlaceholder, templateDest[tmplIdx], -1)
-		templateBlock = strings.Replace(templateBlock, templateContentPlaceholder, secretsTemplate[tmplIdx], -1)
-		templateBlock = strings.Replace(templateBlock, vaultAppSvcSecretsPathPlaceholder, secretsPath[tmplIdx], -1)
-		templateBlock = strings.Replace(templateBlock, templateCommandPlaceholder, templateCommands[tmplIdx], -1)
+		templateBlock = config.TemplateBlock
+		templateBlock = strings.Replace(templateBlock, secretsDestinationPlaceholder, templateDest[tmplIdx], -1)
+		templateBlock = strings.Replace(templateBlock, secretsTemplateContentPlaceholder, secretsTemplate[tmplIdx], -1)
+		templateBlock = strings.Replace(templateBlock, secretsVaultPathPlaceholder, secretsPath[tmplIdx], -1)
+		templateBlock = strings.Replace(templateBlock, secretsTemplateCommandPlaceholder, templateCommands[tmplIdx], -1)
 
 		templates.WriteString(templateBlock)
 		templates.WriteString("\n")
 	}
 
 	return &secretsModeConfig{secretsType, templates.String()}, nil
-}
-
-func (secModeCfg *secretsModeConfig) getTemplate() string {
-	return secModeCfg.template
-}
-
-func getSecretsType(config modeConfig) (string, error) {
-	secModeCfg, ok := config.(*secretsModeConfig) // here we use type assertion (https://golang.org/ref/spec#Type_assertions)
-
-	if ok {
-		return secModeCfg.secretsType, nil
-	}
-
-	err := errors.New("Provided type cannot be casted to 'secretsModeConfig'")
-	klog.Error(err.Error())
-	return "", err
 }

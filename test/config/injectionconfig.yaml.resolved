@@ -12,7 +12,7 @@ containers:
     fi
 
     while true; do
-      cntStatus=$(curl -s -X GET -H "Authorization: Bearer $jwt_sa_token" --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt https://$KUBERNETES_SERVICE_HOST/api/v1/namespaces/$pod_ns/pods/$POD_NAME?pretty=false | jq -c --raw-output '.status.containerStatuses[] | select(.name == "<APP_JOB_CNT_NAME>").state | keys[0]')
+      cntStatus=$(curl -s -X GET -H "Authorization: Bearer $jwt_sa_token" --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt https://$KUBERNETES_SERVICE_HOST/api/v1/namespaces/$pod_ns/pods/$POD_NAME?pretty=false | jq -c --raw-output '.status.containerStatuses[] | select(.name == "${VSI_JOB_CNT_NAME}").state | keys[0]')
       if [ $cntStatus = "terminated" ]; then
         echo "=> job container terminated: send signal"
         touch /opt/talend/tvsi/vault-sidecars-signal-terminate
@@ -25,8 +25,9 @@ containers:
     valueFrom:
       fieldRef:
         fieldPath: metadata.name
+  - name: VSI_JOB_CNT_NAME
   image: everpeace/curl-jq
-  imagePullPolicy: IfNotPresent
+  imagePullPolicy: Always
   name: tvsi-job-babysitter
   resources: {}
   volumeMounts:
@@ -46,7 +47,7 @@ containers:
       method "kubernetes" {
         mount_path = "auth/kubernetes"
         config = {
-          role = "<APP_VAULT_ROLE>"
+          role = "${VSI_VAULT_ROLE}"
           token_path = "/var/run/secrets/talend/vault-sidecar-injector/serviceaccount/token"
         }
       }
@@ -58,12 +59,11 @@ containers:
       }
     }
 
-    <APPSVC_PROXY_CONFIG>
+    ${VSI_PROXY_CONFIG_PLACEHOLDER}
 
-    <APPSVC_TEMPLATES>
+    ${VSI_SECRETS_TEMPLATES_PLACEHOLDER}
     EOF
-    workload_is_job="<APP_JOB>"
-    if [ $workload_is_job = "true" ]; then
+    if [ "${VSI_JOB_WORKLOAD}" = "true" ]; then
       docker-entrypoint.sh agent -config=vault-agent-config.hcl -log-level=info &
       while true; do
         if [ -f "/opt/talend/tvsi/vault-sidecars-signal-terminate" ]; then
@@ -82,8 +82,15 @@ containers:
     value: "true"
   - name: VAULT_ADDR
     value: https://vault:8200
-  image: vault:1.3.1
-  imagePullPolicy: IfNotPresent
+  - name: VSI_JOB_WORKLOAD
+    value: "false"
+  - name: VSI_PROXY_CONFIG_PLACEHOLDER
+  - name: VSI_SECRETS_TEMPLATES_PLACEHOLDER
+  - name: VSI_VAULT_AUTH_METHOD
+    value: kubernetes
+  - name: VSI_VAULT_ROLE
+  image: vault:1.3.2
+  imagePullPolicy: Always
   lifecycle:
     preStop:
       exec:
@@ -102,7 +109,53 @@ containers:
   - mountPath: /var/run/secrets/talend/vault-sidecar-injector/serviceaccount
     name: TVSI_SA_SECRETS_VOL_NAME
     readOnly: true
-initContainers: null
+initContainers:
+- command:
+  - sh
+  - -c
+  - |
+    cat <<EOF > vault-agent-config.hcl
+    pid_file = "/home/vault/pidfile"
+
+    auto_auth {
+      method "kubernetes" {
+        mount_path = "auth/kubernetes"
+        config = {
+          role = "${VSI_VAULT_ROLE}"
+          token_path = "/var/run/secrets/talend/vault-sidecar-injector/serviceaccount/token"
+        }
+      }
+
+      sink "file" {
+        config = {
+          path = "/home/vault/.vault-token"
+        }
+      }
+    }
+
+    ${VSI_SECRETS_TEMPLATES_PLACEHOLDER}
+    EOF
+
+    docker-entrypoint.sh agent -config=vault-agent-config.hcl -exit-after-auth=true -log-level=info
+    export VAULT_TOKEN=$(cat /home/vault/.vault-token)
+    vault token revoke -self
+  env:
+  - name: SKIP_SETCAP
+    value: "true"
+  - name: VAULT_ADDR
+    value: https://vault:8200
+  - name: VSI_SECRETS_TEMPLATES_PLACEHOLDER
+  - name: VSI_VAULT_ROLE
+  image: vault:1.3.2
+  imagePullPolicy: Always
+  name: tvsi-vault-agent
+  resources: {}
+  volumeMounts:
+  - mountPath: /opt/talend/secrets
+    name: secrets
+  - mountPath: /var/run/secrets/talend/vault-sidecar-injector/serviceaccount
+    name: TVSI_SA_SECRETS_VOL_NAME
+    readOnly: true
 volumes:
 - emptyDir:
     medium: Memory

@@ -3,4 +3,4 @@ postStart:
     command:
     - sh
     - -c
-    - cat <APPSVC_SECRETS_VOL_MOUNTPATH>/* >/dev/null 2>&1
+    - cat <VSI_SECRETS_VOL_MOUNTPATH>/* >/dev/null 2>&1

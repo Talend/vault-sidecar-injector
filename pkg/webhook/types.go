@@ -1,4 +1,4 @@
-// Copyright © 2019 Talend
+// Copyright © 2019-2020 Talend - www.talend.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,69 +16,22 @@ package webhook
 
 import (
 	"net/http"
-	"talend/vault-sidecar-injector/pkg/config"
+	cfg "talend/vault-sidecar-injector/pkg/config"
 )
-
-var vaultInjectorAnnotationKeys = [...]string{
-	vaultInjectorAnnotationInjectKey,
-	vaultInjectorAnnotationAuthMethodKey,
-	vaultInjectorAnnotationModeKey,
-	vaultInjectorAnnotationProxyPortKey,
-	vaultInjectorAnnotationRoleKey,
-	vaultInjectorAnnotationSATokenKey,
-	vaultInjectorAnnotationSecretsPathKey,
-	vaultInjectorAnnotationSecretsTemplateKey,
-	vaultInjectorAnnotationTemplateDestKey,
-	vaultInjectorAnnotationLifecycleHookKey,
-	vaultInjectorAnnotationSecretsTypeKey,
-	vaultInjectorAnnotationTemplateCmdKey,
-	vaultInjectorAnnotationWorkloadKey,
-	vaultInjectorAnnotationStatusKey,
-}
-
-var vaultInjectorModes = [...]string{
-	vaultInjectorModeSecrets,
-	vaultInjectorModeProxy,
-}
-
-var vaultInjectorSecretsTypes = [...]string{
-	vaultInjectorSecretsTypeDynamic,
-	vaultInjectorSecretsTypeStatic,
-}
 
 // VaultInjector : Webhook Server entity
 type VaultInjector struct {
-	*config.VSIConfig
-	Server    *http.Server
-	ModesFunc map[string]func(vaultInjector *VaultInjector, labels, annotations map[string]string) (modeConfig, error)
+	*cfg.VSIConfig
+	Server *http.Server
 }
 
-// Struct to carry computed placeholders' values and context info for current injection
-type injectionContext struct {
-	modes                          map[string]bool
-	k8sDefaultSATokenVolumeName    string
-	vaultInjectorSATokenVolumeName string
-	vaultAuthMethod                string
-	vaultRole                      string
-	modesConfig                    map[string]modeConfig
-}
-
-type modeConfig interface {
-	getTemplate() string
-}
-
-type proxyModeConfig struct {
-	template string
-}
-
-type secretsModeConfig struct {
-	secretsType string
-	template    string
-}
-
-// This struct represents a JSON Patch operation (see http://jsonpatch.com/)
-type patchOperation struct {
-	Op    string      `json:"op"`
-	Path  string      `json:"path"`
-	Value interface{} `json:"value,omitempty"`
+// Supported annotations (modes' annotations will be appended to this array)
+var vaultInjectorAnnotationKeys = []string{
+	vaultInjectorAnnotationInjectKey,
+	vaultInjectorAnnotationAuthMethodKey,
+	vaultInjectorAnnotationModeKey,
+	vaultInjectorAnnotationRoleKey,
+	vaultInjectorAnnotationSATokenKey,
+	vaultInjectorAnnotationWorkloadKey,
+	vaultInjectorAnnotationStatusKey,
 }

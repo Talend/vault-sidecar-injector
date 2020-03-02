@@ -1,4 +1,4 @@
-// Copyright © 2019 Talend
+// Copyright © 2019-2020 Talend - www.talend.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,7 +19,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"talend/vault-sidecar-injector/pkg/config"
+	cfg "talend/vault-sidecar-injector/pkg/config"
+	ctx "talend/vault-sidecar-injector/pkg/context"
+	m "talend/vault-sidecar-injector/pkg/mode"
 
 	"k8s.io/api/admission/v1beta1"
 	corev1 "k8s.io/api/core/v1"
@@ -41,29 +43,29 @@ var ignoredNamespaces = []string{
 }
 
 // New : init new VaultInjector type
-func New(cfg *config.VSIConfig, server *http.Server) *VaultInjector {
+func New(config *cfg.VSIConfig, server *http.Server) *VaultInjector {
+	// Add mode annotations
+	for _, mode := range m.VaultInjectorModes {
+		vaultInjectorAnnotationKeys = append(vaultInjectorAnnotationKeys, mode.Annotations...)
+	}
+
 	// Compute FQ annotations
-	cfg.VaultInjectorAnnotationsFQ = make(map[string]string, len(vaultInjectorAnnotationKeys))
+	config.VaultInjectorAnnotationsFQ = make(map[string]string, len(vaultInjectorAnnotationKeys))
 	for _, vaultAnnotationKey := range vaultInjectorAnnotationKeys {
-		if cfg.VaultInjectorAnnotationKeyPrefix != "" {
-			cfg.VaultInjectorAnnotationsFQ[vaultAnnotationKey] = cfg.VaultInjectorAnnotationKeyPrefix + "/" + vaultAnnotationKey
+		if config.VaultInjectorAnnotationKeyPrefix != "" {
+			config.VaultInjectorAnnotationsFQ[vaultAnnotationKey] = config.VaultInjectorAnnotationKeyPrefix + "/" + vaultAnnotationKey
 		} else {
-			cfg.VaultInjectorAnnotationsFQ[vaultAnnotationKey] = vaultAnnotationKey
+			config.VaultInjectorAnnotationsFQ[vaultAnnotationKey] = vaultAnnotationKey
 		}
 	}
 
 	return &VaultInjector{
-		VSIConfig: cfg,
+		VSIConfig: config,
 		Server:    server,
-		// Register Modes functions (using trick to be able to use function pointers to methods, see https://stackoverflow.com/a/31561683)
-		ModesFunc: map[string]func(vaultInjector *VaultInjector, labels, annotations map[string]string) (modeConfig, error){
-			vaultInjectorModeSecrets: (*VaultInjector).secretsMode,
-			vaultInjectorModeProxy:   (*VaultInjector).proxyMode,
-		},
 	}
 }
 
-// create mutation patch for resoures
+// Create mutation patch for resoures
 func (vaultInjector *VaultInjector) createPatch(pod *corev1.Pod, annotations map[string]string) ([]byte, error) {
 
 	patchPodSpec, err := vaultInjector.updatePodSpec(pod)
@@ -71,7 +73,7 @@ func (vaultInjector *VaultInjector) createPatch(pod *corev1.Pod, annotations map
 		return nil, err
 	}
 
-	var patch []patchOperation
+	var patch []ctx.PatchOperation
 
 	patch = append(patch, patchPodSpec...)
 	patch = append(patch, updateAnnotation(pod.Annotations, annotations)...)
@@ -79,7 +81,7 @@ func (vaultInjector *VaultInjector) createPatch(pod *corev1.Pod, annotations map
 	return json.Marshal(patch)
 }
 
-// main mutation process
+// Main mutation process
 func (vaultInjector *VaultInjector) mutate(ar *v1beta1.AdmissionReview) *v1beta1.AdmissionResponse {
 	req := ar.Request
 	var pod corev1.Pod
@@ -118,7 +120,7 @@ func (vaultInjector *VaultInjector) mutate(ar *v1beta1.AdmissionReview) *v1beta1
 	klog.Infof("AdmissionReview for GroupVersionKind=%+v, Namespace=%v Name=%v (%v) UID=%v patchOperation=%v UserInfo=%+v",
 		req.Kind, req.Namespace, req.Name, podName, req.UID, req.Operation, req.UserInfo)
 
-	// determine whether to perform mutation
+	// Determine whether to perform mutation
 	if !mutationRequired(ignoredNamespaces, vaultInjector.VaultInjectorAnnotationsFQ, &pod.ObjectMeta) {
 		klog.Infof("Skipping mutation for %s/%s due to policy check", podNamespace, podName)
 		return &v1beta1.AdmissionResponse{
@@ -161,7 +163,7 @@ func (vaultInjector *VaultInjector) Serve(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// verify the content type is accurate
+	// Verify the content type is accurate
 	contentType := r.Header.Get("Content-Type")
 	if contentType != "application/json" {
 		klog.Errorf("Content-Type=%s, expect application/json", contentType)

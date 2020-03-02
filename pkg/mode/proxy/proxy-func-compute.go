@@ -1,4 +1,4 @@
-// Copyright © 2019 Talend
+// Copyright © 2019-2020 Talend - www.talend.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,25 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package webhook
+package proxy
 
 import (
 	"strings"
+	cfg "talend/vault-sidecar-injector/pkg/config"
+	ctx "talend/vault-sidecar-injector/pkg/context"
 )
 
-// Vault Sidecar Injector: Proxy Mode
-func (vaultInjector *VaultInjector) proxyMode(labels, annotations map[string]string) (modeConfig, error) {
-	proxyPort := annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationProxyPortKey]]
+func proxyModeCompute(config *cfg.VSIConfig, labels, annotations map[string]string) (ctx.ModeConfig, error) {
+	proxyPort := annotations[config.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationProxyPortKey]]
 
 	if proxyPort == "" { // Default port
 		proxyPort = vaultProxyDefaultPort
 	}
 
-	template := strings.Replace(vaultInjector.ProxyConfig, vaultProxyPortPlaceholder, proxyPort, -1)
+	template := strings.Replace(config.ProxyConfig, vaultProxyPortPlaceholder, proxyPort, -1)
 
 	return &proxyModeConfig{template}, nil
-}
-
-func (proxyModeCfg *proxyModeConfig) getTemplate() string {
-	return proxyModeCfg.template
 }

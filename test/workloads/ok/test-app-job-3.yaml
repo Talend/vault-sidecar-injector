@@ -1,30 +1,3 @@
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: job-sa
-  namespace: default
----
-kind: Role
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: job-pod-status
-rules:
-  - apiGroups: [""]
-    resources: ["pods"]
-    verbs: ["get"]
----
-kind: RoleBinding
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: job-pod-status
-subjects:
-  - kind: ServiceAccount
-    name: job-sa
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: job-pod-status
----
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -36,10 +9,11 @@ spec:
     metadata:
       annotations:
         sidecar.vault.talend.org/inject: "true"
-        sidecar.vault.talend.org/mode: "secrets,proxy"  # Enable both 'secrets' and 'proxy' modes
+        sidecar.vault.talend.org/mode: "secrets,proxy,job"  # Enable 'secrets', 'proxy' and 'job' modes
         sidecar.vault.talend.org/proxy-port: "9999"     # Override default proxy port value (8200)
-        # Vault Sidecar Injector receive the pod spec: don't know whether it is a job or a deployment. Need annotation below.
-        sidecar.vault.talend.org/workload: "job"
+        # Vault Sidecar Injector receive the pod spec: don't know whether it is a job or a deployment. 
+        # Annotation below is deprecated, use 'sidecar.vault.talend.org/mode' instead.
+        #sidecar.vault.talend.org/workload: "job"
       labels:
         com.talend.application: test
         com.talend.service: test-app-svc

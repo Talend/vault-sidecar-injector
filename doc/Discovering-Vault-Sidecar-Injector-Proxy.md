@@ -12,4 +12,4 @@ It is also possible to disable dynamic secrets retrieval and benefit only from t
 
 All of this is achieved using the brand new **modes** mechanism relying on the `sidecar.vault.talend.org/mode` annotation. With **modes** you can enable part or all of the features you need depending on your use case. Details are available in the [documentation](https://github.com/Talend/vault-sidecar-injector/blob/master/README.md#modes).
 
-The provided `test-app-job-proxy` and `test-app-job-secrets-proxy` [samples](https://github.com/Talend/vault-sidecar-injector/blob/master/deploy/samples) show some of the possible combinations.
+The provided `app-job-2-proxy` and `app-job-3-secrets-proxy` [samples](https://github.com/Talend/vault-sidecar-injector/blob/master/samples) show some of the possible combinations.

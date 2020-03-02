@@ -1,4 +1,4 @@
-// Copyright © 2019 Talend
+// Copyright © 2019-2020 Talend - www.talend.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@ package webhook
 import (
 	"fmt"
 	"strings"
+
+	ctx "talend/vault-sidecar-injector/pkg/context"
 
 	"k8s.io/api/admission/v1beta1"
 	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
@@ -108,72 +110,21 @@ Loop:
 	return k8sSaSecretsVolName, nil
 }
 
-func getMountPathOfSecretsVolume(cnts []corev1.Container) (string, error) {
-	var secretsVolMountPath string
-
-Loop:
-	for _, sourceContainer := range cnts {
-		for _, volMount := range sourceContainer.VolumeMounts {
-			if volMount.Name == appSvcSecretsVolName {
-				secretsVolMountPath = volMount.MountPath
-				break Loop
-			}
-		}
-	}
-
-	if secretsVolMountPath == "" {
-		err := fmt.Errorf("Volume Mount %s not found in submitted pod", appSvcSecretsVolName)
-		klog.Error(err.Error())
-		return "", err
-	}
-
-	return secretsVolMountPath, nil
-}
-
-func getModes(requestedModes []string, modes map[string]bool) {
-	// Init modes for current injection context
-	for _, mode := range vaultInjectorModes {
-		modes[mode] = false
-	}
-
-	requestedModesNum := len(requestedModes)
-
-	if requestedModesNum > 0 {
-		if requestedModesNum == 1 && requestedModes[0] == "" { // If no mode(s) provided then only enable "secrets" mode
-			modes[vaultInjectorModeSecrets] = true
-		} else {
-			// Look at requested modes, ignore and remove unsupported values
-			for _, requestedMode := range requestedModes {
-				switch requestedMode {
-				case vaultInjectorModeSecrets, vaultInjectorModeProxy:
-					modes[requestedMode] = true
-				default:
-					klog.Warningf("Ignore unsupported requested Vault Sidecar Injector mode: %s", requestedMode)
-				}
-			}
-		}
-	} else { // If no mode(s) provided then only enable "secrets" mode
-		modes[vaultInjectorModeSecrets] = true
-	}
-
-	klog.Infof("Modes: %+v", modes)
-}
-
-func updateAnnotation(target map[string]string, added map[string]string) (patch []patchOperation) {
+func updateAnnotation(target map[string]string, added map[string]string) (patch []ctx.PatchOperation) {
 	for key, value := range added {
 		if target == nil || target[key] == "" {
 			target = map[string]string{}
-			patch = append(patch, patchOperation{
-				Op:   jsonPatchOpAdd,
-				Path: jsonPathAnnotations,
+			patch = append(patch, ctx.PatchOperation{
+				Op:   ctx.JsonPatchOpAdd,
+				Path: ctx.JsonPathAnnotations,
 				Value: map[string]string{
 					key: value,
 				},
 			})
 		} else {
-			patch = append(patch, patchOperation{
-				Op:    jsonPatchOpReplace,
-				Path:  jsonPathAnnotations + "/" + key,
+			patch = append(patch, ctx.PatchOperation{
+				Op:    ctx.JsonPatchOpReplace,
+				Path:  ctx.JsonPathAnnotations + "/" + key,
 				Value: value,
 			})
 		}

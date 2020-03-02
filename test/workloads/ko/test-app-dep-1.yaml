@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-app-no-container
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      com.talend.application: test
+      com.talend.service: test-app-svc
+  template:
+    metadata:
+      annotations:
+        sidecar.vault.talend.org/inject: "true"
+      labels:
+        com.talend.application: test
+        com.talend.service: test-app-svc
+    spec:
+      serviceAccountName: default
+      volumes:
+        - name: secrets
+          emptyDir:
+            medium: Memory

@@ -47,7 +47,7 @@ package:
 	helm lint ./vault-sidecar-injector-*.tgz --debug
 
 image:
-	echo "Build image from sources ..."
+	echo "Build image using Go container and multi-stage build ..."
 	docker build -t talend/vault-sidecar-injector:${VSI_VERSION} .
 	docker tag talend/vault-sidecar-injector:${VSI_VERSION} talend/vault-sidecar-injector
 

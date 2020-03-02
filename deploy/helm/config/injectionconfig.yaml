@@ -7,6 +7,12 @@ initContainers:
         value: "true"
       - name: VAULT_ADDR
         value: {{ required "Vault server's address must be specified" .Values.vault.addr | quote }}
+      # env var set by webhook
+      - name: VSI_SECRETS_TEMPLATES_PLACEHOLDER
+        value: ""
+      # env var set by webhook
+      - name: VSI_VAULT_ROLE
+        value: ""
     command:
       - "sh"
       - "-c"
@@ -18,7 +24,7 @@ initContainers:
           method "kubernetes" {
             mount_path = "auth/{{ .Values.vault.authMethods.kubernetes.path }}"
             config = {
-              role = "<APP_VAULT_ROLE>"
+              role = "${VSI_VAULT_ROLE}"
               token_path = "/var/run/secrets/talend/vault-sidecar-injector/serviceaccount/token"
             }
           }
@@ -30,18 +36,18 @@ initContainers:
           }
         }
 
-        <APPSVC_TEMPLATES>
+        ${VSI_SECRETS_TEMPLATES_PLACEHOLDER}
         EOF
         
         docker-entrypoint.sh agent -config=vault-agent-config.hcl -exit-after-auth=true {{ include "talend-vault-sidecar-injector.vault.cert.skip.verify" .Values }} -log-level={{- .Values.injectconfig.vault.loglevel }}
         export VAULT_TOKEN=$(cat /home/vault/.vault-token)
         vault token revoke {{ include "talend-vault-sidecar-injector.vault.cert.skip.verify" .Values }} -self
     volumeMounts:
-        # Mount path used to share secrets. The associated volume is expected to be defined in application's manifest but in case it is not,
-        # a default 'secrets' volume will be injected in the requesting pod (see definition below) so that mutation process does not fail.
+      # Mount path used to share secrets. The associated volume is expected to be defined in application's manifest but in case it is not,
+      # a default 'secrets' volume will be injected in the requesting pod (see definition below) so that mutation process does not fail.
       - name: secrets
         mountPath: /opt/talend/secrets
-        # The name's value will be overridden by the webhook to point to container's service account volume to use for Vault authentication.
+      # The name's value will be overridden by the webhook to point to container's service account volume to use for Vault authentication.
       - name: TVSI_SA_SECRETS_VOL_NAME
         mountPath: /var/run/secrets/talend/vault-sidecar-injector/serviceaccount
         readOnly: true
@@ -59,6 +65,9 @@ containers:
         valueFrom:
           fieldRef:
             fieldPath: metadata.name
+      # env var set by webhook
+      - name: VSI_JOB_CNT_NAME
+        value: ""
     command:
       - "sh"
       - "-c"
@@ -72,7 +81,7 @@ containers:
         fi
 
         while true; do
-          cntStatus=$(curl -s -X GET -H "Authorization: Bearer $jwt_sa_token" --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt https://$KUBERNETES_SERVICE_HOST/api/v1/namespaces/$pod_ns/pods/$POD_NAME?pretty=false | jq -c --raw-output '.status.containerStatuses[] | select(.name == "<APP_JOB_CNT_NAME>").state | keys[0]')
+          cntStatus=$(curl -s -X GET -H "Authorization: Bearer $jwt_sa_token" --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt https://$KUBERNETES_SERVICE_HOST/api/v1/namespaces/$pod_ns/pods/$POD_NAME?pretty=false | jq -c --raw-output '.status.containerStatuses[] | select(.name == "${VSI_JOB_CNT_NAME}").state | keys[0]')
           if [ $cntStatus = "terminated" ]; then
             echo "=> job container terminated: send signal"
             touch /opt/talend/tvsi/vault-sidecars-signal-terminate
@@ -81,10 +90,10 @@ containers:
           sleep 2
         done
     volumeMounts:
-        # Mount path used by injected sidecars to share data
+      # Mount path used by injected sidecars to share data
       - name: tvsi-shared
         mountPath: /opt/talend/tvsi
-        # The name's value will be overridden by the webhook
+      # The name's value will be overridden by the webhook
       - name: K8S_SA_SECRETS_VOL_NAME
         mountPath: /var/run/secrets/kubernetes.io/serviceaccount
         readOnly: true
@@ -100,12 +109,26 @@ containers:
         value: "true"
       - name: VAULT_ADDR
         value: {{ required "Vault server's address must be specified" .Values.vault.addr | quote }}
+      # env var set by webhook
+      - name: VSI_JOB_WORKLOAD
+        value: "false"
+      # env var set by webhook
+      - name: VSI_PROXY_CONFIG_PLACEHOLDER
+        value: ""
+      # env var set by webhook
+      - name: VSI_SECRETS_TEMPLATES_PLACEHOLDER
+        value: ""
+      # env var set by webhook
+      - name: VSI_VAULT_AUTH_METHOD
+        value: "kubernetes"
+      # env var set by webhook
+      - name: VSI_VAULT_ROLE
+        value: ""
     command:
       - "sh"
       - "-c"
       - |
-        vault_auth_method="<APPSVC_VAULT_AUTH_METHOD>"
-        if [ $vault_auth_method = "kubernetes" ]; then
+        if [ "${VSI_VAULT_AUTH_METHOD}" = "kubernetes" ]; then
           cat <<EOF > vault-agent-config.hcl
         pid_file = "/home/vault/pidfile"
 
@@ -113,7 +136,7 @@ containers:
           method "kubernetes" {
             mount_path = "auth/{{ .Values.vault.authMethods.kubernetes.path }}"
             config = {
-              role = "<APP_VAULT_ROLE>"
+              role = "${VSI_VAULT_ROLE}"
               token_path = "/var/run/secrets/talend/vault-sidecar-injector/serviceaccount/token"
             }
           }
@@ -125,11 +148,11 @@ containers:
           }
         }
 
-        <APPSVC_PROXY_CONFIG>
+        ${VSI_PROXY_CONFIG_PLACEHOLDER}
 
-        <APPSVC_TEMPLATES>
+        ${VSI_SECRETS_TEMPLATES_PLACEHOLDER}
         EOF
-        elif [ $vault_auth_method = "approle" ]; then
+        elif [ "${VSI_VAULT_AUTH_METHOD}" = "approle" ]; then
           cat <<EOF > vault-agent-config.hcl
         pid_file = "/home/vault/pidfile"
 
@@ -149,16 +172,15 @@ containers:
           }
         }
 
-        <APPSVC_PROXY_CONFIG>
+        ${VSI_PROXY_CONFIG_PLACEHOLDER}
 
-        <APPSVC_TEMPLATES>
+        ${VSI_SECRETS_TEMPLATES_PLACEHOLDER}
         EOF
         else
-          echo "Unsupported Vault Auth Method: $vault_auth_method"
+          echo "Unsupported Vault Auth Method: ${VSI_VAULT_AUTH_METHOD}"
           exit 1
         fi
-        workload_is_job="<APP_JOB>"
-        if [ $workload_is_job = "true" ]; then
+        if [ "${VSI_JOB_WORKLOAD}" = "true" ]; then
           docker-entrypoint.sh agent -config=vault-agent-config.hcl {{ include "talend-vault-sidecar-injector.vault.cert.skip.verify" .Values }} -log-level={{- .Values.injectconfig.vault.loglevel }} &
           while true; do
             if [ -f "/opt/talend/tvsi/vault-sidecars-signal-terminate" ]; then
@@ -182,14 +204,14 @@ containers:
               export VAULT_TOKEN=$(cat /home/vault/.vault-token);
               vault token revoke {{ include "talend-vault-sidecar-injector.vault.cert.skip.verify" .Values }} -self;
     volumeMounts:
-        # Mount path used by injected sidecars to share data
+      # Mount path used by injected sidecars to share data
       - name: tvsi-shared
         mountPath: /opt/talend/tvsi
-        # Mount path used to share secrets. The associated volume is expected to be defined in application's manifest but in case it is not,
-        # a default 'secrets' volume will be injected in the requesting pod (see definition below) so that mutation process does not fail.
+      # Mount path used to share secrets. The associated volume is expected to be defined in application's manifest but in case it is not,
+      # a default 'secrets' volume will be injected in the requesting pod (see definition below) so that mutation process does not fail.
       - name: secrets
         mountPath: /opt/talend/secrets
-        # The name's value will be overridden by the webhook to point to container's service account volume to use for Vault authentication.
+      # The name's value will be overridden by the webhook to point to container's service account volume to use for Vault authentication.
       - name: TVSI_SA_SECRETS_VOL_NAME
         mountPath: /var/run/secrets/talend/vault-sidecar-injector/serviceaccount
         readOnly: true

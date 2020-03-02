@@ -16,7 +16,7 @@ revisionHistoryLimit: 3  # revision history limit in tiller / helm / k8s
 image:
   path: "talend/vault-sidecar-injector"  # VSI image path
   tag: "latest"  # VSI image tag
-  pullPolicy: IfNotPresent  # Pull policy for images: IfNotPresent or Always
+  pullPolicy: Always  # Pull policy for images: IfNotPresent or Always
   port: 8443  # service main port exposed by the image
   metricsPort: 9000  # metricsPort defines the port exposed by the image for metrics collection
 
@@ -55,7 +55,7 @@ injectconfig:
     image:
       path: "everpeace/curl-jq" # image path
       tag: "latest" # image tag
-      pullPolicy: IfNotPresent # Pull policy for images: IfNotPresent or Always
+      pullPolicy: Always # Pull policy for images: IfNotPresent or Always
     resources:
       limits:
         cpu: 20m  # Job babysitter sidecar CPU resource limits
@@ -66,8 +66,8 @@ injectconfig:
   vault:
     image:
       path: "vault" # image path
-      tag: "1.3.1" # image tag
-      pullPolicy: IfNotPresent # Pull policy for images: IfNotPresent or Always
+      tag: "1.3.2" # image tag
+      pullPolicy: Always # Pull policy for images: IfNotPresent or Always
     loglevel: info # Vault log level: trace, debug, info, warn, err
     resources:
       limits:
@@ -85,7 +85,7 @@ hook:
   image:
     path: "bitnami/kubectl"  # image path
     tag: "latest" # image tag
-    pullPolicy: IfNotPresent  # Pull policy for images: IfNotPresent or Always
+    pullPolicy: Always  # Pull policy for images: IfNotPresent or Always
 
 # ----------------------------------------------------------------------------
 # Define resources requests and limits
