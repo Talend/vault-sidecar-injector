@@ -82,16 +82,23 @@ func TestWebhookServerOK(t *testing.T) {
 		// Mutate pod
 		resp := vaultInjector.mutate(ar)
 
-		assert.Equal(t, true, resp.Allowed)
-		assert.Nil(t, resp.Result)
-		assert.NotNil(t, resp.Patch)
+		assert.Condition(t, func() bool {
+			// Handle injection cases *and* also pod submitted without `inject: "true"` annotation
+			if (resp.Allowed && resp.Patch != nil && resp.Result == nil) || (resp.Allowed && resp.Patch == nil && resp.Result == nil) {
+				return true
+			}
 
-		var patch []ctx.PatchOperation
-		if err = yaml.Unmarshal(resp.Patch, &patch); err != nil {
-			t.Errorf("JSON Patch unmarshal error \"%s\"", err)
+			return false
+		}, "Inconsistent AdmissionResponse")
+
+		if resp.Patch != nil {
+			var patch []ctx.PatchOperation
+			if err = yaml.Unmarshal(resp.Patch, &patch); err != nil {
+				t.Errorf("JSON Patch unmarshal error \"%s\"", err)
+			}
+
+			klog.Infof("JSON Patch=%+v", patch)
 		}
-
-		klog.Infof("JSON Patch=%+v", patch)
 	}
 }
 
@@ -132,9 +139,14 @@ func TestWebhookServerKO(t *testing.T) {
 		// Mutate pod
 		resp := vaultInjector.mutate(ar)
 
-		assert.Equal(t, false, resp.Allowed)
-		assert.NotNil(t, resp.Result)
-		assert.Nil(t, resp.Patch)
+		assert.Condition(t, func() bool {
+			// Handle error cases
+			if !resp.Allowed && resp.Patch == nil && resp.Result != nil {
+				return true
+			}
+
+			return false
+		}, "Inconsistent AdmissionResponse")
 
 		klog.Infof("Result=%+v", resp.Result)
 	}

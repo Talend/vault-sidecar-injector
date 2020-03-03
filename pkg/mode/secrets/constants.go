@@ -25,11 +25,12 @@ const (
 )
 
 const (
-	secretsContainerName             = "tvsi-vault-agent"   // Name of our secrets container to inject
-	secretsVolName                   = "secrets"            // Name of the volume shared between containers to store secrets file(s)
-	templateAppSvcDefaultDestination = "secrets.properties" // Default secrets destination
-	vaultDefaultSecretsEnginePath    = "secret"             // Default path for Vault K/V Secrets Engine if no 'secrets-path' annotation
-
+	secretsContainerName               = "tvsi-vault-agent"   // Name of our secrets container to inject
+	secretsVolName                     = "secrets"            // Name of the volume shared between containers to store secrets file(s)
+	templateAppSvcDefaultDestination   = "secrets.properties" // Default secrets destination
+	vaultDefaultSecretsEnginePath      = "secret"             // Default path for Vault K/V Secrets Engine if no 'secrets-path' annotation
+	secretsAnnotationSeparator         = ","                  // Generic separator for secrets annotations' values
+	secretsAnnotationTemplateSeparator = "---"                // Separator for secrets templates annotation's values
 )
 
 const (

@@ -26,10 +26,10 @@ import (
 
 func secretsModeCompute(config *cfg.VSIConfig, labels, annotations map[string]string) (ctx.ModeConfig, error) {
 	secretsType := annotations[config.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationSecretsTypeKey]]
-	secretsPath := strings.Split(annotations[config.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationSecretsPathKey]], ",")
-	secretsTemplate := strings.Split(annotations[config.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationSecretsTemplateKey]], "---")
-	templateDest := strings.Split(annotations[config.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationTemplateDestKey]], ",")
-	templateCmd := strings.Split(annotations[config.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationTemplateCmdKey]], ",")
+	secretsPath := strings.Split(annotations[config.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationSecretsPathKey]], secretsAnnotationSeparator)
+	secretsTemplate := strings.Split(annotations[config.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationSecretsTemplateKey]], secretsAnnotationTemplateSeparator)
+	templateDest := strings.Split(annotations[config.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationTemplateDestKey]], secretsAnnotationSeparator)
+	templateCmd := strings.Split(annotations[config.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationTemplateCmdKey]], secretsAnnotationSeparator)
 
 	secretsPathNum := len(secretsPath)
 	secretsTemplateNum := len(secretsTemplate)
