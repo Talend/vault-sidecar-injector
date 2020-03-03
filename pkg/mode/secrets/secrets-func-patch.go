@@ -15,7 +15,7 @@
 package secrets
 
 import (
-	"fmt"
+	"errors"
 	"strconv"
 	"strings"
 	cfg "talend/vault-sidecar-injector/pkg/config"
@@ -44,21 +44,14 @@ func addLifecycleHooks(config *cfg.VSIConfig, podContainers []corev1.Container, 
 			return patch, nil
 		case "y", "yes", "true", "on":
 			if config.PodslifecycleHooks.PostStart != nil {
-				// As we inject hooks, there should have existing containers so len(podContainers) shoud be > 0
-				if len(podContainers) == 0 {
-					err = fmt.Errorf("[%s] Submitted pod must contain at least one container", vaultInjectorModeSecrets)
-					klog.Error(err.Error())
-					return nil, err
-				}
-
 				secretsVolMountPath, err := getMountPathOfSecretsVolume(podContainers)
 				if err != nil {
 					return nil, err
 				}
 
 				if config.PodslifecycleHooks.PostStart.Exec == nil {
-					err = fmt.Errorf("[%s] Unsupported lifecycle hook. Only support Exec type", vaultInjectorModeSecrets)
-					klog.Error(err.Error())
+					err = errors.New("Unsupported lifecycle hook. Only support Exec type")
+					klog.Errorf("[%s] %s", vaultInjectorModeSecrets, err.Error())
 					return nil, err
 				}
 

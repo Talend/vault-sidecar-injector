@@ -15,7 +15,7 @@
 package job
 
 import (
-	"fmt"
+	"errors"
 	ctx "talend/vault-sidecar-injector/pkg/context"
 
 	corev1 "k8s.io/api/core/v1"
@@ -24,8 +24,8 @@ import (
 
 func jobModeInject(containerBasePath string, podContainers []corev1.Container, containerName string, env []corev1.EnvVar, context *ctx.InjectionContext) (bool, error) {
 	if (containerBasePath == ctx.JsonPathContainers) && (len(podContainers) != 1) {
-		err := fmt.Errorf("[%s] Submitted pod should contain only one container", vaultInjectorModeJob)
-		klog.Error(err.Error())
+		err := errors.New("Submitted pod should contain only one container")
+		klog.Errorf("[%s] %s", vaultInjectorModeJob, err.Error())
 		return false, err
 	}
 

@@ -15,6 +15,7 @@
 package secrets
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	cfg "talend/vault-sidecar-injector/pkg/config"
@@ -46,8 +47,8 @@ func secretsModeCompute(config *cfg.VSIConfig, labels, annotations map[string]st
 		}
 
 		if !secretsTypeSupported {
-			err := fmt.Errorf("[%s] Submitted pod makes use of unsupported secrets type %s", vaultInjectorModeSecrets, secretsType)
-			klog.Error(err.Error())
+			err := fmt.Errorf("Submitted pod makes use of unsupported secrets type '%s'", secretsType)
+			klog.Errorf("[%s] %s", vaultInjectorModeSecrets, err.Error())
 			return nil, err
 		}
 	}
@@ -57,8 +58,8 @@ func secretsModeCompute(config *cfg.VSIConfig, labels, annotations map[string]st
 		applicationServiceLabel := labels[config.ApplicationServiceLabelKey]
 
 		if applicationLabel == "" || applicationServiceLabel == "" {
-			err := fmt.Errorf("[%s] Submitted pod must contain labels %s and %s", vaultInjectorModeSecrets, config.ApplicationLabelKey, config.ApplicationServiceLabelKey)
-			klog.Error(err.Error())
+			err := fmt.Errorf("Submitted pod must contain labels %s and %s", config.ApplicationLabelKey, config.ApplicationServiceLabelKey)
+			klog.Errorf("[%s] %s", vaultInjectorModeSecrets, err.Error())
 			return nil, err
 		}
 
@@ -72,8 +73,8 @@ func secretsModeCompute(config *cfg.VSIConfig, labels, annotations map[string]st
 	if secretsTemplateNum == 1 && secretsTemplate[0] == "" {
 		// We must have same numbers of secrets path & secrets destinations
 		if templateDestNum != secretsPathNum {
-			err := fmt.Errorf("[%s] Submitted pod must contain same numbers of secrets path and secrets destinations", vaultInjectorModeSecrets)
-			klog.Error(err.Error())
+			err := errors.New("Submitted pod must contain same numbers of secrets path and secrets destinations")
+			klog.Errorf("[%s] %s", vaultInjectorModeSecrets, err.Error())
 			return nil, err
 		}
 
@@ -85,8 +86,8 @@ func secretsModeCompute(config *cfg.VSIConfig, labels, annotations map[string]st
 	} else {
 		// We must have same numbers of custom templates & secrets destinations ...
 		if templateDestNum != secretsTemplateNum {
-			err := fmt.Errorf("[%s] Submitted pod must contain same numbers of templates and secrets destinations", vaultInjectorModeSecrets)
-			klog.Error(err.Error())
+			err := errors.New("Submitted pod must contain same numbers of templates and secrets destinations")
+			klog.Errorf("[%s] %s", vaultInjectorModeSecrets, err.Error())
 			return nil, err
 		}
 

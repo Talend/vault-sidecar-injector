@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-app-missing-label
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      com.talend.application: test
+  template:
+    metadata:
+      annotations:
+        sidecar.vault.talend.org/inject: "true"
+      labels:
+        com.talend.application: test
+    spec:
+      serviceAccountName: default
+      containers:
+        - name: test-app-missing-label
+          image: busybox:1.28
+          command:
+            - "sh"
+            - "-c"
+            - >
+              while true;do echo "My secrets are: $(cat /opt/talend/secrets/secrets.properties)"; sleep 5; done
+          volumeMounts:
+            - name: secrets
+              mountPath: /opt/talend/secrets
+      volumes:
+        - name: secrets
+          emptyDir:
+            medium: Memory
