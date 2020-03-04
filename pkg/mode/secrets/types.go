@@ -22,7 +22,7 @@ var vaultInjectorSecretsTypes = [...]string{
 }
 
 var secretsContainerNames = map[string][]string{
-	ctx.JsonPathInitContainers: {secretsContainerName},
+	ctx.JsonPathInitContainers: {secretsInitContainerName},
 	ctx.JsonPathContainers:     {secretsContainerName},
 }
 

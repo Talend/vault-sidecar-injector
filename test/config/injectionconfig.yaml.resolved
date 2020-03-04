@@ -12,8 +12,8 @@ containers:
     fi
 
     while true; do
-      cntStatus=$(curl -s -X GET -H "Authorization: Bearer $jwt_sa_token" --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt https://$KUBERNETES_SERVICE_HOST/api/v1/namespaces/$pod_ns/pods/$POD_NAME?pretty=false | jq -c --raw-output '.status.containerStatuses[] | select(.name == "${VSI_JOB_CNT_NAME}").state | keys[0]')
-      if [ $cntStatus = "terminated" ]; then
+      cntStatus=$(curl -s -X GET -H "Authorization: Bearer $jwt_sa_token" --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt https://$KUBERNETES_SERVICE_HOST/api/v1/namespaces/$pod_ns/pods/$POD_NAME?pretty=false | jq -c --raw-output --arg cntname "${VSI_JOB_CNT_NAME}" '.status.containerStatuses[] | select(.name == $cntname).state | keys[0]')
+      if [ "$cntStatus" = "terminated" ]; then
         echo "=> job container terminated: send signal"
         touch /opt/talend/tvsi/vault-sidecars-signal-terminate
         exit 0
@@ -148,7 +148,7 @@ initContainers:
   - name: VSI_VAULT_ROLE
   image: vault:1.3.2
   imagePullPolicy: Always
-  name: tvsi-vault-agent
+  name: tvsi-vault-agent-init
   resources: {}
   volumeMounts:
   - mountPath: /opt/talend/secrets

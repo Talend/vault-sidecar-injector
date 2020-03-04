@@ -52,7 +52,7 @@ To ease deployment, a Helm chart is provided under [deploy/helm](https://github.
 
 > ⚠️ **Important note** ⚠️: support for sidecars in Kubernetes **jobs** suffers from limitations and issues exposed here: <https://github.com/kubernetes/kubernetes/issues/25908>.
 >
-> A Kubernetes proposal tries to address those points: <https://github.com/kubernetes/enhancements/blob/master/keps/sig-apps/sidecarcontainers.md>, <https://github.com/kubernetes/enhancements/issues/753>. Implementation of the proposal has started and may be released in Kubernetes 1.18 (in Alpha stage).
+> A Kubernetes proposal tries to address those points: <https://github.com/kubernetes/enhancements/blob/master/keps/sig-apps/sidecarcontainers.md>, <https://github.com/kubernetes/enhancements/issues/753>. Implementation of the proposal has started and may be released in Kubernetes 1.19 (in Alpha stage).
 >
 > In the meantime however, `Vault Sidecar Injector` implements **specific sidecar and signaling mechanism** to properly stop all injected containers on job termination.
 
@@ -115,8 +115,8 @@ Template below is used by default to fetch all secrets and create corresponding 
 
 <!-- {% raw %} -->
 ```yaml
-{{ with secret "<APPSVC_VAULT_SECRETS_PATH>" }}{{ range \$k, \$v := .Data }}
-{{ \$k }}={{ \$v }}
+{{ with secret "<APPSVC_VAULT_SECRETS_PATH>" }}{{ range $k, $v := .Data }}
+{{ $k }}={{ $v }}
 {{ end }}{{ end }}
 ```
 <!-- {% endraw %}) -->
@@ -777,6 +777,8 @@ EOF
 $ helm init --service-account tiller
 ```
 
+> On Kubernetes `1.16+`: make sure to use Helm **`2.16.0` or higher** as previous Helm 2 versions rely on deprecated APIs no longer served (see <https://kubernetes.io/blog/2019/09/18/kubernetes-1-16-release-announcement/>).
+
 For details on using Tiller with RBAC:
 
 - <https://v2.helm.sh/docs/using_helm/#tiller-and-user-permissions>
@@ -844,6 +846,9 @@ Just run following command:
 ```bash
 $ make image
 ```
+
+> Note: if you have Go installed on your machine, you can use `make image-from-build` instead.
+
 </details>
 
 ### Installing the Chart
@@ -1005,7 +1010,7 @@ The following table lists the configurable parameters of the `Vault Sidecar Inje
 | image.metricsPort                | Port exposed for metrics collection | 9000 |
 | image.path       | Image path   | talend/vault-sidecar-injector |
 | image.port       | Service main port    | 8443            |
-| image.pullPolicy   | Pull policy for image: IfNotPresent or Always       | Always           |
+| image.pullPolicy   | Pull policy for image: IfNotPresent or Always       | IfNotPresent           |
 | image.serviceNameLabel   | Service Name. Must match label com.talend.service     | talend-vault-sidecar-injector      |
 | image.tag  | Image tag     | latest *(local testing)*, [VERSION_VSI](VERSION_VSI) *(release)* |
 | imageRegistry  | Image registry |   |

@@ -75,6 +75,7 @@ func (vaultInjector *VaultInjector) computeContext(podContainers []corev1.Contai
 
 	// !!! This annotation is deprecated !!! Enable job mode if used
 	if annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationWorkloadKey]] == vaultInjectorWorkloadJob {
+		klog.Warningf("Annotation '%s' is deprecated but still supported. Use '%s' instead", vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationWorkloadKey], vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationModeKey])
 		modesStatus[vaultInjectorWorkloadJob] = true
 	}
 
@@ -271,9 +272,11 @@ func (vaultInjector *VaultInjector) addVolume(podVolumes []corev1.Volume, basePa
 			}
 
 			if isSecretsVolumeInPod { // Volume 'secrets' exists in pod so do not add ours
-				klog.Infof("Found existing '%s' volume in requesting pod: skip injector volume definition", secretsVolName)
+				klog.Infof("Found existing '%s' volume in submitted pod: skip injector volume definition", secretsVolName)
 				continue
 			}
+
+			klog.Infof("Injecting volume '%s' in submitted pod", secretsVolName)
 		}
 
 		value = sidecarVol

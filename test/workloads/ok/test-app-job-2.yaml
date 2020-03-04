@@ -34,6 +34,12 @@ spec:
               echo "Advantage: you do not need to deal with any Vault tokens and you just have to send requests to the local Vault Agent sidecar (available at 127.0.0.1) that will then forward everything to Vault server."
               echo
 
+              isVaultReady=$(curl -s -X GET http://127.0.0.1:8200/v1/sys/health | jq --raw-output .initialized)
+              while [ "$isVaultReady" != "true" ];do
+                sleep 5
+                isVaultReady=$(curl -s -X GET http://127.0.0.1:8200/v1/sys/health | jq --raw-output .initialized)
+              done
+
               plaintext="Secret data to protect"
               echo "Data that is going to be ciphered and deciphered: $plaintext"
               echo

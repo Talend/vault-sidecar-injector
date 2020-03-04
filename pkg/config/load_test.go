@@ -25,7 +25,7 @@ import (
 const (
 	proxyCfgFileResolved    = "cache {\n    use_auto_auth_token = true\n}\n\nlistener \"tcp\" {\n    address = \"127.0.0.1:<VSI_PROXY_PORT>\"\n    tls_disable = true\n}"
 	templateBlockResolved   = "template {\n    destination = \"/opt/talend/secrets/<VSI_SECRETS_DESTINATION>\"\n    contents = <<EOH\n    <VSI_SECRETS_TEMPLATE_CONTENT>\n    EOH\n    command = \"<VSI_SECRETS_TEMPLATE_COMMAND_TO_RUN>\"\n    wait {\n    min = \"1s\"\n    max = \"2s\"\n    }\n}"
-	templateDefaultResolved = "{{ with secret \"<VSI_SECRETS_VAULT_SECRETS_PATH>\" }}{{ range \\$k, \\$v := .Data }}\n{{ \\$k }}={{ \\$v }}\n{{ end }}{{ end }}"
+	templateDefaultResolved = "{{ with secret \"<VSI_SECRETS_VAULT_SECRETS_PATH>\" }}{{ range $k, $v := .Data }}\n{{ $k }}={{ $v }}\n{{ end }}{{ end }}"
 )
 
 type inputLoaded struct {

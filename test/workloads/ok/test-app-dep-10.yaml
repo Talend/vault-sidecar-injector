@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: test-app5
+  name: test-app-no-secrets-volume
   namespace: default
 spec:
   replicas: 1
@@ -13,28 +13,19 @@ spec:
     metadata:
       annotations:
         sidecar.vault.talend.org/inject: "true"
-        sidecar.vault.talend.org/secrets-type: "static" # static secrets
       labels:
         com.talend.application: test
         com.talend.service: test-app-svc
     spec:
       serviceAccountName: default
       containers:
-        - name: test-app5-container
+        - name: test-app-no-secrets-volume
           image: busybox:1.28
           command:
             - "sh"
             - "-c"
-            - |
-              set -e
-              echo "My secrets are: $(cat /opt/talend/secrets/secrets.properties)"
-              while true;do
-                sleep 5
-              done
+            - >
+              while true;do echo "My secrets are: $(cat /opt/talend/secrets/secrets.properties)"; sleep 5; done
           volumeMounts:
             - name: secrets
               mountPath: /opt/talend/secrets
-      volumes:
-        - name: secrets
-          emptyDir:
-            medium: Memory
