@@ -15,7 +15,7 @@
       - [Default template](#default-template)
       - [Template's Syntax](#templates-syntax)
     - [Proxy Mode](#proxy-mode)
-    - [Modes & Injection Config Overview](#modes--injection-config-overview)
+    - [Modes and Injection Config Overview](#modes-and-injection-config-overview)
     - [Examples](#examples)
       - [Using Vault Kubernetes Auth Method](#using-vault-kubernetes-auth-method)
         - [Secrets mode - Usage with a K8S Deployment workload](#secrets-mode---usage-with-a-k8s-deployment-workload)
@@ -37,7 +37,7 @@
 
 ## Announcements
 
-- 2020-02: [Static vs Dynamic secrets](https://github.com/Talend/vault-sidecar-injector/blob/master/doc/Static-vs-Dynamic-Secrets.md)
+- 2020-03: [Static vs Dynamic secrets](https://github.com/Talend/vault-sidecar-injector/blob/master/doc/Static-vs-Dynamic-Secrets.md)
 - 2019-12: [Discovering Vault Sidecar Injector's Proxy feature](https://github.com/Talend/vault-sidecar-injector/blob/master/doc/Discovering-Vault-Sidecar-Injector-Proxy.md)
 - 2019-11: [Vault Sidecar Injector now leverages Vault Agent Template feature](https://github.com/Talend/vault-sidecar-injector/blob/master/doc/Leveraging-Vault-Agent-Template.md)
 - 2019-10: [Open-sourcing Vault Sidecar Injector](https://github.com/Talend/vault-sidecar-injector/blob/master/doc/Open-sourcing-Vault-Sidecar-Injector.md)
@@ -64,6 +64,9 @@ To ease deployment, a Helm chart is provided under [deploy/helm](https://github.
 
 - [**secrets**](https://github.com/Talend/vault-sidecar-injector/blob/master/README.md#secrets-mode), the primary mode allowing to retrieve secrets from Vault server's stores, either once (for **static secrets**) or continuously (for **dynamic secrets**), coping with secrets rotations (ie any change will be propagated and updated values made available to consume by applications).
 - [**proxy**](https://github.com/Talend/vault-sidecar-injector/blob/master/README.md#proxy-mode), to enable the injected Vault Agent as a local, authenticated gateway to the remote Vault server. As an example, with this mode on, applications can easily leverage Vault's Transit Engine to cipher/decipher payloads by just sending data to the local proxy without dealing themselves with Vault authentication and tokens.
+- **job**, to use when a Kubernetes Job is submitted. This new mode comes in replacement of the now deprecated `sidecar.vault.talend.org/workload` annotation.
+
+For details, refer to [Modes and Injection Config Overview](https://github.com/Talend/vault-sidecar-injector/blob/master/README.md#modes-and-injection-config-overview).
 
 ### Requirements
 
@@ -135,7 +138,7 @@ Details on template syntax can be found in Consul Template's documentation (same
 
 This mode opens the gate to virtually any Vault features for requesting applications. A [blog entry](https://github.com/Talend/vault-sidecar-injector/blob/master/doc/Discovering-Vault-Sidecar-Injector-Proxy.md) introduces this mode and examples are provided.
 
-### Modes & Injection Config Overview
+### Modes and Injection Config Overview
 
 Depending on the modes you decide to enable and whether you opt for static or dynamic secrets (when **secrets** mode is selected), the configuration injected into your pod varies. The following table provides a quick glance at the different configurations.
 

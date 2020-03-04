@@ -1,6 +1,6 @@
 # Changelog for Vault Sidecar Injector
 
-## Release v6.0.0 - 2020-02-xx
+## Release v6.0.0 - 2020-03-04
 
 This is a major release introducing new features and complete code refactoring for clear isolation of modes.
 
