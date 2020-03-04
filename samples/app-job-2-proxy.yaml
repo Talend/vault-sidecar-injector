@@ -54,8 +54,6 @@ spec:
             - "-c"
             - |
               set -e
-              echo "Wait a while to make sure Vault Agent is started and authenticated..."
-              sleep 10
               echo "Job started"
               echo "Now using Vault Agent as a proxy to leverage Encryption as a Service feature"
               echo "Advantage: you do not need to deal with any Vault tokens and you just have to send requests to the local Vault Agent sidecar (available at 127.0.0.1) that will then forward everything to Vault server."
