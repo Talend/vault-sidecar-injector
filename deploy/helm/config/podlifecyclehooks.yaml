@@ -1,0 +1,6 @@
+postStart:
+  exec:
+    command:
+      - "sh"
+      - "-c"
+      - cat <VSI_SECRETS_VOL_MOUNTPATH>/* >/dev/null 2>&1

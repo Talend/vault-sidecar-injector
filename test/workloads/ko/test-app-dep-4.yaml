@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-app-secrets-path-dest
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      com.talend.application: test-app3
+      com.talend.service: test-app3-svc
+  template:
+    metadata:
+      annotations:
+        sidecar.vault.talend.org/inject: "true"
+        sidecar.vault.talend.org/role: "test"
+        sidecar.vault.talend.org/secrets-path: "secret/test/test-app-svc"
+        sidecar.vault.talend.org/secrets-destination: "secrets.properties,supersecrets.properties"
+      labels:
+        com.talend.application: test-app3
+        com.talend.service: test-app3-svc
+    spec:
+      serviceAccountName: default
+      containers:
+        - name: test-app-secrets-path-dest
+          image: busybox:1.28
+          command:
+            - "sh"
+            - "-c"
+            - >
+              while true;do echo "My secrets are: $(cat /opt/talend/secrets/supersecrets.properties)"; sleep 5; done
+          volumeMounts:
+            - name: secrets
+              mountPath: /opt/talend/secrets
+      volumes:
+        - name: secrets
+          emptyDir:
+            medium: Memory

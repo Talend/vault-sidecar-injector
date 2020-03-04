@@ -1,4 +1,4 @@
-// Copyright © 2019 Talend
+// Copyright © 2019-2020 Talend - www.talend.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,50 +16,22 @@ package webhook
 
 import (
 	"net/http"
-	"talend/vault-sidecar-injector/pkg/config"
+	cfg "talend/vault-sidecar-injector/pkg/config"
 )
-
-var vaultInjectorAnnotationKeys = [...]string{
-	vaultInjectorAnnotationInjectKey,
-	vaultInjectorAnnotationAuthMethodKey,
-	vaultInjectorAnnotationModeKey,
-	vaultInjectorAnnotationProxyPortKey,
-	vaultInjectorAnnotationRoleKey,
-	vaultInjectorAnnotationSATokenKey,
-	vaultInjectorAnnotationSecretsPathKey,
-	vaultInjectorAnnotationSecretsTemplateKey,
-	vaultInjectorAnnotationTemplateDestKey,
-	vaultInjectorAnnotationLifecycleHookKey,
-	vaultInjectorAnnotationTemplateCmdKey,
-	vaultInjectorAnnotationWorkloadKey,
-	vaultInjectorAnnotationStatusKey,
-}
-
-var vaultInjectorModes = [...]string{
-	vaultInjectorModeSecrets,
-	vaultInjectorModeProxy,
-}
 
 // VaultInjector : Webhook Server entity
 type VaultInjector struct {
-	*config.InjectionConfig
+	*cfg.VSIConfig
 	Server *http.Server
 }
 
-// Struct to carry computed placeholders' values and context info for current injection
-type sidecarContext struct {
-	modes                          map[string]bool
-	k8sDefaultSATokenVolumeName    string
-	vaultInjectorSATokenVolumeName string
-	vaultAuthMethod                string
-	vaultRole                      string
-	proxy                          string
-	templates                      string
-}
-
-// This struct represents a JSON Patch operation (see http://jsonpatch.com/)
-type patchOperation struct {
-	Op    string      `json:"op"`
-	Path  string      `json:"path"`
-	Value interface{} `json:"value,omitempty"`
+// Supported annotations (modes' annotations will be appended to this array)
+var vaultInjectorAnnotationKeys = []string{
+	vaultInjectorAnnotationInjectKey,
+	vaultInjectorAnnotationAuthMethodKey,
+	vaultInjectorAnnotationModeKey,
+	vaultInjectorAnnotationRoleKey,
+	vaultInjectorAnnotationSATokenKey,
+	vaultInjectorAnnotationWorkloadKey,
+	vaultInjectorAnnotationStatusKey,
 }

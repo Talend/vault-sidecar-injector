@@ -1,5 +1,19 @@
 # Changelog for Vault Sidecar Injector
 
+## Release v6.0.0 - 2020-03-04
+
+This is a major release introducing new features and complete code refactoring for clear isolation of modes.
+
+Highlights:
+
+- New Static Secrets feature, part of `secrets` mode (now supporting both **dynamic** and **static** secrets)
+- Kubernetes Jobs are now handled as a *Vault Sidecar Injector mode*. Annotation `sidecar.vault.talend.org/workload` is **still supported but deprecated**: make use of `sidecar.vault.talend.org/mode` to enable job mode
+- HashiCorp Vault image updated to `1.3.2`
+
+**Added**
+
+- [VSI #20](https://github.com/Talend/vault-sidecar-injector/pull/20) - Static secrets. Feature announcement [here](https://github.com/Talend/vault-sidecar-injector/blob/master/doc/Static-vs-Dynamic-Secrets.md).
+
 ## Release v5.1.1 - 2019-12-23
 
 **Added**

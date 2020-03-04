@@ -1,4 +1,4 @@
-// Copyright © 2019 Talend
+// Copyright © 2019-2020 Talend - www.talend.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,13 +23,13 @@ import (
 )
 
 const (
-	proxyCfgFileResolved    = "cache {\n    use_auto_auth_token = true\n}\n\nlistener \"tcp\" {\n    address = \"127.0.0.1:<APPSVC_PROXY_PORT>\"\n    tls_disable = true\n}"
-	templateBlockResolved   = "template {\n    destination = \"/opt/talend/secrets/<APPSVC_SECRETS_DESTINATION>\"\n    contents = <<EOH\n    <APPSVC_TEMPLATE_CONTENT>\n    EOH\n    command = \"<APPSVC_TEMPLATE_COMMAND_TO_RUN>\"\n    wait {\n    min = \"1s\"\n    max = \"2s\"\n    }\n}"
-	templateDefaultResolved = "{{ with secret \"<APPSVC_VAULT_SECRETS_PATH>\" }}{{ range \\$k, \\$v := .Data }}\n{{ \\$k }}={{ \\$v }}\n{{ end }}{{ end }}"
+	proxyCfgFileResolved    = "cache {\n    use_auto_auth_token = true\n}\n\nlistener \"tcp\" {\n    address = \"127.0.0.1:<VSI_PROXY_PORT>\"\n    tls_disable = true\n}"
+	templateBlockResolved   = "template {\n    destination = \"/opt/talend/secrets/<VSI_SECRETS_DESTINATION>\"\n    contents = <<EOH\n    <VSI_SECRETS_TEMPLATE_CONTENT>\n    EOH\n    command = \"<VSI_SECRETS_TEMPLATE_COMMAND_TO_RUN>\"\n    wait {\n    min = \"1s\"\n    max = \"2s\"\n    }\n}"
+	templateDefaultResolved = "{{ with secret \"<VSI_SECRETS_VAULT_SECRETS_PATH>\" }}{{ range $k, $v := .Data }}\n{{ $k }}={{ $v }}\n{{ end }}{{ end }}"
 )
 
 type inputLoaded struct {
-	sidecarCfgFile        string
+	injectionCfgFile      string
 	proxyCfgFile          string
 	templateBlockFile     string
 	templateDefaultFile   string
@@ -37,7 +37,7 @@ type inputLoaded struct {
 }
 
 type expectedLoad struct {
-	sidecarCfgFileResolved        string
+	injectionCfgFileResolved      string
 	proxyCfgFileResolved          string
 	templateBlockResolved         string
 	templateDefaultResolved       string
@@ -51,14 +51,14 @@ func TestLoadConfig(t *testing.T) {
 	}{
 		{
 			inputLoaded{
-				"../../test/config/sidecarconfig.yaml",
+				"../../test/config/injectionconfig.yaml",
 				"../../test/config/proxyconfig.hcl",
 				"../../test/config/tmplblock.hcl",
 				"../../test/config/tmpldefault.tmpl",
 				"../../test/config/podlifecyclehooks.yaml",
 			},
 			expectedLoad{
-				"../../test/config/sidecarconfig.yaml.resolved",
+				"../../test/config/injectionconfig.yaml.resolved",
 				proxyCfgFileResolved,
 				templateBlockResolved,
 				templateDefaultResolved,
@@ -68,11 +68,11 @@ func TestLoadConfig(t *testing.T) {
 	}
 
 	for _, table := range tables {
-		injectionCfg, err := Load(
+		vsiCfg, err := Load(
 			WhSvrParameters{
 				0, 0, "", "",
 				"", "", "",
-				table.sidecarCfgFile,
+				table.injectionCfgFile,
 				table.proxyCfgFile,
 				table.templateBlockFile,
 				table.templateDefaultFile,
@@ -80,17 +80,17 @@ func TestLoadConfig(t *testing.T) {
 			},
 		)
 		if err != nil {
-			t.Errorf("Loading error \"%s\"", err)
+			t.Fatalf("Loading error \"%s\"", err)
 		}
 
 		// Verify strings
-		assert.Equal(t, table.proxyCfgFileResolved, injectionCfg.ProxyConfig)
-		assert.Equal(t, table.templateBlockResolved, injectionCfg.TemplateBlock)
-		assert.Equal(t, table.templateDefaultResolved, injectionCfg.TemplateDefaultTmpl)
+		assert.Equal(t, table.proxyCfgFileResolved, vsiCfg.ProxyConfig)
+		assert.Equal(t, table.templateBlockResolved, vsiCfg.TemplateBlock)
+		assert.Equal(t, table.templateDefaultResolved, vsiCfg.TemplateDefaultTmpl)
 
 		// Verify yaml by marshalling the object into yaml again
-		assert.Equal(t, stringFromYamlFile(t, table.sidecarCfgFileResolved), stringFromYamlObj(t, injectionCfg.SidecarConfig))
-		assert.Equal(t, stringFromYamlFile(t, table.podLifecycleHooksFileResolved), stringFromYamlObj(t, injectionCfg.PodslifecycleHooks))
+		assert.Equal(t, stringFromYamlFile(t, table.injectionCfgFileResolved), stringFromYamlObj(t, vsiCfg.InjectionConfig))
+		assert.Equal(t, stringFromYamlFile(t, table.podLifecycleHooksFileResolved), stringFromYamlObj(t, vsiCfg.PodslifecycleHooks))
 	}
 }
 

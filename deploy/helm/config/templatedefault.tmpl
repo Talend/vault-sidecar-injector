@@ -1,0 +1,3 @@
+{{`{{ with secret "<VSI_SECRETS_VAULT_SECRETS_PATH>" }}{{ range $k, $v := .Data }}
+{{ $k }}={{ $v }}
+{{ end }}{{ end }}`}}

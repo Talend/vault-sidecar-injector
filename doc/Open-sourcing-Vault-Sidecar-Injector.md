@@ -87,7 +87,7 @@ Figure below depicts what's happening when you submit a manifest with custom ann
 
 To help you installing and using Vault Sidecar Injector and for detailed description, go look at the [README](https://github.com/Talend/vault-sidecar-injector/blob/master/README.md) on GitHub.
 
-The repository also comes with [samples](https://github.com/Talend/vault-sidecar-injector/tree/master/deploy/samples) of annotated workloads to allow you to quickly test the component.
+The repository also comes with [samples](https://github.com/Talend/vault-sidecar-injector/tree/master/samples) of annotated workloads to allow you to quickly test the component.
 
 ## Community
 
