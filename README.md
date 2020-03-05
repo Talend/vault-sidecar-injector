@@ -46,13 +46,13 @@
 
 `Vault Sidecar Injector` consists in a **Webhook Admission Server**, registered in the Kubernetes Mutating Admission Webhook Controller, that will mutate resources depending on defined criteriae. See here for more details: <https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#admission-webhooks>.
 
-This component allows **to dynamically inject Vault Agent as a sidecar container** (along with configuration and volumes) in any matching pod manifest to seamlessly and dynamically fetch secrets. Pods willing to benefit from this feature just have to add some custom annotations to ask for the sidecar injection **at deployment time**.
+This component allows **to dynamically inject Vault Agent as either an init or a sidecar container** (along with configuration and volumes) in any matching pod manifest to seamlessly fetch secrets from Vault. Pods willing to benefit from this feature just have to add some custom annotations to ask for the injection **at deployment time**.
 
 To ease deployment, a Helm chart is provided under [deploy/helm](https://github.com/Talend/vault-sidecar-injector/blob/master/deploy/helm) folder of this repository as well as instructions to [install it](https://github.com/Talend/vault-sidecar-injector/blob/master/README.md#installing-the-chart).
 
 > ⚠️ **Important note** ⚠️: support for sidecars in Kubernetes **jobs** suffers from limitations and issues exposed here: <https://github.com/kubernetes/kubernetes/issues/25908>.
 >
-> A Kubernetes proposal tries to address those points: <https://github.com/kubernetes/enhancements/blob/master/keps/sig-apps/sidecarcontainers.md>, <https://github.com/kubernetes/enhancements/issues/753>. Implementation of the proposal has started and may be released in Kubernetes 1.19 (in Alpha stage).
+> A Kubernetes proposal tries to address those points: <https://github.com/kubernetes/enhancements/blob/master/keps/sig-apps/sidecarcontainers.md>, <https://github.com/kubernetes/enhancements/issues/753>. Implementation of the proposal has started and may be released in Kubernetes 1.18 or 1.19 (in Alpha stage).
 >
 > In the meantime however, `Vault Sidecar Injector` implements **specific sidecar and signaling mechanism** to properly stop all injected containers on job termination.
 
