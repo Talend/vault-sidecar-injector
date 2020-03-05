@@ -802,8 +802,8 @@ Using HashiCorp's Vault Helm chart:
 ```bash
 $ git clone https://github.com/hashicorp/vault-helm.git
 $ cd vault-helm
-$ git checkout v0.1.2
-$ helm install . --name=vault --set server.dev.enabled=true --set server.authDelegator.enabled=true --set ui.enabled=true --set ui.serviceType="NodePort"
+$ git checkout v0.4.0
+$ helm install . --name=vault --set injector.enabled=false --set server.dev.enabled=true --set ui.enabled=true --set ui.serviceType="NodePort"
 ```
 
 Then init Vault server with our test config:
