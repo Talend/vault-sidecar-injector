@@ -1,4 +1,4 @@
-// Copyright © 2019 Talend
+// Copyright © 2019-2020 Talend - www.talend.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,19 +27,18 @@ type WhSvrParameters struct {
 	AnnotationKeyPrefix   string // annotations key prefix
 	AppLabelKey           string // key for application label
 	AppServiceLabelKey    string // key for application's service label
-	SidecarCfgFile        string // path to sidecar injector configuration file
+	InjectionCfgFile      string // path to injection configuration file
 	ProxyCfgFile          string // path to Vault proxy configuration file
 	TemplateBlockFile     string // path to template file
 	TemplateDefaultFile   string // path to default template content file
 	PodLifecycleHooksFile string // path to pod's lifecycle hooks file
 }
 
-// SidecarConfig : resources that will be injected (read from config file)
-type SidecarConfig struct {
-	SecurityContext *corev1.PodSecurityContext `yaml:"securityContext" json:"securityContext"`
-	InitContainers  []corev1.Container         `yaml:"initContainers" json:"initContainers"`
-	Containers      []corev1.Container         `yaml:"containers" json:"containers"`
-	Volumes         []corev1.Volume            `yaml:"volumes" json:"volumes"`
+// InjectionConfig : resources that will be injected (read from config file)
+type InjectionConfig struct {
+	InitContainers []corev1.Container `yaml:"initContainers" json:"initContainers"`
+	Containers     []corev1.Container `yaml:"containers" json:"containers"`
+	Volumes        []corev1.Volume    `yaml:"volumes" json:"volumes"`
 }
 
 // LifecycleHooks : lifecycle hooks to inject in requesting pod
@@ -47,13 +46,13 @@ type LifecycleHooks struct {
 	PostStart *corev1.Handler `yaml:"postStart" json:"postStart"`
 }
 
-// InjectionConfig : Vault Sidecar Injector configuration
-type InjectionConfig struct {
+// VSIConfig : Vault Sidecar Injector configuration
+type VSIConfig struct {
 	VaultInjectorAnnotationKeyPrefix string            // annotations prefix
 	VaultInjectorAnnotationsFQ       map[string]string // supported annotations (fully-qualified with prefix if any)
 	ApplicationLabelKey              string            // key for application label
 	ApplicationServiceLabelKey       string            // key for application's service label
-	SidecarConfig                    *SidecarConfig    // sidecar injector configuration
+	InjectionConfig                  *InjectionConfig  // injection configuration
 	ProxyConfig                      string            // Vault proxy configuration
 	TemplateBlock                    string            // template
 	TemplateDefaultTmpl              string            // default template content

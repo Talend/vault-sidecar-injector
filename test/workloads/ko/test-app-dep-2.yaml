@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-app-unsupported-secrets-type
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      com.talend.application: test
+      com.talend.service: test-app-svc
+  template:
+    metadata:
+      annotations:
+        sidecar.vault.talend.org/inject: "true"
+        sidecar.vault.talend.org/secrets-type: "kubernetes" # unsupported secrets type
+      labels:
+        com.talend.application: test
+        com.talend.service: test-app-svc
+    spec:
+      serviceAccountName: default
+      containers:
+        - name: test-app-unsupported-secrets-type
+          image: busybox:1.28
+          command:
+            - "sh"
+            - "-c"
+            - >
+              echo "My secrets are: $(cat /opt/talend/secrets/secrets.properties)"
+          volumeMounts:
+            - name: secrets
+              mountPath: /opt/talend/secrets
+      volumes:
+        - name: secrets
+          emptyDir:
+            medium: Memory
