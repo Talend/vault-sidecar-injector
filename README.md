@@ -77,7 +77,7 @@ Invoking `Vault Sidecar Injector` is pretty straightforward. In your application
 - When using **secrets** mode:
   - Add volume `secrets`, setting field `emptyDir.medium` to *Memory*. Deciphered secrets will be made available in file `secrets.properties` (using format `<secret key>=<secret value>`) by default or in the secrets destination you provide with annotation `sidecar.vault.talend.org/secrets-destination`.
     > Note: as a fallback measure, if your manifest does not define a `secrets` volume, `Vault Sidecar Injector` will add one to the resulting pod.
-  - For Kubernetes **Job workloads only**:
+  - For Kubernetes **Job workloads dealing with dynamic secrets only**:
     - **Use of `serviceAccountName` attribute**, with role allowing to perform GET on pods (needed to poll for job's pod status)
     - **Do not make use of annotation `sidecar.vault.talend.org/secrets-hook`** as it will immediately put the job in error state. This hook is meant to be used with regular workloads only (ie Kubernetes Deployments) as it forces a restart of the application container until secrets are available in application's context. With jobs, as we look after status of the job container, our special signaling mechanism will terminate all the sidecars upon job exit thus preventing use of the hook.
 
