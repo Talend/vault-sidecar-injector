@@ -144,6 +144,6 @@ Features comparison `Vault Sidecar Injector` vs `HashiCorp Vault Agent Injector`
 
 Most of the differences are less the result of technical choice than philosophical ones: the Vault Sidecar Injector is more "user friendly" in this regard by easily giving access to Vault proxy mode or other technical features through a simple annotation, where the same capabilities on HashiCorp's injector will require the user to provide a complete Vault Agent config wrapped into a Kubernetes ConfigMap. This distinct approach can also be seen with Vault Sidecar Injector's modes that completely relieve the user from knowing whether he needs an init container or a sidecar or both of them to handle a use case. On the other end, with the HashiCorp's injector, the user has control over the injected content and this "complexity" allows for greater flexibility.
 
-The major advantage brought by the Vault Sidecar Injector lies in how it supports dynamic secrets in Kubernetes Jobs, a feature currently not properly implemented on HashiCorp side.
+**The major advantage brought by the Vault Sidecar Injector lies in how it supports dynamic secrets in Kubernetes Jobs, a feature currently not properly implemented on HashiCorp side.**
 
 Future Vault Sidecar Injector releases will continue focusing on a feature-oriented, non-technical path to make injector usage as seamless as possible. Results from this comparison test show that there is room for some improvements on volume management that will be taking care of soon. Stay tuned !
