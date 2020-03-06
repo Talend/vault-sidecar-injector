@@ -98,7 +98,7 @@ $ cd vault-helm
 $ helm install . --name=hashicorp-vault-injector --set injector.enabled=true --set injector.externalVaultAddr=http://vault:8200 --set server.standalone.enabled=false --set server.service.enabled=false --set server.dataStorage.enabled=false
 ```
 
-Using this command line, we **only** install the HashiCorp injector and tell him to make use of the Vault server we deployed previously. By doing so, it is easy to test one injector or the other, keeping our Vault server in place. Of course, it is possible to install both Vault server and the HashiCorp injector at once if you want to.
+Using this command line, we **only** install the HashiCorp injector and tell it to make use of the Vault server we deployed previously. By doing so, it is easy to test one injector or the other, keeping our Vault server in place. Of course, it is possible to install both Vault server and the HashiCorp injector at once if you want to.
 
 To uninstall:
 
