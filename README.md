@@ -37,6 +37,7 @@
 
 ## Announcements
 
+- 2020-03: [Vault Sidecar Injector vs HashiCorp Vault Agent Injector - Features Comparison](https://github.com/Talend/vault-sidecar-injector/blob/master/doc/HashiCorp-Vault-Agent-Injector.md)
 - 2020-03: [Static vs Dynamic secrets](https://github.com/Talend/vault-sidecar-injector/blob/master/doc/Static-vs-Dynamic-Secrets.md)
 - 2019-12: [Discovering Vault Sidecar Injector's Proxy feature](https://github.com/Talend/vault-sidecar-injector/blob/master/doc/Discovering-Vault-Sidecar-Injector-Proxy.md)
 - 2019-11: [Vault Sidecar Injector now leverages Vault Agent Template feature](https://github.com/Talend/vault-sidecar-injector/blob/master/doc/Leveraging-Vault-Agent-Template.md)
@@ -52,7 +53,7 @@ To ease deployment, a Helm chart is provided under [deploy/helm](https://github.
 
 > ⚠️ **Important note** ⚠️: support for sidecars in Kubernetes **jobs** suffers from limitations and issues exposed here: <https://github.com/kubernetes/kubernetes/issues/25908>.
 >
-> A Kubernetes proposal tries to address those points: <https://github.com/kubernetes/enhancements/blob/master/keps/sig-apps/sidecarcontainers.md>, <https://github.com/kubernetes/enhancements/issues/753>. Implementation of the proposal has started and may be released in Kubernetes 1.18 or 1.19 (in Alpha stage).
+> A Kubernetes proposal tries to address those points: <https://github.com/kubernetes/enhancements/blob/master/keps/sig-apps/sidecarcontainers.md>, <https://github.com/kubernetes/enhancements/issues/753>. Implementation of the proposal has started and may be released in Kubernetes 1.19 (in Alpha stage).
 >
 > In the meantime however, `Vault Sidecar Injector` implements **specific sidecar and signaling mechanism** to properly stop all injected containers on job termination.
 
@@ -306,7 +307,7 @@ spec:
 Show example
 </summary>
 
-When submitting a job, annotation `sidecar.vault.talend.org/workload` **must be used with value set to `"job"`**.
+When submitting a job, use annotation `sidecar.vault.talend.org/mode` and set value to `job`.
 
 The service account used to run the job should at least have the following permissions:
 
@@ -353,7 +354,7 @@ spec:
     metadata:
       annotations:
         sidecar.vault.talend.org/inject: "true"
-        sidecar.vault.talend.org/workload: "job"
+        sidecar.vault.talend.org/mode: "job"
       labels:
         com.talend.application: test
         com.talend.service: test-app-svc
@@ -397,9 +398,7 @@ spec:
 Show example
 </summary>
 
-This sample demonstrates how to enable the proxy mode in addition to the secrets mode used in previous samples. We are here again using a Kubernetes job so we reuse the dedicated service account and the `sidecar.vault.talend.org/workload` annotation.
-
-> Note that any mode combination is supported: **secrets** only (default when annotation `sidecar.vault.talend.org/mode` not provided), **proxy** only and both modes.
+This sample demonstrates how to enable the proxy mode in addition to the secrets mode used in previous samples. We are here again using a Kubernetes job so we reuse the dedicated service account.
 
 Key annotation to use is `sidecar.vault.talend.org/mode` to let `Vault Sidecar Injector` knows that proxy mode must be enabled. Optional `sidecar.vault.talend.org/proxy-port` annotation can be handy if default proxy port has to be customized.
 
@@ -444,9 +443,8 @@ spec:
     metadata:
       annotations:
         sidecar.vault.talend.org/inject: "true"
-        sidecar.vault.talend.org/mode: "secrets,proxy"  # Enable both 'secrets' and 'proxy' modes
+        sidecar.vault.talend.org/mode: "secrets,proxy,job"  # Enable 'secrets', 'proxy' and 'job' modes
         sidecar.vault.talend.org/proxy-port: "9999"     # Optional: override default proxy port value (8200)
-        sidecar.vault.talend.org/workload: "job"
       labels:
         com.talend.application: test
         com.talend.service: test-app-svc
