@@ -307,7 +307,7 @@ spec:
 Show example
 </summary>
 
-When submitting a job, annotation `sidecar.vault.talend.org/workload` **must be used with value set to `"job"`**.
+When submitting a job, use annotation `sidecar.vault.talend.org/mode` and set value to `job`.
 
 The service account used to run the job should at least have the following permissions:
 
@@ -354,7 +354,7 @@ spec:
     metadata:
       annotations:
         sidecar.vault.talend.org/inject: "true"
-        sidecar.vault.talend.org/workload: "job"
+        sidecar.vault.talend.org/mode: "job"
       labels:
         com.talend.application: test
         com.talend.service: test-app-svc
@@ -398,9 +398,7 @@ spec:
 Show example
 </summary>
 
-This sample demonstrates how to enable the proxy mode in addition to the secrets mode used in previous samples. We are here again using a Kubernetes job so we reuse the dedicated service account and the `sidecar.vault.talend.org/workload` annotation.
-
-> Note that any mode combination is supported: **secrets** only (default when annotation `sidecar.vault.talend.org/mode` not provided), **proxy** only and both modes.
+This sample demonstrates how to enable the proxy mode in addition to the secrets mode used in previous samples. We are here again using a Kubernetes job so we reuse the dedicated service account.
 
 Key annotation to use is `sidecar.vault.talend.org/mode` to let `Vault Sidecar Injector` knows that proxy mode must be enabled. Optional `sidecar.vault.talend.org/proxy-port` annotation can be handy if default proxy port has to be customized.
 
@@ -445,9 +443,8 @@ spec:
     metadata:
       annotations:
         sidecar.vault.talend.org/inject: "true"
-        sidecar.vault.talend.org/mode: "secrets,proxy"  # Enable both 'secrets' and 'proxy' modes
+        sidecar.vault.talend.org/mode: "secrets,proxy,job"  # Enable 'secrets', 'proxy' and 'job' modes
         sidecar.vault.talend.org/proxy-port: "9999"     # Optional: override default proxy port value (8200)
-        sidecar.vault.talend.org/workload: "job"
       labels:
         com.talend.application: test
         com.talend.service: test-app-svc

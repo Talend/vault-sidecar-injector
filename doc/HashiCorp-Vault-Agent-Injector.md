@@ -41,10 +41,10 @@ Last, Helm 2 will be used to deploy the charts but this is not a requirement (He
 
 ### Cluster and Vault server installation
 
-Our Minikube cluster is started on a Linux Ubuntu 18.04.4 LTS station using KVM. We allocate 4 cpus and 16G of memory to the VM.
+Our Minikube cluster is started on a Linux Ubuntu 18.04.4 LTS station using KVM.
 
 ```bash
-$ minikube start --cpus 4 --memory 16384 --vm-driver kvm2
+$ minikube start --vm-driver kvm2
 ```
 
 Once cluster is ready, we deploy our test Vault server (note that the HashiCorp injector *is not installed at this stage* to clearly separate each step):
@@ -121,27 +121,29 @@ Features comparison `Vault Sidecar Injector` vs `HashiCorp Vault Agent Injector`
 
 |Features|Vault Sidecar Injector|HashiCorp Vault Agent Injector|
 |--------|----------------------|------------------------------|
-|Vault Agent image|               At webhook level *(helm chart value)*    |    Both at webhook *(helm chart value)* and pod levels *(via annotation)* |
-| Shared secrets volume| Injection of In-memory Volume **only** if not defined. VolumeMount is not injected if not defined | Injection of both In-memory Volume and VolumeMount. **Failure** if `vault-secrets` Volume already defined |
-| Secrets volume mount path |  Any path associated to the `secrets` Volume   | Cannot be changed *(set to `/vault/secrets`)* |
-| Kubernetes Job support for both static and dynamic secrets | **Yes**, with special mechanism to monitor injected sidecars | **Static secrets only**, do not properly support dynamic secrets (sidecar **never ends**)  |
-| Vault K8S Auth with custom Service Account Token | At pod level *(using annotation)* | **Not possible** |
-| Multi-secrets, multi-templates support | At pod level *(using annotation)* | At pod level *(using annotation)* |
+| Vault K8S Auth path | At webhook level *(helm chart value)* | At pod level *(default to `kubernetes` or custom via annotation)* |
 | Vault Role | At pod level *(using annotation or label)* | At pod level *(using annotation)* |
 | Vault secrets path | At pod level *(using annotation or label)* | At pod level *(using annotation)* |
-| Vault proxy mode | At pod level *(using annotation)* | By providing K8S ConfigMap with custom Vault Agent config + using annotation to load config *(`vault.hashicorp.com/agent-configmap`)* |
-| Custom Vault Agent config | **Not possible** | By providing K8S ConfigMap with custom Vault Agent config + using annotation to load config *(`vault.hashicorp.com/agent-configmap`)* |
-| Resources (CPU, mem) for webhook | Using Helm chart values | Using Helm chart values |
-| Resources (CPU, mem) for injected container(s) | At webhook level *(helm chart values)* | At pod level *(default values or custom via annotations)* |
-| Vault server to use | At webhook level *(helm chart value)* | Both at webhook *(helm chart value)* and pod levels *(via annotation)* |
-| Vault K8S Auth path | At webhook level *(helm chart value)* | At pod level *(default to `kubernetes` or custom via annotation)* |
-| Vault Agent's check of Vault's TLS cert | At webhook level *(helm chart value)* | At pod level *(using annotation)* |
-| Vault AppRole Auth support | At pod level *(using annotation)* | By providing K8S ConfigMap with custom Vault Agent config + using annotation to load config *(`vault.hashicorp.com/agent-configmap`)* |
+| Multi-secrets, multi-templates support | At pod level *(using annotation)* | At pod level *(using annotation)* |
+| Notifying application of secrets change | At pod level *(using annotation)* | By providing K8S ConfigMap with custom Vault Agent config + using annotation to load config *(`vault.hashicorp.com/agent-configmap`)*  |
 | Injection of init and sidecar containers | At pod level, injection content **fully based on enabled modes** (see [table](https://github.com/Talend/vault-sidecar-injector/tree/v6.0.0/README.md#modes-and-injection-config-overview)) *(using annotations)* | At pod level, injection content **only based on annotations** (`vault.hashicorp.com/agent-pre-populate` and `vault.hashicorp.com/agent-pre-populate-only`) *(inject both init and sidecar container by default)* |
-| Handling Vault Dynamic Secrets (e.g. AWS, Azure) | | |
+| Kubernetes Job support for both static and dynamic secrets | **Yes**, with special mechanism to monitor injected sidecars | **Static secrets only**, do not properly support dynamic secrets (sidecar **never ends**)  |
+| Static secrets | At pod level, with dedicated mode *(using annotation)* | At pod level, asking for init container injection *(using annotation)* |
+| Dynamic secrets | At pod level, with dedicated mode and optional hook *(using annotations)* | At pod level, asking for sidecar container and, if needed, init container injection *(using annotations)* |
+| Vault proxy mode | At pod level *(using annotation)* | By providing K8S ConfigMap with custom Vault Agent config + using annotation to load config *(`vault.hashicorp.com/agent-configmap`)* |
+| Vault K8S Auth with custom Service Account Token | At pod level *(using annotation)* | **Not possible** |
+| Custom Vault Agent config | **Not possible** | By providing K8S ConfigMap with custom Vault Agent config + using annotation to load config *(`vault.hashicorp.com/agent-configmap`)* |
+| Vault AppRole Auth support | At pod level *(using annotation)* | By providing K8S ConfigMap with custom Vault Agent config + using annotation to load config *(`vault.hashicorp.com/agent-configmap`)* |
+| Secrets volume mount path |  Any path associated to the `secrets` Volume   | Cannot be changed *(set to `/vault/secrets`)* |
+| Shared secrets volume| Injection of In-memory Volume **only** if not defined. VolumeMount is not injected if not defined | Injection of both In-memory Volume and VolumeMount. **Failure** if `vault-secrets` Volume already defined |
+| Resources (CPU, mem) for injected container(s) | At webhook level *(helm chart values)* | At pod level *(default values or custom via annotations)* |
+| Resources (CPU, mem) for webhook | Using Helm chart values | Using Helm chart values |
+| Vault server to use | At webhook level *(helm chart value)* | Both at webhook *(helm chart value)* and pod levels *(via annotation)* |
+| Vault Agent's check of Vault's TLS cert | At webhook level *(helm chart value)* | At pod level *(using annotation)* |
+|Vault Agent image|               At webhook level *(helm chart value)*    |    Both at webhook *(helm chart value)* and pod levels *(via annotation)* |
 
-Most of the differences are less the result of technical choice than philosophical ones: the Vault Sidecar Injector is more "user friendly" in this regard by easily giving access to Vault proxy mode or other technical features through a simple annotation, where the same capability on HashiCorp's injector will require the user to provide a complete Vault Agent config wrapped into a Kubernetes ConfigMap. This distinct approach can also be seen with Vault Sidecar Injector's modes that completely free the user from knowing whether he needs an init container or a sidecar or both of them to handle a use case. On the other end, with the HashiCorp's injector, the user has control over the injected content and this "complexity" allows for greater flexibility.
+Most of the differences are less the result of technical choice than philosophical ones: the Vault Sidecar Injector is more "user friendly" in this regard by easily giving access to Vault proxy mode or other technical features through a simple annotation, where the same capabilities on HashiCorp's injector will require the user to provide a complete Vault Agent config wrapped into a Kubernetes ConfigMap. This distinct approach can also be seen with Vault Sidecar Injector's modes that completely relieve the user from knowing whether he needs an init container or a sidecar or both of them to handle a use case. On the other end, with the HashiCorp's injector, the user has control over the injected content and this "complexity" allows for greater flexibility.
 
 The major advantage brought by the Vault Sidecar Injector lies in how it supports dynamic secrets in Kubernetes Jobs, a feature currently not properly implemented on HashiCorp side.
 
-Results from this comparison test are instrumental to drive the roadmap and content of the next releases of the Vault Sidecar Injector. So stay tuned!
+Future Vault Sidecar Injector releases will continue focusing on a feature-oriented, non-technical path to make injector usage as seamless as possible. Results from this comparison test show that there is room for some improvements on volume management that will be taking care of soon. Stay tuned !
