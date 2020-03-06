@@ -111,7 +111,7 @@ $ helm delete --purge hashicorp-vault-injector
 Assessment has been done with the help of following workloads:
 
 - For Vault Sidecar Injector: [samples](https://github.com/Talend/vault-sidecar-injector/tree/v6.0.0/samples)
-- For HashiCorp Vault Agent Injector: [hashicorp-injector-samples](https://github.com/Talend/vault-sidecar-injector/tree/v6.0.0/doc/hashicorp-injector-samples)
+- For HashiCorp Vault Agent Injector: [hashicorp-injector-samples](https://github.com/Talend/vault-sidecar-injector/blob/master/doc/hashicorp-injector-samples)
 
 ## Features Comparison
 
