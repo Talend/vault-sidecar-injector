@@ -119,7 +119,7 @@ Template below is used by default to fetch all secrets and create corresponding 
 
 <!-- {% raw %} -->
 ```yaml
-{{ with secret "<APPSVC_VAULT_SECRETS_PATH>" }}{{ range $k, $v := .Data }}
+{{ with secret "<VSI_SECRETS_VAULT_SECRETS_PATH>" }}{{ range $k, $v := .Data }}
 {{ $k }}={{ $v }}
 {{ end }}{{ end }}
 ```
