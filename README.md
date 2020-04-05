@@ -119,7 +119,7 @@ Template below is used by default to fetch all secrets and create corresponding 
 
 <!-- {% raw %} -->
 ```yaml
-{{ with secret "<APPSVC_VAULT_SECRETS_PATH>" }}{{ range $k, $v := .Data }}
+{{ with secret "<Path to secrets (defaut value or `sidecar.vault.talend.org/secrets-path` annotation)>" }}{{ range $k, $v := .Data }}
 {{ $k }}={{ $v }}
 {{ end }}{{ end }}
 ```
@@ -1024,7 +1024,7 @@ The following table lists the configurable parameters of the `Vault Sidecar Inje
 | injectconfig.jobbabysitter.resources.requests.memory | Job babysitter sidecar memory resource requests | 20Mi |
 | injectconfig.vault.image.path  | Image path  | vault |
 | injectconfig.vault.image.pullPolicy    | Pull policy for image: IfNotPresent or Always  | Always   |
-| injectconfig.vault.image.tag  | Image tag | 1.3.2 |
+| injectconfig.vault.image.tag  | Image tag | 1.3.4 |
 | injectconfig.vault.loglevel                    | Vault log level: trace, debug, info, warn, err    | info    |
 | injectconfig.vault.resources.limits.cpu | Vault sidecar CPU resource limits | 50m |
 | injectconfig.vault.resources.limits.memory | Vault sidecar memory resource limits | 50Mi |
