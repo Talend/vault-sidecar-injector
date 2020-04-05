@@ -31,7 +31,7 @@ test:
 
 build: clean test
 	echo "Building ..."
-	GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -a -o $(TARGET)
+	GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -mod=vendor -a -o $(TARGET)
 	cd target && sha512sum vaultinjector-webhook > vaultinjector-webhook.sha512
 
 package:

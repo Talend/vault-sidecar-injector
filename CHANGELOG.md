@@ -1,10 +1,16 @@
 # Changelog for Vault Sidecar Injector
 
-## Release v6.0.1 - 2020-04-xx
+## Release v6.0.1 - 2020-04-06
 
-This is a minor release to update Vault image to `1.3.4` by default to benefit from CVE fixes (see details [here](https://github.com/hashicorp/vault/blob/master/CHANGELOG.md#134-march-19th-2020)).
+This is a minor release to update Vault image to `1.3.4` by default (CVE fixes, see details [here](https://github.com/hashicorp/vault/blob/master/CHANGELOG.md#134-march-19th-2020)) and enable offline builds by vendoring dependencies.
+
+**Changed**
 
 - [VSI #23](https://github.com/Talend/vault-sidecar-injector/pull/23) - Update HashiCorp Vault image (CVE fixes)
+
+**Added**
+
+- [VSI #24](https://github.com/Talend/vault-sidecar-injector/pull/24) - Vendoring
 
 ## Release v6.0.0 - 2020-03-04
 
