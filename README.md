@@ -119,7 +119,7 @@ Template below is used by default to fetch all secrets and create corresponding 
 
 <!-- {% raw %} -->
 ```yaml
-{{ with secret "<VSI_SECRETS_VAULT_SECRETS_PATH>" }}{{ range $k, $v := .Data }}
+{{ with secret "<Path to secrets (defaut value or `sidecar.vault.talend.org/secrets-path` annotation)>" }}{{ range $k, $v := .Data }}
 {{ $k }}={{ $v }}
 {{ end }}{{ end }}
 ```
