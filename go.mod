@@ -9,7 +9,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742 // indirect
 	github.com/prometheus/client_golang v0.9.3
-	github.com/spf13/viper v1.4.0
+	github.com/spf13/viper v1.4.0 // indirect
 	github.com/stretchr/testify v1.3.0
 	gopkg.in/inf.v0 v0.9.0 // indirect
 	k8s.io/api v0.0.0-20190116205037-c89978d5f86d
