@@ -25,13 +25,18 @@ clean:
 fmt:
 	gofmt -l -w $(SRC)
 
-test:
+test: # for detailed outputs, run 'make test VERBOSE=true'
 	echo "Running tests ..."
 	go test -v ./...
 
-build: clean test
-	echo "Building ..."
-	GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -mod=vendor -a -o $(TARGET)
+build: clean test # run 'make build OFFLINE=true' to build from vendor folder
+	if [ -z ${OFFLINE} ] || [ ${OFFLINE} != true ];then \
+		echo "Building ..."; \
+		GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -a -o $(TARGET); \
+	else \
+		echo "Building using local vendor folder (ie offline build)..."; \
+		GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -mod=vendor -a -o $(TARGET); \
+	fi
 	cd target && sha512sum vaultinjector-webhook > vaultinjector-webhook.sha512
 
 package:

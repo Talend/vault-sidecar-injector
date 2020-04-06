@@ -2,7 +2,7 @@
 
 ## Release v6.0.1 - 2020-04-06
 
-This is a minor release to update Vault image to `1.3.4` by default (CVE fixes, see details [here](https://github.com/hashicorp/vault/blob/master/CHANGELOG.md#134-march-19th-2020)) and enable offline builds by vendoring dependencies.
+This is a minor release to update Vault image to `1.3.4` by default (CVE fixes, see details [here](https://github.com/hashicorp/vault/blob/master/CHANGELOG.md#134-march-19th-2020)) and enable offline builds by vendoring dependencies (use `make build OFFLINE=true`).
 
 **Changed**
 
