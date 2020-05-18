@@ -2,6 +2,12 @@
 
 ## Release v6.1.0 - 2020-05-18
 
+This release fixes VSI deployment on Kubernetes 1.18+ clusters. It also comes with better AppRole integration and updated Vault image.
+
+**Changed**
+
+- [VSI #27](https://github.com/Talend/vault-sidecar-injector/pull/27) - Update HashiCorp Vault image to 1.4.1
+
 **Added**
 
 - [VSI #26](https://github.com/Talend/vault-sidecar-injector/pull/26) - Improve AppRole support: add tests, enforce check over secrets type, tune Vault Agent config
