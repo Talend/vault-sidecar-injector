@@ -17,6 +17,7 @@ package webhook
 import (
 	"net/http"
 	cfg "talend/vault-sidecar-injector/pkg/config"
+	ctx "talend/vault-sidecar-injector/pkg/context"
 )
 
 // VaultInjector : Webhook Server entity
@@ -27,11 +28,17 @@ type VaultInjector struct {
 
 // Supported annotations (modes' annotations will be appended to this array)
 var vaultInjectorAnnotationKeys = []string{
-	vaultInjectorAnnotationInjectKey,
-	vaultInjectorAnnotationAuthMethodKey,
-	vaultInjectorAnnotationModeKey,
-	vaultInjectorAnnotationRoleKey,
-	vaultInjectorAnnotationSATokenKey,
-	vaultInjectorAnnotationWorkloadKey,
-	vaultInjectorAnnotationStatusKey,
+	ctx.VaultInjectorAnnotationInjectKey,
+	ctx.VaultInjectorAnnotationAuthMethodKey,
+	ctx.VaultInjectorAnnotationModeKey,
+	ctx.VaultInjectorAnnotationRoleKey,
+	ctx.VaultInjectorAnnotationSATokenKey,
+	ctx.VaultInjectorAnnotationWorkloadKey,
+	ctx.VaultInjectorAnnotationStatusKey,
+}
+
+// Supported Vault Auth Methods
+var vaultInjectorAuthMethods = [...]string{
+	ctx.VaultK8sAuthMethod,
+	ctx.VaultAppRoleAuthMethod,
 }

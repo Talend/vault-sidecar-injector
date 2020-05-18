@@ -15,38 +15,11 @@
 package webhook
 
 const (
-	//--- Vault Sidecar Injector annotation keys (without prefix)
-	// Input annotations (set on incoming manifest)
-	vaultInjectorAnnotationInjectKey     = "inject"   // Mandatory
-	vaultInjectorAnnotationAuthMethodKey = "auth"     // Optional. Vault Auth Method to use: kubernetes (default) or approle
-	vaultInjectorAnnotationModeKey       = "mode"     // Optional. Comma-separated list of mode(s) to enable.
-	vaultInjectorAnnotationRoleKey       = "role"     // Optional. To explicitly provide Vault role to use
-	vaultInjectorAnnotationSATokenKey    = "sa-token" // Optional. Full path to service account token used for Vault Kubernetes authentication
-	vaultInjectorAnnotationWorkloadKey   = "workload" // Optional. If set to "job", supplementary container and signaling mechanism will also be injected to properly handle k8s job
-	// Output annotation (set by VSI webhook)
-	vaultInjectorAnnotationStatusKey = "status" // Not to be set by requesting pods: set by the Webhook Admission Controller if injection ok
-)
-
-const (
-	//--- Vault Sidecar Injector status
-	vaultInjectorStatusInjected = "injected"
-)
-
-const (
-	//--- Vault Sidecar Injector workloads
-	vaultInjectorWorkloadJob = "job"
-)
-
-const (
 	//--- Vault Sidecar Injector mount path for service accounts
 	vaultInjectorSATokenVolMountPath = "/var/run/secrets/talend/vault-sidecar-injector/serviceaccount"
 	k8sDefaultSATokenVolMountPath    = "/var/run/secrets/kubernetes.io/serviceaccount"
 	//-- Volumes
 	secretsVolName = "secrets" // Name of the volume shared between containers to store secrets file(s)
-)
-
-const (
-	vaultK8sAuthMethod = "kubernetes" // Default auth method used by Vault Agent
 )
 
 const (

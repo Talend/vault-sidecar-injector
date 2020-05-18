@@ -54,6 +54,11 @@ func main() {
 	version := flag.Bool("version", false, "print current version")
 	flag.Parse()
 
+	if *version {
+		fmt.Println("\nVSI (Vault Sidecar Injector) version " + VERSION)
+		os.Exit(0)
+	}
+
 	// Beware as glog is here behind the scene and we use klog here
 	// So logging command line parameters -v, -logtostderr, -alsologtostderr, -log_dir, -log_file, ... are already initialized (see glog init() func)
 	klogFlags := flag.NewFlagSet("klog", flag.ExitOnError)
@@ -67,11 +72,6 @@ func main() {
 			f2.Value.Set(value)
 		}
 	})
-
-	if *version {
-		fmt.Println("TVSI (Talend Vault Sidecar Injector) version " + VERSION)
-		os.Exit(0)
-	}
 
 	// Load webhook admission server's config
 	vsiCfg, err := config.Load(parameters)

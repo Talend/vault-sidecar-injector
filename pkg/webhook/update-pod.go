@@ -71,25 +71,39 @@ func (vaultInjector *VaultInjector) computeContext(podContainers []corev1.Contai
 
 	// Get status for Vault Sidecar Injector modes
 	modesStatus := make(map[string]bool, len(m.VaultInjectorModes))
-	m.GetModesStatus(strings.Split(annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationModeKey]], ","), modesStatus)
+	m.GetModesStatus(strings.Split(annotations[vaultInjector.VaultInjectorAnnotationsFQ[ctx.VaultInjectorAnnotationModeKey]], ","), modesStatus)
 
 	// !!! This annotation is deprecated !!! Enable job mode if used
-	if annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationWorkloadKey]] == vaultInjectorWorkloadJob {
-		klog.Warningf("Annotation '%s' is deprecated but still supported. Use '%s' instead", vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationWorkloadKey], vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationModeKey])
-		modesStatus[vaultInjectorWorkloadJob] = true
+	if annotations[vaultInjector.VaultInjectorAnnotationsFQ[ctx.VaultInjectorAnnotationWorkloadKey]] == ctx.VaultInjectorWorkloadJob {
+		klog.Warningf("Annotation '%s' is deprecated but still supported. Use '%s' instead", vaultInjector.VaultInjectorAnnotationsFQ[ctx.VaultInjectorAnnotationWorkloadKey], vaultInjector.VaultInjectorAnnotationsFQ[ctx.VaultInjectorAnnotationModeKey])
+		modesStatus[ctx.VaultInjectorWorkloadJob] = true
 	}
 
 	klog.Infof("Modes status: %+v", modesStatus)
 
-	vaultAuthMethod := annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationAuthMethodKey]]
-	vaultRole := annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationRoleKey]]
-	vaultSATokenPath := annotations[vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationSATokenKey]]
+	vaultAuthMethod := annotations[vaultInjector.VaultInjectorAnnotationsFQ[ctx.VaultInjectorAnnotationAuthMethodKey]]
+	vaultRole := annotations[vaultInjector.VaultInjectorAnnotationsFQ[ctx.VaultInjectorAnnotationRoleKey]]
+	vaultSATokenPath := annotations[vaultInjector.VaultInjectorAnnotationsFQ[ctx.VaultInjectorAnnotationSATokenKey]]
 
 	if vaultAuthMethod == "" { // Default Vault Auth Method is "kubernetes"
-		vaultAuthMethod = vaultK8sAuthMethod
+		vaultAuthMethod = ctx.VaultK8sAuthMethod
+	} else {
+		vaultAuthMethodSupported := false
+		for _, supportedVaultAuthMethod := range vaultInjectorAuthMethods {
+			if vaultAuthMethod == supportedVaultAuthMethod {
+				vaultAuthMethodSupported = true
+				break
+			}
+		}
+
+		if !vaultAuthMethodSupported {
+			err := fmt.Errorf("Submitted pod makes use of unsupported Vault Auth Method '%s'", vaultAuthMethod)
+			klog.Errorf(err.Error())
+			return nil, err
+		}
 	}
 
-	if (vaultRole == "") && (vaultAuthMethod == vaultK8sAuthMethod) { // If role annotation not provided and "kubernetes" Vault Auth
+	if (vaultRole == "") && (vaultAuthMethod == ctx.VaultK8sAuthMethod) { // If role annotation not provided and "kubernetes" Vault Auth
 		// Look after application label to set role
 		vaultRole = labels[vaultInjector.ApplicationLabelKey]
 

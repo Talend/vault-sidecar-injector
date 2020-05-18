@@ -2,11 +2,12 @@
 
 set -e
 
+SCRIPT_PATH="$(dirname "$0")"
 VAULT_POD="kubectl exec -i vault-0 -- sh -c"
 
 # Create policies to allow read access to our secrets
-cat vault-server-policy-test.hcl | ${VAULT_POD} "VAULT_TOKEN=root vault policy write test_pol -"
-cat vault-server-policy-test2.hcl | ${VAULT_POD} "VAULT_TOKEN=root vault policy write test_pol2 -"
+cat "$SCRIPT_PATH"/vault-server-policy-test.hcl | ${VAULT_POD} "VAULT_TOKEN=root vault policy write test_pol -"
+cat "$SCRIPT_PATH"/vault-server-policy-test2.hcl | ${VAULT_POD} "VAULT_TOKEN=root vault policy write test_pol2 -"
 
 # Enable KV v1 (KV v2 is enabled with Vault server in dev mode whereas KV v1 is enabled in prod mode: https://www.vaultproject.io/docs/secrets/kv/kv-v2.html#setup)
 ${VAULT_POD} "VAULT_TOKEN=root vault secrets disable secret/"
@@ -36,8 +37,8 @@ echo "-> Enable & set up Vault AppRole Auth Method"
 ${VAULT_POD} "VAULT_TOKEN=root vault auth enable approle" || true
 
 # Create roles for Vault AppRole Auth Method
-${VAULT_POD} "VAULT_TOKEN=root vault write auth/approle/role/test secret_id_ttl=60m token_num_uses=10 token_ttl=20m token_max_ttl=30m secret_id_num_uses=0 policies=test_pol"
-${VAULT_POD} "VAULT_TOKEN=root vault write auth/approle/role/test2 secret_id_ttl=60m token_num_uses=10 token_ttl=20m token_max_ttl=30m secret_id_num_uses=0 policies=test_pol2"
+${VAULT_POD} "VAULT_TOKEN=root vault write auth/approle/role/test secret_id_ttl=60m token_num_uses=0 token_ttl=20m token_max_ttl=30m secret_id_num_uses=0 policies=test_pol"
+${VAULT_POD} "VAULT_TOKEN=root vault write auth/approle/role/test2 secret_id_ttl=60m token_num_uses=0 token_ttl=20m token_max_ttl=30m secret_id_num_uses=0 policies=test_pol2"
 
 # Add some secrets
 ${VAULT_POD} "VAULT_TOKEN=root vault kv put secret/test/test-app-svc ttl=10s SECRET1=Batman SECRET2=BruceWayne"
