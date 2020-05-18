@@ -34,7 +34,7 @@ spec:
           VAULTINJECTOR_SA_SECRET=$(kubectl get secrets -n ${K8S_NAMESPACE} -o name | grep -m 1 talend-vault-sidecar-injector-token)
           CA_BUNDLE=$(kubectl get -n ${K8S_NAMESPACE} ${VAULTINJECTOR_SA_SECRET} -o jsonpath='{.data.ca\.crt}')
 
-          if [[ ${CA_BUNDLE} == '' ]]; then
+          if [ "${CA_BUNDLE}" = "" ]; then
               echo "ERROR: CA_BUNDLE is empty!" >&2
               exit 1
           fi
