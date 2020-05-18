@@ -68,6 +68,7 @@ spec:
           kubectl delete csr ${csrName} 2>/dev/null || true
 
           # create server cert/key CSR and send to k8s API
+          # In k8s 1.18 certificates.k8s.io/v1beta1 has now a default signerName field set to "kubernetes.io/legacy-unknown" (https://github.com/kubernetes/enhancements/blob/master/keps/sig-auth/20190607-certificates-api.md)
           cat <<EOF | kubectl create -f -
           apiVersion: certificates.k8s.io/v1beta1
           kind: CertificateSigningRequest
