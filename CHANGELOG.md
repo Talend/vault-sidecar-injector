@@ -4,7 +4,7 @@
 
 **Fixed**
 
-- [VSI #]() - Fix RBAC following breaking change in [Kubernetes 1.18 Certificates API](https://github.com/kubernetes/enhancements/blob/master/keps/sig-auth/20190607-certificates-api.md). See also associated PR [86476](https://github.com/kubernetes/kubernetes/pull/86476) & [86933](https://github.com/kubernetes/kubernetes/pull/86933).
+- [VSI #25](https://github.com/Talend/vault-sidecar-injector/pull/25) - Fix RBAC following breaking change in [Kubernetes 1.18 Certificates API](https://github.com/kubernetes/enhancements/blob/master/keps/sig-auth/20190607-certificates-api.md). See also associated PR [86476](https://github.com/kubernetes/kubernetes/pull/86476) & [86933](https://github.com/kubernetes/kubernetes/pull/86933).
 
 ## Release v6.0.1 - 2020-04-06
 
