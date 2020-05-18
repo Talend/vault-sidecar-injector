@@ -69,14 +69,14 @@ func mutationRequired(ignoredList []string, vaultInjectorAnnotations map[string]
 		annotations = map[string]string{}
 	}
 
-	status := annotations[vaultInjectorAnnotations[vaultInjectorAnnotationStatusKey]]
+	status := annotations[vaultInjectorAnnotations[ctx.VaultInjectorAnnotationStatusKey]]
 
 	// determine whether to perform mutation based on annotation for the target resource
 	var required bool
-	if strings.ToLower(status) == vaultInjectorStatusInjected {
+	if strings.ToLower(status) == ctx.VaultInjectorStatusInjected {
 		required = false
 	} else {
-		switch strings.ToLower(annotations[vaultInjectorAnnotations[vaultInjectorAnnotationInjectKey]]) {
+		switch strings.ToLower(annotations[vaultInjectorAnnotations[ctx.VaultInjectorAnnotationInjectKey]]) {
 		default:
 			required = false
 		case "y", "yes", "true", "on":

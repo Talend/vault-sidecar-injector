@@ -26,7 +26,7 @@ fmt:
 	gofmt -l -w $(SRC)
 
 test: # for detailed outputs, run 'make test VERBOSE=true'
-	echo "Running tests ..."
+	echo "Running tests (for detailed outputs, run 'make test VERBOSE=true') ..."
 	go test -v ./...
 
 build: clean test # run 'make build OFFLINE=true' to build from vendor folder

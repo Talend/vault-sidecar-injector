@@ -162,6 +162,7 @@ containers:
             config = {
               role_id_file_path = "/opt/talend/secrets/{{ .Values.vault.authMethods.approle.roleid_filename }}"
               secret_id_file_path = "/opt/talend/secrets/{{ .Values.vault.authMethods.approle.secretid_filename }}"
+              remove_secret_id_file_after_reading = false
             }
           }
 
@@ -176,9 +177,6 @@ containers:
 
         ${VSI_SECRETS_TEMPLATES_PLACEHOLDER}
         EOF
-        else
-          echo "Unsupported Vault Auth Method: ${VSI_VAULT_AUTH_METHOD}"
-          exit 1
         fi
         if [ "${VSI_JOB_WORKLOAD}" = "true" ]; then
           docker-entrypoint.sh agent -config=vault-agent-config.hcl {{ include "talend-vault-sidecar-injector.vault.cert.skip.verify" .Values }} -log-level={{- .Values.injectconfig.vault.loglevel }} &

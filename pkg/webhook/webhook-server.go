@@ -128,7 +128,7 @@ func (vaultInjector *VaultInjector) mutate(ar *v1beta1.AdmissionReview) *v1beta1
 		}
 	}
 
-	annotations := map[string]string{vaultInjector.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationStatusKey]: vaultInjectorStatusInjected}
+	annotations := map[string]string{vaultInjector.VaultInjectorAnnotationsFQ[ctx.VaultInjectorAnnotationStatusKey]: ctx.VaultInjectorStatusInjected}
 	patchBytes, err := vaultInjector.createPatch(&pod, annotations)
 	if err != nil {
 		return &v1beta1.AdmissionResponse{

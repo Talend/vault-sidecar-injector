@@ -69,7 +69,7 @@ func main() {
 	})
 
 	if *version {
-		fmt.Println("TVSI (Talend Vault Sidecar Injector) version " + VERSION)
+		fmt.Println("VSI (Vault Sidecar Injector) version " + VERSION)
 		os.Exit(0)
 	}
 

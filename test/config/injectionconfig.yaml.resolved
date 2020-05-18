@@ -40,7 +40,8 @@ containers:
   - sh
   - -c
   - |
-    cat <<EOF > vault-agent-config.hcl
+    if [ "${VSI_VAULT_AUTH_METHOD}" = "kubernetes" ]; then
+      cat <<EOF > vault-agent-config.hcl
     pid_file = "/home/vault/pidfile"
 
     auto_auth {
@@ -63,6 +64,32 @@ containers:
 
     ${VSI_SECRETS_TEMPLATES_PLACEHOLDER}
     EOF
+    elif [ "${VSI_VAULT_AUTH_METHOD}" = "approle" ]; then
+      cat <<EOF > vault-agent-config.hcl
+    pid_file = "/home/vault/pidfile"
+
+    auto_auth {
+      method "approle" {
+        mount_path = "auth/approle"
+        config = {
+          role_id_file_path = "/opt/talend/secrets/approle_roleid"
+          secret_id_file_path = "/opt/talend/secrets/approle_secretid"
+          remove_secret_id_file_after_reading = false
+        }
+      }
+
+      sink "file" {
+        config = {
+          path = "/home/vault/.vault-token"
+        }
+      }
+    }
+
+    ${VSI_PROXY_CONFIG_PLACEHOLDER}
+
+    ${VSI_SECRETS_TEMPLATES_PLACEHOLDER}
+    EOF
+    fi
     if [ "${VSI_JOB_WORKLOAD}" = "true" ]; then
       docker-entrypoint.sh agent -config=vault-agent-config.hcl -log-level=info &
       while true; do
