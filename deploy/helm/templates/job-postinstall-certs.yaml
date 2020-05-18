@@ -68,6 +68,7 @@ spec:
           kubectl delete csr ${csrName} 2>/dev/null || true
 
           # create server cert/key CSR and send to k8s API
+          # In k8s 1.18 certificates.k8s.io/v1beta1 has now a default signerName field set to "kubernetes.io/legacy-unknown" (https://github.com/kubernetes/enhancements/blob/master/keps/sig-auth/20190607-certificates-api.md)
           cat <<EOF | kubectl create -f -
           apiVersion: certificates.k8s.io/v1beta1
           kind: CertificateSigningRequest
@@ -97,13 +98,13 @@ spec:
           # verify certificate has been signed
           for x in $(seq 10); do
               serverCert=$(kubectl get csr ${csrName} -o jsonpath='{.status.certificate}')
-              if [[ ${serverCert} != '' ]]; then
+              if [ "${serverCert}" != "" ]; then
                   break
               fi
               sleep 1
           done
 
-          if [[ ${serverCert} == '' ]]; then
+          if [ "${serverCert}" = "" ]; then
               echo "ERROR: After approving csr ${csrName}, the signed certificate did not appear on the resource. Giving up after 10 attempts." >&2
               exit 1
           fi
@@ -114,5 +115,5 @@ spec:
           kubectl create secret generic ${K8S_SECRET} \
                   --from-file=key.pem=${tmpdir}/server-key.pem \
                   --from-file=cert.pem=${tmpdir}/server-cert.pem \
-                  --dry-run -o yaml |
+                  --dry-run=client -o yaml |
               kubectl -n ${K8S_NAMESPACE} apply -f -
