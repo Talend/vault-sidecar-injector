@@ -800,7 +800,7 @@ Using HashiCorp's Vault Helm chart:
 ```bash
 $ git clone https://github.com/hashicorp/vault-helm.git
 $ cd vault-helm
-$ git checkout v0.4.0
+$ git checkout v0.5.0
 $ helm install . --name=vault --set injector.enabled=false --set server.dev.enabled=true --set ui.enabled=true --set ui.serviceType="NodePort"
 ```
 
@@ -1024,7 +1024,7 @@ The following table lists the configurable parameters of the `Vault Sidecar Inje
 | injectconfig.jobbabysitter.resources.requests.memory | Job babysitter sidecar memory resource requests | 20Mi |
 | injectconfig.vault.image.path  | Image path  | vault |
 | injectconfig.vault.image.pullPolicy    | Pull policy for image: IfNotPresent or Always  | Always   |
-| injectconfig.vault.image.tag  | Image tag | 1.3.4 |
+| injectconfig.vault.image.tag  | Image tag | 1.4.1 |
 | injectconfig.vault.loglevel                    | Vault log level: trace, debug, info, warn, err    | info    |
 | injectconfig.vault.resources.limits.cpu | Vault sidecar CPU resource limits | 50m |
 | injectconfig.vault.resources.limits.memory | Vault sidecar memory resource limits | 50Mi |
