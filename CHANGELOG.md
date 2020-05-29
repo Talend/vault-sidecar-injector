@@ -1,5 +1,13 @@
 # Changelog for Vault Sidecar Injector
 
+## Release v6.2.0 - 2020-xx-xx
+
+Default Vault image set to `1.4.2` to fix several CVEs (CVE-2020-13223, CVE-2020-12757: see HashiCorp's [CHANGELOG](https://github.com/hashicorp/vault/blob/master/CHANGELOG.md#142-may-21st-2020))
+
+**Changed**
+
+- [VSI #28](https://github.com/Talend/vault-sidecar-injector/pull/28) - Update HashiCorp Vault image to 1.4.2
+
 ## Release v6.1.0 - 2020-05-18
 
 This release fixes VSI deployment on Kubernetes 1.18+ clusters. It also comes with better AppRole integration and updated Vault image.
