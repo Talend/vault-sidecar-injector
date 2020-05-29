@@ -1,6 +1,6 @@
 # Changelog for Vault Sidecar Injector
 
-## Release v6.2.0 - 2020-xx-xx
+## Next Release
 
 Default Vault image set to `1.4.2` to fix several CVEs (CVE-2020-13223, CVE-2020-12757: see HashiCorp's [CHANGELOG](https://github.com/hashicorp/vault/blob/master/CHANGELOG.md#142-may-21st-2020))
 
