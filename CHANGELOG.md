@@ -6,7 +6,7 @@ Default Vault image set to `1.4.2` to fix several CVEs (CVE-2020-13223, CVE-2020
 
 **Changed**
 
-- [VSI #28](https://github.com/Talend/vault-sidecar-injector/pull/28) - Update HashiCorp Vault image to 1.4.2
+- [VSI #29](https://github.com/Talend/vault-sidecar-injector/pull/29) - Update HashiCorp Vault image to 1.4.2
 
 ## Release v6.1.0 - 2020-05-18
 
