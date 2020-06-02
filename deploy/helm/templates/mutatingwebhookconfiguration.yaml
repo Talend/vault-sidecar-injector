@@ -1,0 +1,21 @@
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: talend-vault-sidecar-injector-{{ .Release.Namespace }}
+  labels:
+{{ include "talend-vault-sidecar-injector.labels" . | indent 4 }}
+webhooks:
+  - name: vault-sidecar-injector.talend.org
+    clientConfig:
+      service:
+        name: {{ include "talend-vault-sidecar-injector.service.name" . }}
+        namespace: {{ .Release.Namespace }}
+        path: "/mutate"
+      caBundle: ""
+    rules:
+      - operations: [ "CREATE" ]
+        apiGroups: [""]
+        apiVersions: ["v1"]
+        resources: ["pods"]
+    failurePolicy: {{ include "talend-vault-sidecar-injector.failurePolicy" .Values }}
+{{ include "talend-vault-sidecar-injector.namespaceSelector" . | indent 4 }}

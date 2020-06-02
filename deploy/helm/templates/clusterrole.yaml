@@ -11,15 +11,6 @@ rules:
 - apiGroups:  [""]
   resources: ["secrets"]
   verbs: ["get", "list", "create", "delete", "update", "patch"]
-- apiGroups: ["certificates.k8s.io"]
-  resources: ["certificatesigningrequests", "certificatesigningrequests/approval"]
-  verbs: ["get", "delete", "create", "update"]
-- apiGroups: ["certificates.k8s.io"]
-  resources: ["signers"]
-  resourceNames:
-  # Support legacy versions, before signerName was added
-  - "kubernetes.io/legacy-unknown"
-  verbs: ["approve"]
 - apiGroups: ["admissionregistration.k8s.io"]
   resources: ["mutatingwebhookconfigurations"]
   verbs: ["get", "create", "delete", "update", "patch"]

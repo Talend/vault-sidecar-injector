@@ -738,8 +738,6 @@ Installation:
 - Kubernetes v1.10+
 - Helm 2 or 3
 
-> ⚠️ **Important note** ⚠️: the chart is issuing a certificate signing request (CSR) to dynamically generate the key and certificate used to set up TLS on the webhook admission server. Make sure your Kubernetes cluster has been configured with a *signer* in order to enable the certificate API. Refer to Kubernetes documentation here: <https://kubernetes.io/docs/tasks/tls/managing-tls-in-a-cluster/#a-note-to-cluster-administrators>.
-
 Runtime:
 
 - Vault server deployed (either *in cluster* with official chart <https://github.com/hashicorp/vault-helm> or *out of cluster*), started and reachable through Kubernetes service & endpoint deployed into cluster
@@ -853,8 +851,6 @@ $ make image
 </details>
 
 ### Installing the Chart
-
-> **Note:** as `Vault Sidecar Injector` chart makes use of Helm post-install hooks, **do not** provide Helm `--wait` flag since it will prevent post-install hooks from running and installation will fail.
 
 Several options to install the chart:
 
