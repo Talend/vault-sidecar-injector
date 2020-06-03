@@ -1,4 +1,4 @@
-FROM golang:1.12.9 AS buildTVSI
+FROM golang:1.14.4 AS buildTVSI
 
 COPY . /vaultsidecarinjector
 RUN cd /vaultsidecarinjector && make build
