@@ -848,7 +848,7 @@ Just run following command:
 $ make image
 ```
 
-> Note: if you have Go installed on your machine, you can use `make image-from-build` instead.
+> Note: if you have Go installed on your machine, you can use `make image-from-build` instead. You need Golang 1.14 or higher.
 
 </details>
 

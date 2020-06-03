@@ -7,6 +7,7 @@ Default Vault image set to `1.4.2` to fix several CVEs (CVE-2020-13223, CVE-2020
 **Changed**
 
 - [VSI #29](https://github.com/Talend/vault-sidecar-injector/pull/29) - Update HashiCorp Vault image to 1.4.2
+- [VSI #31](https://github.com/Talend/vault-sidecar-injector/pull/31) - Migrate to Golang 1.14
 
 ## Release v6.1.0 - 2020-05-18
 
