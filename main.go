@@ -41,17 +41,19 @@ func main() {
 	// get command line parameters
 	flag.IntVar(&parameters.Port, "port", 8443, "webhook server port")
 	flag.IntVar(&parameters.MetricsPort, "metricsport", 9000, "metrics server port (Prometheus)")
-	flag.StringVar(&parameters.CertFile, "tlscertfile", config.CertsPath+"/cert.pem", "file containing the x509 Certificate for HTTPS")
-	flag.StringVar(&parameters.KeyFile, "tlskeyfile", config.CertsPath+"/key.pem", "file containing the x509 private key to tlscertfile")
+	flag.StringVar(&parameters.WebhookCfgName, "webhookcfgname", "", "name of MutatingWebhookConfiguration resource")
+	flag.StringVar(&parameters.WebhookHostnames, "webhookhostnames", "", "host names to register in webhook certificate (comma-separated list)")
+	flag.IntVar(&parameters.WebhookCertLifetime, "webhookcertlifetime", 10, "lifetime in years for generated certificates")
+	flag.StringVar(&parameters.CertFile, "tlscertfile", "", "file containing the x509 Certificate for HTTPS")
+	flag.StringVar(&parameters.KeyFile, "tlskeyfile", "", "file containing the x509 private key to tlscertfile")
 	flag.StringVar(&parameters.AnnotationKeyPrefix, "annotationkeyprefix", "sidecar.vault", "annotations key prefix")
 	flag.StringVar(&parameters.AppLabelKey, "applabelkey", "application.name", "key for application label")
 	flag.StringVar(&parameters.AppServiceLabelKey, "appservicelabelkey", "service.name", "key for application's service label")
-	flag.StringVar(&parameters.WebhookCfgName, "webhookcfgname", "vault-sidecar-injector-default", "name of MutatingWebhookConfiguration resource")
-	flag.StringVar(&parameters.InjectionCfgFile, "injectioncfgfile", config.ConfigFilesPath+"/injectionconfig.yaml", "file containing the mutation configuration (initcontainers, sidecars, volumes, ...)")
-	flag.StringVar(&parameters.ProxyCfgFile, "proxycfgfile", config.ConfigFilesPath+"/proxyconfig.hcl", "file containing Vault proxy configuration")
-	flag.StringVar(&parameters.TemplateBlockFile, "tmplblockfile", config.ConfigFilesPath+"/templateblock.hcl", "file containing the template block")
-	flag.StringVar(&parameters.TemplateDefaultFile, "tmpldefaultfile", config.ConfigFilesPath+"/templatedefault.tmpl", "file containing the default template")
-	flag.StringVar(&parameters.PodLifecycleHooksFile, "podlchooksfile", config.ConfigFilesPath+"/podlifecyclehooks.yaml", "file containing the lifecycle hooks to inject in the requesting pod")
+	flag.StringVar(&parameters.InjectionCfgFile, "injectioncfgfile", "", "file containing the mutation configuration (initcontainers, sidecars, volumes, ...)")
+	flag.StringVar(&parameters.ProxyCfgFile, "proxycfgfile", "", "file containing Vault proxy configuration")
+	flag.StringVar(&parameters.TemplateBlockFile, "tmplblockfile", "", "file containing the template block")
+	flag.StringVar(&parameters.TemplateDefaultFile, "tmpldefaultfile", "", "file containing the default template")
+	flag.StringVar(&parameters.PodLifecycleHooksFile, "podlchooksfile", "", "file containing the lifecycle hooks to inject in the requesting pod")
 	version := flag.Bool("version", false, "print current version")
 	flag.Parse()
 
@@ -75,10 +77,11 @@ func main() {
 	})
 
 	// Generate webhook certs and patch MutatingWebhookConfiguration
-	err := webhook.PatchWebhookConfiguration(parameters.WebhookCfgName)
+	/*k8sClient := k8s.New()
+	err := k8sClient.PatchWebhookConfiguration(parameters.WebhookCfgName)
 	if err != nil {
 		os.Exit(1)
-	}
+	}*/
 
 	// Load webhook admission server's config
 	vsiCfg, err := config.Load(parameters)

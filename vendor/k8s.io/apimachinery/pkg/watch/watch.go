@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"sync"
 
-	"k8s.io/klog"
+	"github.com/golang/glog"
 
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -44,7 +44,6 @@ const (
 	Added    EventType = "ADDED"
 	Modified EventType = "MODIFIED"
 	Deleted  EventType = "DELETED"
-	Bookmark EventType = "BOOKMARK"
 	Error    EventType = "ERROR"
 
 	DefaultChanSize int32 = 100
@@ -58,10 +57,6 @@ type Event struct {
 	// Object is:
 	//  * If Type is Added or Modified: the new state of the object.
 	//  * If Type is Deleted: the state of the object immediately before deletion.
-	//  * If Type is Bookmark: the object (instance of a type being watched) where
-	//    only ResourceVersion field is set. On successful restart of watch from a
-	//    bookmark resourceVersion, client is guaranteed to not get repeat event
-	//    nor miss any events.
 	//  * If Type is Error: *api.Status is recommended; other types may make sense
 	//    depending on context.
 	Object runtime.Object
@@ -90,7 +85,7 @@ func (w emptyWatch) ResultChan() <-chan Event {
 // FakeWatcher lets you test anything that consumes a watch.Interface; threadsafe.
 type FakeWatcher struct {
 	result  chan Event
-	stopped bool
+	Stopped bool
 	sync.Mutex
 }
 
@@ -110,24 +105,24 @@ func NewFakeWithChanSize(size int, blocking bool) *FakeWatcher {
 func (f *FakeWatcher) Stop() {
 	f.Lock()
 	defer f.Unlock()
-	if !f.stopped {
-		klog.V(4).Infof("Stopping fake watcher.")
+	if !f.Stopped {
+		glog.V(4).Infof("Stopping fake watcher.")
 		close(f.result)
-		f.stopped = true
+		f.Stopped = true
 	}
 }
 
 func (f *FakeWatcher) IsStopped() bool {
 	f.Lock()
 	defer f.Unlock()
-	return f.stopped
+	return f.Stopped
 }
 
 // Reset prepares the watcher to be reused.
 func (f *FakeWatcher) Reset() {
 	f.Lock()
 	defer f.Unlock()
-	f.stopped = false
+	f.Stopped = false
 	f.result = make(chan Event)
 }
 
@@ -178,7 +173,7 @@ func (f *RaceFreeFakeWatcher) Stop() {
 	f.Lock()
 	defer f.Unlock()
 	if !f.Stopped {
-		klog.V(4).Infof("Stopping fake watcher.")
+		glog.V(4).Infof("Stopping fake watcher.")
 		close(f.result)
 		f.Stopped = true
 	}

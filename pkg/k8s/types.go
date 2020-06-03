@@ -14,5 +14,10 @@
 
 package k8s
 
+import (
+	k8s "k8s.io/client-go/kubernetes"
+)
+
 type K8SClient struct {
+	*k8s.Clientset
 }

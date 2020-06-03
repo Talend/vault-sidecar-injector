@@ -33,17 +33,22 @@ spec:
           args:
             - -port={{ .Values.image.port }}
             - -metricsport={{ .Values.image.metricsPort }}
+            {{- if .Values.mutatingwebhook.cert.secretName }}
+            - -tlscertfile=/opt/talend/webhook/certs/{{ .Values.mutatingwebhook.cert.certfile }}
+            - -tlskeyfile=/opt/talend/webhook/certs/{{ .Values.mutatingwebhook.cert.keyfile }}
+            {{- else }}
+            - -webhookcfgname={{ include "talend-vault-sidecar-injector.fullname" . }}
+            - -webhookhostnames={{ include "talend-vault-sidecar-injector.service.name" . }},{{ include "talend-vault-sidecar-injector.service.name" . }}.{{ .Release.Namespace }},{{ include "talend-vault-sidecar-injector.service.name" . }}.{{ .Release.Namespace }}.svc
+            - -webhookcertlifetime={{ .Values.mutatingwebhook.cert.certlifetime }}
+            {{- end }}
             - -annotationkeyprefix={{ .Values.mutatingwebhook.annotations.keyPrefix }}
             - -applabelkey={{ .Values.mutatingwebhook.annotations.appLabelKey }}
             - -appservicelabelkey={{ .Values.mutatingwebhook.annotations.appServiceLabelKey }}
-            - -webhookcfgname={{ include "talend-vault-sidecar-injector.fullname" . }}
             - -injectioncfgfile=/opt/talend/webhook/config/injectionconfig.yaml
             - -proxycfgfile=/opt/talend/webhook/config/proxyconfig.hcl
             - -tmplblockfile=/opt/talend/webhook/config/templateblock.hcl
             - -tmpldefaultfile=/opt/talend/webhook/config/templatedefault.tmpl
             - -podlchooksfile=/opt/talend/webhook/config/podlifecyclehooks.yaml
-            - -tlscertfile=/opt/talend/webhook/certs/cert.pem
-            - -tlskeyfile=/opt/talend/webhook/certs/key.pem
             - -logtostderr
             - -stderrthreshold=0
             - -v=4
@@ -77,9 +82,11 @@ spec:
             successThreshold: {{ .Values.probes.readiness.successThreshold }}
             failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
           volumeMounts:
+            {{- if .Values.mutatingwebhook.cert.secretName }}
             - name: webhook-certs
               mountPath: /opt/talend/webhook/certs
               readOnly: true
+            {{- end }}
             - name: webhook-config
               mountPath: /opt/talend/webhook/config
           {{- if .Values.resources }}
@@ -92,9 +99,11 @@ spec:
 {{ toYaml .Values.nodeAffinity | indent 10 }}
       {{- end }}
       volumes:
+        {{- if .Values.mutatingwebhook.cert.secretName }}
         - name: webhook-certs
           secret:
-            secretName: {{ include "talend-vault-sidecar-injector.service.name" . }}-{{ .Release.Namespace }}-certs
+            secretName: {{ .Values.mutatingwebhook.cert.secretName }}
+        {{- end }}
         - name: webhook-config
           configMap:
             name: {{ include "talend-vault-sidecar-injector.fullname" . }}

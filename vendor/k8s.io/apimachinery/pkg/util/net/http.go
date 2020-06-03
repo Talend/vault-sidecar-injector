@@ -31,8 +31,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/golang/glog"
 	"golang.org/x/net/http2"
-	"k8s.io/klog"
 )
 
 // JoinPreservingTrailingSlash does a path.Join of the specified elements,
@@ -55,12 +55,6 @@ func JoinPreservingTrailingSlash(elem ...string) string {
 	return result
 }
 
-// IsTimeout returns true if the given error is a network timeout error
-func IsTimeout(err error) bool {
-	neterr, ok := err.(net.Error)
-	return ok && neterr != nil && neterr.Timeout()
-}
-
 // IsProbableEOF returns true if the given error resembles a connection termination
 // scenario that would justify assuming that the watch is empty.
 // These errors are what the Go http stack returns back to us which are general
@@ -74,17 +68,14 @@ func IsProbableEOF(err error) bool {
 	if uerr, ok := err.(*url.Error); ok {
 		err = uerr.Err
 	}
-	msg := err.Error()
 	switch {
 	case err == io.EOF:
 		return true
-	case msg == "http: can't write HTTP request on broken connection":
+	case err.Error() == "http: can't write HTTP request on broken connection":
 		return true
-	case strings.Contains(msg, "http2: server sent GOAWAY and closed the connection"):
+	case strings.Contains(err.Error(), "connection reset by peer"):
 		return true
-	case strings.Contains(msg, "connection reset by peer"):
-		return true
-	case strings.Contains(strings.ToLower(msg), "use of closed network connection"):
+	case strings.Contains(strings.ToLower(err.Error()), "use of closed network connection"):
 		return true
 	}
 	return false
@@ -107,9 +98,6 @@ func SetOldTransportDefaults(t *http.Transport) *http.Transport {
 	if t.TLSHandshakeTimeout == 0 {
 		t.TLSHandshakeTimeout = defaultTransport.TLSHandshakeTimeout
 	}
-	if t.IdleConnTimeout == 0 {
-		t.IdleConnTimeout = defaultTransport.IdleConnTimeout
-	}
 	return t
 }
 
@@ -119,28 +107,13 @@ func SetTransportDefaults(t *http.Transport) *http.Transport {
 	t = SetOldTransportDefaults(t)
 	// Allow clients to disable http2 if needed.
 	if s := os.Getenv("DISABLE_HTTP2"); len(s) > 0 {
-		klog.Infof("HTTP2 has been explicitly disabled")
-	} else if allowsHTTP2(t) {
+		glog.Infof("HTTP2 has been explicitly disabled")
+	} else {
 		if err := http2.ConfigureTransport(t); err != nil {
-			klog.Warningf("Transport failed http2 configuration: %v", err)
+			glog.Warningf("Transport failed http2 configuration: %v", err)
 		}
 	}
 	return t
-}
-
-func allowsHTTP2(t *http.Transport) bool {
-	if t.TLSClientConfig == nil || len(t.TLSClientConfig.NextProtos) == 0 {
-		// the transport expressed no NextProto preference, allow
-		return true
-	}
-	for _, p := range t.TLSClientConfig.NextProtos {
-		if p == http2.NextProtoTLS {
-			// the transport explicitly allowed http/2
-			return true
-		}
-	}
-	// the transport explicitly set NextProtos and excluded http/2
-	return false
 }
 
 type RoundTripperWrapper interface {
@@ -212,17 +185,13 @@ func GetHTTPClient(req *http.Request) string {
 	return "unknown"
 }
 
-// SourceIPs splits the comma separated X-Forwarded-For header and joins it with
-// the X-Real-Ip header and/or req.RemoteAddr, ignoring invalid IPs.
-// The X-Real-Ip is omitted if it's already present in the X-Forwarded-For chain.
-// The req.RemoteAddr is always the last IP in the returned list.
-// It returns nil if all of these are empty or invalid.
+// SourceIPs splits the comma separated X-Forwarded-For header or returns the X-Real-Ip header or req.RemoteAddr,
+// in that order, ignoring invalid IPs. It returns nil if all of these are empty or invalid.
 func SourceIPs(req *http.Request) []net.IP {
-	var srcIPs []net.IP
-
 	hdr := req.Header
 	// First check the X-Forwarded-For header for requests via proxy.
 	hdrForwardedFor := hdr.Get("X-Forwarded-For")
+	forwardedForIPs := []net.IP{}
 	if hdrForwardedFor != "" {
 		// X-Forwarded-For can be a csv of IPs in case of multiple proxies.
 		// Use the first valid one.
@@ -230,49 +199,38 @@ func SourceIPs(req *http.Request) []net.IP {
 		for _, part := range parts {
 			ip := net.ParseIP(strings.TrimSpace(part))
 			if ip != nil {
-				srcIPs = append(srcIPs, ip)
+				forwardedForIPs = append(forwardedForIPs, ip)
 			}
 		}
+	}
+	if len(forwardedForIPs) > 0 {
+		return forwardedForIPs
 	}
 
 	// Try the X-Real-Ip header.
 	hdrRealIp := hdr.Get("X-Real-Ip")
 	if hdrRealIp != "" {
 		ip := net.ParseIP(hdrRealIp)
-		// Only append the X-Real-Ip if it's not already contained in the X-Forwarded-For chain.
-		if ip != nil && !containsIP(srcIPs, ip) {
-			srcIPs = append(srcIPs, ip)
+		if ip != nil {
+			return []net.IP{ip}
 		}
 	}
 
-	// Always include the request Remote Address as it cannot be easily spoofed.
-	var remoteIP net.IP
+	// Fallback to Remote Address in request, which will give the correct client IP when there is no proxy.
 	// Remote Address in Go's HTTP server is in the form host:port so we need to split that first.
 	host, _, err := net.SplitHostPort(req.RemoteAddr)
 	if err == nil {
-		remoteIP = net.ParseIP(host)
-	}
-	// Fallback if Remote Address was just IP.
-	if remoteIP == nil {
-		remoteIP = net.ParseIP(req.RemoteAddr)
-	}
-
-	// Don't duplicate remote IP if it's already the last address in the chain.
-	if remoteIP != nil && (len(srcIPs) == 0 || !remoteIP.Equal(srcIPs[len(srcIPs)-1])) {
-		srcIPs = append(srcIPs, remoteIP)
-	}
-
-	return srcIPs
-}
-
-// Checks whether the given IP address is contained in the list of IPs.
-func containsIP(ips []net.IP, ip net.IP) bool {
-	for _, v := range ips {
-		if v.Equal(ip) {
-			return true
+		if remoteIP := net.ParseIP(host); remoteIP != nil {
+			return []net.IP{remoteIP}
 		}
 	}
-	return false
+
+	// Fallback if Remote Address was just IP.
+	if remoteIP := net.ParseIP(req.RemoteAddr); remoteIP != nil {
+		return []net.IP{remoteIP}
+	}
+
+	return nil
 }
 
 // Extracts and returns the clients IP from the given request.
@@ -410,7 +368,7 @@ redirectLoop:
 		resp, err := http.ReadResponse(respReader, nil)
 		if err != nil {
 			// Unable to read the backend response; let the client handle it.
-			klog.Warningf("Error reading backend response: %v", err)
+			glog.Warningf("Error reading backend response: %v", err)
 			break redirectLoop
 		}
 

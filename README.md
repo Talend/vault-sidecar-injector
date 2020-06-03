@@ -7,6 +7,7 @@
 - [Vault Sidecar Injector](#vault-sidecar-injector)
   - [Announcements](#announcements)
   - [Overview](#overview)
+  - [Kubernetes compatibility](#kubernetes-compatibility)
   - [How to invoke Vault Sidecar Injector](#how-to-invoke-vault-sidecar-injector)
     - [Modes](#modes)
     - [Requirements](#requirements)
@@ -56,6 +57,10 @@ To ease deployment, a Helm chart is provided under [deploy/helm](https://github.
 > A Kubernetes proposal tries to address those points: <https://github.com/kubernetes/enhancements/blob/master/keps/sig-apps/sidecarcontainers.md>, <https://github.com/kubernetes/enhancements/issues/753>. Implementation of the proposal has started and may be released in Kubernetes 1.19 (in Alpha stage).
 >
 > In the meantime however, `Vault Sidecar Injector` implements **specific sidecar and signaling mechanism** to properly stop all injected containers on job termination.
+
+## Kubernetes compatibility
+
+`Vault Sidecar Injector` can be deployed on Kubernetes `1.12` and higher. Deployment on earlier versions *may work* but has not been tested.
 
 ## How to invoke Vault Sidecar Injector
 
@@ -1029,6 +1034,11 @@ The following table lists the configurable parameters of the `Vault Sidecar Inje
 | mutatingwebhook.annotations.appLabelKey | Annotation for application's name. Annotation's value used as Vault role by default. | com.talend.application  |
 | mutatingwebhook.annotations.appServiceLabelKey | Annotation for service's name | com.talend.service  |
 | mutatingwebhook.annotations.keyPrefix | Prefix used for all vault sidecar injector annotations | sidecar.vault.talend.org  |
+| mutatingwebhook.cert.caBundle | Base64-encoded PEM-encoded certificate for the CA that signed the webhook certificate. To set if secretName is non-null. | "" |
+| mutatingwebhook.cert.certfile | Default filename for webhook certificate in provided Kubernetes secret | cert.pem |
+| mutatingwebhook.cert.certlifetime | Default lifetime in years for generated certificates. Not used if secretName is non-null. | 5 |
+| mutatingwebhook.cert.keyfile | Default filename for webhook private key in provided Kubernetes secret | key.pem |
+| mutatingwebhook.cert.secretName | Name of the Kubernetes secret that contains the webhook certificate and private key. If null, they are generated. Secret should be in webhook's namespace. | `null` |
 | mutatingwebhook.failurePolicy | Defines how unrecognized errors and timeout errors from the admission webhook are handled. Allowed values are Ignore or Fail | Ignore |
 | mutatingwebhook.namespaceSelector.boolean    | Enable to control, with label "vault-injection=enabled", the namespaces where injection is allowed (if false: all namespaces except _kube-system_ and _kube-public_) | false                                                           |
 | mutatingwebhook.namespaceSelector.namespaced | Enable to control, with label "vault-injection={{ .Release.Namespace }}", the specific namespace where injection is allowed (ie, restrict to namespace where injector is installed) | false |

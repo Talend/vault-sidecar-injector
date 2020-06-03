@@ -22,12 +22,14 @@ import (
 type WhSvrParameters struct {
 	Port                  int    // webhook server port
 	MetricsPort           int    // metrics server port (Prometheus)
+	WebhookCfgName        string // name of MutatingWebhookConfiguration resource
+	WebhookHostnames      string // host names to register in webhook certificate (comma-separated list)
+	WebhookCertLifetime   int    // lifetime in years for generated certificates
 	CertFile              string // path to the x509 certificate for https
 	KeyFile               string // path to the x509 private key matching `CertFile`
 	AnnotationKeyPrefix   string // annotations key prefix
 	AppLabelKey           string // key for application label
 	AppServiceLabelKey    string // key for application's service label
-	WebhookCfgName        string // name of MutatingWebhookConfiguration resource
 	InjectionCfgFile      string // path to injection configuration file
 	ProxyCfgFile          string // path to Vault proxy configuration file
 	TemplateBlockFile     string // path to template file

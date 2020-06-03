@@ -30,22 +30,20 @@ func New() *K8SClient {
 	k8sConfig, err := rest.InClusterConfig()
 	if err != nil {
 		klog.Errorf("Failed to load in-cluster K8S config: %s", err)
+		panic(err)
 	}
 
 	k8sClientset, err := kubernetes.NewForConfig(k8sConfig)
 	if err != nil {
 		klog.Errorf("Error creating K8S client: %s", err)
+		panic(err)
 	}
 
 	return &K8SClient{k8sClientset}
 }
 
 // PatchWebhookConfiguration generates CA and certificate for webhook then patches MutatingWebhookConfiguration's caBundle
-func (k8sctl *K8SClient) PatchWebhookConfiguration(webhookCfgName string) error {
-	var ca []byte
-
-	// TODO: generate CA and cert
-
+func (k8sctl *K8SClient) PatchWebhookConfiguration(webhookCfgName string, ca []byte) error {
 	// Patch MutatingWebhookConfiguration resource with generated CA (should be base64-encoded)
 	_, err := k8sctl.AdmissionregistrationV1beta1().MutatingWebhookConfigurations().Patch(
 		webhookCfgName, types.JSONPatchType, []byte(fmt.Sprintf(
