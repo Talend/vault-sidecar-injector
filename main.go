@@ -46,6 +46,7 @@ func main() {
 	flag.StringVar(&parameters.AnnotationKeyPrefix, "annotationkeyprefix", "sidecar.vault", "annotations key prefix")
 	flag.StringVar(&parameters.AppLabelKey, "applabelkey", "application.name", "key for application label")
 	flag.StringVar(&parameters.AppServiceLabelKey, "appservicelabelkey", "service.name", "key for application's service label")
+	flag.StringVar(&parameters.WebhookCfgName, "webhookcfgname", "vault-sidecar-injector-default", "name of MutatingWebhookConfiguration resource")
 	flag.StringVar(&parameters.InjectionCfgFile, "injectioncfgfile", config.ConfigFilesPath+"/injectionconfig.yaml", "file containing the mutation configuration (initcontainers, sidecars, volumes, ...)")
 	flag.StringVar(&parameters.ProxyCfgFile, "proxycfgfile", config.ConfigFilesPath+"/proxyconfig.hcl", "file containing Vault proxy configuration")
 	flag.StringVar(&parameters.TemplateBlockFile, "tmplblockfile", config.ConfigFilesPath+"/templateblock.hcl", "file containing the template block")
@@ -72,6 +73,12 @@ func main() {
 			f2.Value.Set(value)
 		}
 	})
+
+	// Generate webhook certs and patch MutatingWebhookConfiguration
+	err := webhook.PatchWebhookConfiguration(parameters.WebhookCfgName)
+	if err != nil {
+		os.Exit(1)
+	}
 
 	// Load webhook admission server's config
 	vsiCfg, err := config.Load(parameters)

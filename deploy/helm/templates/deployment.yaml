@@ -36,6 +36,7 @@ spec:
             - -annotationkeyprefix={{ .Values.mutatingwebhook.annotations.keyPrefix }}
             - -applabelkey={{ .Values.mutatingwebhook.annotations.appLabelKey }}
             - -appservicelabelkey={{ .Values.mutatingwebhook.annotations.appServiceLabelKey }}
+            - -webhookcfgname={{ include "talend-vault-sidecar-injector.fullname" . }}
             - -injectioncfgfile=/opt/talend/webhook/config/injectionconfig.yaml
             - -proxycfgfile=/opt/talend/webhook/config/proxyconfig.hcl
             - -tmplblockfile=/opt/talend/webhook/config/templateblock.hcl

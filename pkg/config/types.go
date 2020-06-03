@@ -27,6 +27,7 @@ type WhSvrParameters struct {
 	AnnotationKeyPrefix   string // annotations key prefix
 	AppLabelKey           string // key for application label
 	AppServiceLabelKey    string // key for application's service label
+	WebhookCfgName        string // name of MutatingWebhookConfiguration resource
 	InjectionCfgFile      string // path to injection configuration file
 	ProxyCfgFile          string // path to Vault proxy configuration file
 	TemplateBlockFile     string // path to template file

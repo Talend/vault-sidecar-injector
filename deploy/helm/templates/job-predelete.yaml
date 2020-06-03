@@ -30,5 +30,5 @@ spec:
         - "-c"
         - |
           set -e
-          kubectl delete mutatingwebhookconfigurations.admissionregistration.k8s.io talend-vault-sidecar-injector-{{ .Release.Namespace }} || true
+          kubectl delete mutatingwebhookconfigurations.admissionregistration.k8s.io {{ include "talend-vault-sidecar-injector.fullname" . }} || true
           kubectl delete secrets -n {{ .Release.Namespace }} {{ include "talend-vault-sidecar-injector.service.name" . }}-{{ .Release.Namespace }}-certs || true
