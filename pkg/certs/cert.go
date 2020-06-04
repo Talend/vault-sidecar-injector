@@ -46,8 +46,8 @@ func (c *Cert) GenerateWebhookBundle() (*PEMBundle, error) {
 	}
 
 	if klog.V(5) { // enabled by providing '-v=5' at least
-		klog.Infof("Generated Webhook CA Certificate: %s", string(webhookBundle.CACert))
-		klog.Infof("Generated Webhook Certificate: %s", string(webhookBundle.Cert))
+		klog.Infof("Generated Webhook CA Certificate:\n%s\n", string(webhookBundle.CACert))
+		klog.Infof("Generated Webhook Certificate:\n%s\n", string(webhookBundle.Cert))
 	}
 
 	return webhookBundle, nil
