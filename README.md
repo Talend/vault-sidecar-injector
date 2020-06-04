@@ -1005,9 +1005,6 @@ The following table lists the configurable parameters of the `Vault Sidecar Inje
 
 | Parameter    | Description          | Default                                                         |
 |:-------------|:---------------------|:----------------------------------------------------------------|
-| hook.image.path            | Image path | bitnami/kubectl |
-| hook.image.pullPolicy      | Pull policy for image: IfNotPresent or Always | Always |
-| hook.image.tag             | Image tag | latest |
 | image.applicationNameLabel   | Application Name. Must match label com.talend.application | talend-vault-sidecar-injector   |
 | image.metricsPort                | Port exposed for metrics collection | 9000 |
 | image.path       | Image path   | talend/vault-sidecar-injector |
@@ -1035,11 +1032,12 @@ The following table lists the configurable parameters of the `Vault Sidecar Inje
 | mutatingwebhook.annotations.appServiceLabelKey | Annotation for service's name | com.talend.service  |
 | mutatingwebhook.annotations.keyPrefix | Prefix used for all vault sidecar injector annotations | sidecar.vault.talend.org  |
 | mutatingwebhook.cert.caBundle | Base64-encoded PEM-encoded certificate for the CA that signed the webhook certificate. To set if secretName is non-null. | "" |
-| mutatingwebhook.cert.certfile | Default filename for webhook certificate in provided Kubernetes secret | cert.pem |
-| mutatingwebhook.cert.certlifetime | Default lifetime in years for generated certificates. Not used if secretName is non-null. | 5 |
-| mutatingwebhook.cert.keyfile | Default filename for webhook private key in provided Kubernetes secret | key.pem |
+| mutatingwebhook.cert.certfile | Default filename for webhook certificate (PEM-encoded) in provided Kubernetes secret | cert.pem |
+| mutatingwebhook.cert.certlifetime | Default lifetime in years for generated certificates. Not used if secretName is non-null. | 10 |
+| mutatingwebhook.cert.keyfile | Default filename for webhook private key (PEM-encoded) in provided Kubernetes secret | key.pem |
 | mutatingwebhook.cert.secretName | Name of the Kubernetes secret that contains the webhook certificate and private key. If null, they are generated. Secret should be in webhook's namespace. | `null` |
 | mutatingwebhook.failurePolicy | Defines how unrecognized errors and timeout errors from the admission webhook are handled. Allowed values are Ignore or Fail | Ignore |
+| mutatingwebhook.loglevel | Webhook log level (set to 5 for debug) | 4 |
 | mutatingwebhook.namespaceSelector.boolean    | Enable to control, with label "vault-injection=enabled", the namespaces where injection is allowed (if false: all namespaces except _kube-system_ and _kube-public_) | false                                                           |
 | mutatingwebhook.namespaceSelector.namespaced | Enable to control, with label "vault-injection={{ .Release.Namespace }}", the specific namespace where injection is allowed (ie, restrict to namespace where injector is installed) | false |
 | probes.liveness.failureThreshold                | Number of probe failure before restarting the probe                                 | 3  |

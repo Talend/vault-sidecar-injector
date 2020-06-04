@@ -15,102 +15,154 @@
 package certs
 
 import (
+	"bytes"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/pem"
 	"math/big"
 	"net"
-	"strings"
 	"time"
 
 	"k8s.io/klog"
 )
 
-// GenerateCerts generates a CA with a leaf certificate and key and returns the CA, cert and key as PEM encoded slices
-func GenerateCerts(host string) (ca, cert, key []byte) {
-	notBefore := time.Now().Add(time.Minute * -5)
-	notAfter := notBefore.Add(5 * 365 * 24 * time.Hour)
+// GenerateWebhookBundle generates and returns CA, webhook certificate and private key
+func (c *Cert) GenerateWebhookBundle() (*PEMBundle, error) {
+	// CA
+	_, err := c.genCertificate(true)
+	if err != nil {
+		klog.Errorf("Failed to generate CA certificate: %s", err)
+		return nil, err
+	}
 
-	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
-	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
+	// Webhook certificate
+	webhookBundle, err := c.genCertificate(false)
+	if err != nil {
+		klog.Errorf("Failed to generate webhook certificate: %s", err)
+		return nil, err
+	}
+
+	if klog.V(5) { // enabled by providing '-v=5' at least
+		klog.Infof("Generated Webhook CA Certificate: %s", string(webhookBundle.CACert))
+		klog.Infof("Generated Webhook Certificate: %s", string(webhookBundle.Cert))
+	}
+
+	return webhookBundle, nil
+}
+
+func (c *Cert) genCertificate(isCA bool) (*PEMBundle, error) {
+	var derBytes []byte
+	var certBnd PEMBundle
+	var keyUsage x509.KeyUsage
+
+	cn := c.CN
+	notBefore := time.Now().Add(time.Minute * -5)
+	notAfter := notBefore.Add(time.Duration(c.Lifetime) * 365 * 24 * time.Hour)
+
+	sn, err := serialNumber()
 	if err != nil {
 		klog.Errorf("Failed to generate serial number: %s", err)
+		return nil, err
 	}
-	rootKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+
+	if isCA {
+		cn = cn + " CA"
+		keyUsage = x509.KeyUsageCertSign | x509.KeyUsageDigitalSignature
+	} else {
+		keyUsage = x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment
+	}
+
+	template := x509.Certificate{
+		SerialNumber:          sn,
+		Subject:               pkix.Name{CommonName: cn},
+		NotBefore:             notBefore,
+		NotAfter:              notAfter,
+		KeyUsage:              keyUsage,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		BasicConstraintsValid: true,
+		IsCA:                  isCA,
+	}
+
+	//-- Generate key pair
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		klog.Errorf("Failed ECDSA Key Generation: %s", err)
+		return nil, err
 	}
 
-	rootTemplate := x509.Certificate{
-		SerialNumber:          serialNumber,
-		NotBefore:             notBefore,
-		NotAfter:              notAfter,
-		KeyUsage:              x509.KeyUsageCertSign,
-		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
-		BasicConstraintsValid: true,
-		IsCA:                  true,
-	}
-
-	derBytes, err := x509.CreateCertificate(rand.Reader, &rootTemplate, &rootTemplate, &rootKey.PublicKey, rootKey)
-	if err != nil {
-		klog.Errorf("Failed createCertificate for CA: %s", err)
-	}
-
-	ca = encodeCert(derBytes)
-
-	leafKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err != nil {
-		klog.Errorf("Failed createLeafKey for certificate: %s", err)
-	}
-
-	key = encodeKey(leafKey)
-
-	serialNumber, err = rand.Int(rand.Reader, serialNumberLimit)
-	if err != nil {
-		klog.Errorf("Failed to generate serial number: %s", err)
-	}
-
-	leafTemplate := x509.Certificate{
-		SerialNumber:          serialNumber,
-		NotBefore:             notBefore,
-		NotAfter:              notAfter,
-		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
-		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
-		BasicConstraintsValid: true,
-		IsCA:                  false,
-	}
-
-	hosts := strings.Split(host, ",")
-
-	for _, h := range hosts {
-		if ip := net.ParseIP(h); ip != nil {
-			leafTemplate.IPAddresses = append(leafTemplate.IPAddresses, ip)
-		} else {
-			leafTemplate.DNSNames = append(leafTemplate.DNSNames, h)
+	//-- Generate certificate
+	if isCA { // Self-signed
+		derBytes, err = x509.CreateCertificate(rand.Reader, &template, &template, &key.PublicKey, key)
+		c.caTemplate = &template
+		c.caPrivKey = key
+	} else {
+		for _, h := range c.Hosts {
+			if ip := net.ParseIP(h); ip != nil {
+				template.IPAddresses = append(template.IPAddresses, ip)
+			} else {
+				template.DNSNames = append(template.DNSNames, h)
+			}
 		}
+
+		derBytes, err = x509.CreateCertificate(rand.Reader, &template, c.caTemplate, &key.PublicKey, c.caPrivKey)
 	}
 
-	derBytes, err = x509.CreateCertificate(rand.Reader, &leafTemplate, &rootTemplate, &leafKey.PublicKey, rootKey)
 	if err != nil {
-		klog.Errorf("Failed createLeaf certificate: %s", err)
+		klog.Errorf("Failed to create certificate: %s", err)
+		return nil, err
 	}
 
-	cert = encodeCert(derBytes)
-	return ca, cert, key
+	//-- PEM-encode certificate and private key
+	pemCert, err := pemEncodeCert(derBytes)
+	if err != nil {
+		klog.Errorf("Failed to encode certificate: %s", err)
+		return nil, err
+	}
+
+	pemPrivkey, err := pemEncodeKey(key)
+	if err != nil {
+		klog.Errorf("Failed to encode private key: %s", err)
+		return nil, err
+	}
+
+	if isCA { // Self-signed
+		certBnd = PEMBundle{CACert: pemCert, Cert: pemCert, PrivKey: pemPrivkey}
+		c.caCert = pemCert
+	} else {
+		certBnd = PEMBundle{CACert: c.caCert, Cert: pemCert, PrivKey: pemPrivkey}
+	}
+
+	return &certBnd, nil
 }
 
-func encodeKey(key *ecdsa.PrivateKey) []byte {
+func serialNumber() (*big.Int, error) {
+	return rand.Int(rand.Reader, (&big.Int{}).Exp(big.NewInt(2), big.NewInt(159), nil))
+}
+
+func pemEncodeKey(key *ecdsa.PrivateKey) ([]byte, error) {
 	b, err := x509.MarshalECPrivateKey(key)
-
 	if err != nil {
-		klog.Errorf("Unable to marshal ECDSA private key: %s", err)
+		return nil, err
 	}
 
-	return pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: b})
+	var buf bytes.Buffer
+	err = pem.Encode(&buf, &pem.Block{Type: "EC PRIVATE KEY", Bytes: b})
+	if err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
 }
 
-func encodeCert(derBytes []byte) []byte {
-	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
+func pemEncodeCert(derBytes []byte) ([]byte, error) {
+	var buf bytes.Buffer
+	err := pem.Encode(&buf, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
+	if err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
 }

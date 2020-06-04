@@ -51,7 +51,7 @@ spec:
             - -podlchooksfile=/opt/talend/webhook/config/podlifecyclehooks.yaml
             - -logtostderr
             - -stderrthreshold=0
-            - -v=4
+            - -v={{ .Values.mutatingwebhook.loglevel }}
             - 2>&1
           ports:
             - name: webhook-api

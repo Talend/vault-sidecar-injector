@@ -22,8 +22,11 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
+	"talend/vault-sidecar-injector/pkg/certs"
 	"talend/vault-sidecar-injector/pkg/config"
+	"talend/vault-sidecar-injector/pkg/k8s"
 	"talend/vault-sidecar-injector/pkg/webhook"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -76,12 +79,11 @@ func main() {
 		}
 	})
 
-	// Generate webhook certs and patch MutatingWebhookConfiguration
-	/*k8sClient := k8s.New()
-	err := k8sClient.PatchWebhookConfiguration(parameters.WebhookCfgName)
+	// Get webhook certificate (either provided or generated. If generated, MutatingWebhookConfiguration resource is patched)
+	tlsCert, err := getTLSCertificate(parameters)
 	if err != nil {
 		os.Exit(1)
-	}*/
+	}
 
 	// Load webhook admission server's config
 	vsiCfg, err := config.Load(parameters)
@@ -89,17 +91,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	pair, err := tls.LoadX509KeyPair(parameters.CertFile, parameters.KeyFile)
-	if err != nil {
-		klog.Errorf("Failed to load key pair: %v", err)
-		os.Exit(1)
-	}
-
 	vaultInjector := webhook.New(
 		vsiCfg,
 		&http.Server{
 			Addr:      fmt.Sprintf(":%v", parameters.Port),
-			TLSConfig: &tls.Config{Certificates: []tls.Certificate{pair}},
+			TLSConfig: &tls.Config{Certificates: []tls.Certificate{*tlsCert}},
 		},
 	)
 
@@ -139,4 +135,43 @@ func main() {
 	klog.Infof("Got OS shutdown signal, shutting down webhook server gracefully...")
 	vaultInjector.Server.Shutdown(context.Background())
 	metricsServer.Shutdown(context.Background())
+}
+
+func getTLSCertificate(whSvrParams config.WhSvrParameters) (*tls.Certificate, error) {
+	var tlsCert tls.Certificate
+	var err error
+
+	if whSvrParams.CertFile != "" && whSvrParams.KeyFile != "" {
+		// Certificate and key are provided: no need to generate them and patch MutatingWebhookConfiguration resource
+		tlsCert, err = tls.LoadX509KeyPair(whSvrParams.CertFile, whSvrParams.KeyFile)
+		if err != nil {
+			klog.Errorf("Failed to load key pair: %v", err)
+			return nil, err
+		}
+	} else { // Generate certificates and keys and patch MutatingWebhookConfiguration resource
+		cert := &certs.Cert{
+			CN:       "Vault Sidecar Injector",
+			Hosts:    strings.Split(whSvrParams.WebhookHostnames, ","),
+			Lifetime: whSvrParams.WebhookCertLifetime,
+		}
+
+		bundle, err := cert.GenerateWebhookBundle()
+		if err != nil {
+			return nil, err
+		}
+
+		tlsCert, err = tls.X509KeyPair(bundle.Cert, bundle.PrivKey)
+		if err != nil {
+			klog.Errorf("Failed to load key pair: %v", err)
+			return nil, err
+		}
+
+		k8sClient := k8s.New()
+		err = k8sClient.PatchWebhookConfiguration(whSvrParams.WebhookCfgName, bundle.CACert)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &tlsCert, nil
 }

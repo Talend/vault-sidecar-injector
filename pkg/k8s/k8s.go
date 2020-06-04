@@ -44,7 +44,7 @@ func New() *K8SClient {
 
 // PatchWebhookConfiguration generates CA and certificate for webhook then patches MutatingWebhookConfiguration's caBundle
 func (k8sctl *K8SClient) PatchWebhookConfiguration(webhookCfgName string, ca []byte) error {
-	// Patch MutatingWebhookConfiguration resource with generated CA (should be base64-encoded)
+	// Patch MutatingWebhookConfiguration resource with CA (should be base64-encoded PEM-encoded)
 	_, err := k8sctl.AdmissionregistrationV1beta1().MutatingWebhookConfigurations().Patch(
 		webhookCfgName, types.JSONPatchType, []byte(fmt.Sprintf(
 			`[{
