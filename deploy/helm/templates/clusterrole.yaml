@@ -10,7 +10,7 @@ rules:
   verbs: ["get", "list", "watch"]
 - apiGroups:  [""]
   resources: ["secrets"]
-  verbs: ["get", "list"]
+  verbs: ["get", "list", "create", "delete", "update", "patch"]
 - apiGroups: ["admissionregistration.k8s.io"]
   resources: ["mutatingwebhookconfigurations"]
   verbs: ["get", "create", "delete", "update", "patch"]

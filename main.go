@@ -36,19 +36,21 @@ import (
 var (
 	// VERSION stores current version. Set in Makefile (see build flag -ldflags "-X=main.VERSION=$(VERSION)")
 	VERSION string
+
+	parameters config.WhSvrParameters
 )
 
-func main() {
-	var parameters config.WhSvrParameters
-
-	// get command line parameters
+func parseFlags() {
 	flag.IntVar(&parameters.Port, "port", 8443, "webhook server port")
 	flag.IntVar(&parameters.MetricsPort, "metricsport", 9000, "metrics server port (Prometheus)")
+	flag.BoolVar(&parameters.CertGeneration, "certgen", false, "generates webhook certificates, private key and Kubernetes secret")
+	flag.StringVar(&parameters.CertSecretName, "certsecretname", "", "name of generated or provided Kubernetes secret storing webhook certificates and private key")
+	flag.StringVar(&parameters.CertHostnames, "certhostnames", "", "host names to register in webhook certificate (comma-separated list)")
+	flag.IntVar(&parameters.CertLifetime, "certlifetime", 10, "lifetime in years for generated certificates")
+	flag.StringVar(&parameters.CACertFile, "cacertfile", "", "PEM-encoded webhook CA certificate")
+	flag.StringVar(&parameters.CertFile, "certfile", "", "PEM-encoded webhook certificate used for TLS")
+	flag.StringVar(&parameters.KeyFile, "keyfile", "", "PEM-encoded webhook private key used for TLS")
 	flag.StringVar(&parameters.WebhookCfgName, "webhookcfgname", "", "name of MutatingWebhookConfiguration resource")
-	flag.StringVar(&parameters.WebhookHostnames, "webhookhostnames", "", "host names to register in webhook certificate (comma-separated list)")
-	flag.IntVar(&parameters.WebhookCertLifetime, "webhookcertlifetime", 10, "lifetime in years for generated certificates")
-	flag.StringVar(&parameters.CertFile, "tlscertfile", "", "file containing the x509 Certificate for HTTPS")
-	flag.StringVar(&parameters.KeyFile, "tlskeyfile", "", "file containing the x509 private key to tlscertfile")
 	flag.StringVar(&parameters.AnnotationKeyPrefix, "annotationkeyprefix", "sidecar.vault", "annotations key prefix")
 	flag.StringVar(&parameters.AppLabelKey, "applabelkey", "application.name", "key for application label")
 	flag.StringVar(&parameters.AppServiceLabelKey, "appservicelabelkey", "service.name", "key for application's service label")
@@ -78,100 +80,132 @@ func main() {
 			f2.Value.Set(value)
 		}
 	})
+}
 
-	// Get webhook certificate (either provided or generated. If generated, MutatingWebhookConfiguration resource is patched)
-	tlsCert, err := getTLSCertificate(parameters)
+func main() {
+	parseFlags()
+
+	if parameters.CertGeneration { // Only generate certificates, private key, K8S secret
+		err := genCertificates()
+		if err != nil {
+			os.Exit(1)
+		}
+	} else {
+		// Init and load config
+		vaultInjector, err := createVaultInjector()
+		if err != nil {
+			os.Exit(1)
+		}
+
+		// Define http server and server handler
+		mux := http.NewServeMux()
+		mux.HandleFunc("/mutate", vaultInjector.Serve)
+		vaultInjector.Server.Handler = mux
+
+		// Start webhook server in new routine
+		go func() {
+			if err := vaultInjector.Server.ListenAndServeTLS("", ""); err != nil {
+				klog.Errorf("Failed to listen and serve webhook server: %v", err)
+			}
+		}()
+
+		// Define metrics server
+		metricsMux := http.NewServeMux()
+		metricsMux.Handle("/metrics", promhttp.Handler())
+
+		metricsServer := &http.Server{
+			Addr:    fmt.Sprintf(":%v", parameters.MetricsPort),
+			Handler: metricsMux,
+		}
+
+		// Start metrics server in new routine
+		go func() {
+			if err := metricsServer.ListenAndServe(); err != nil {
+				klog.Errorf("Failed to listen and serve metrics server: %v", err)
+			}
+		}()
+
+		// Listening OS shutdown singal
+		signalChan := make(chan os.Signal, 1)
+		signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
+		<-signalChan
+
+		klog.Infof("Got OS shutdown signal, shutting down webhook server gracefully...")
+		vaultInjector.Server.Shutdown(context.Background())
+		metricsServer.Shutdown(context.Background())
+	}
+}
+
+func createVaultInjector() (*webhook.VaultInjector, error) {
+	// Patch MutatingWebhookConfiguration (set 'caBundle' attribute from Webhook CA)
+	err := patchWebhookConfig()
 	if err != nil {
-		os.Exit(1)
+		return nil, err
+	}
+
+	// Load TLS cert and key from mounted secret
+	tlsCert, err := tls.LoadX509KeyPair(parameters.CertFile, parameters.KeyFile)
+	if err != nil {
+		klog.Errorf("Failed to load key pair: %v", err)
+		return nil, err
 	}
 
 	// Load webhook admission server's config
 	vsiCfg, err := config.Load(parameters)
 	if err != nil {
-		os.Exit(1)
+		return nil, err
 	}
 
 	vaultInjector := webhook.New(
 		vsiCfg,
 		&http.Server{
 			Addr:      fmt.Sprintf(":%v", parameters.Port),
-			TLSConfig: &tls.Config{Certificates: []tls.Certificate{*tlsCert}},
+			TLSConfig: &tls.Config{Certificates: []tls.Certificate{tlsCert}},
 		},
 	)
 
-	// define http server and server handler
-	mux := http.NewServeMux()
-	mux.HandleFunc("/mutate", vaultInjector.Serve)
-	vaultInjector.Server.Handler = mux
-
-	// start webhook server in new routine
-	go func() {
-		if err := vaultInjector.Server.ListenAndServeTLS("", ""); err != nil {
-			klog.Errorf("Failed to listen and serve webhook server: %v", err)
-		}
-	}()
-
-	// define metrics server
-	metricsMux := http.NewServeMux()
-	metricsMux.Handle("/metrics", promhttp.Handler())
-
-	metricsServer := &http.Server{
-		Addr:    fmt.Sprintf(":%v", parameters.MetricsPort),
-		Handler: metricsMux,
-	}
-
-	// start metrics server in new routine
-	go func() {
-		if err := metricsServer.ListenAndServe(); err != nil {
-			klog.Errorf("Failed to listen and serve metrics server: %v", err)
-		}
-	}()
-
-	// listening OS shutdown singal
-	signalChan := make(chan os.Signal, 1)
-	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
-	<-signalChan
-
-	klog.Infof("Got OS shutdown signal, shutting down webhook server gracefully...")
-	vaultInjector.Server.Shutdown(context.Background())
-	metricsServer.Shutdown(context.Background())
+	return vaultInjector, nil
 }
 
-func getTLSCertificate(whSvrParams config.WhSvrParameters) (*tls.Certificate, error) {
-	var tlsCert tls.Certificate
-	var err error
-
-	if whSvrParams.CertFile != "" && whSvrParams.KeyFile != "" {
-		// Certificate and key are provided: no need to generate them and patch MutatingWebhookConfiguration resource
-		tlsCert, err = tls.LoadX509KeyPair(whSvrParams.CertFile, whSvrParams.KeyFile)
-		if err != nil {
-			klog.Errorf("Failed to load key pair: %v", err)
-			return nil, err
-		}
-	} else { // Generate certificates and keys and patch MutatingWebhookConfiguration resource
-		cert := &certs.Cert{
-			CN:       "Vault Sidecar Injector",
-			Hosts:    strings.Split(whSvrParams.WebhookHostnames, ","),
-			Lifetime: whSvrParams.WebhookCertLifetime,
-		}
-
-		bundle, err := cert.GenerateWebhookBundle()
-		if err != nil {
-			return nil, err
-		}
-
-		tlsCert, err = tls.X509KeyPair(bundle.Cert, bundle.PrivKey)
-		if err != nil {
-			klog.Errorf("Failed to load key pair: %v", err)
-			return nil, err
-		}
-
-		k8sClient := k8s.New()
-		err = k8sClient.PatchWebhookConfiguration(whSvrParams.WebhookCfgName, bundle.CACert)
-		if err != nil {
-			return nil, err
-		}
+func genCertificates() error {
+	// Generate certificates and key
+	cert := &certs.Cert{
+		CN:       "Vault Sidecar Injector",
+		Hosts:    strings.Split(parameters.CertHostnames, ","),
+		Lifetime: parameters.CertLifetime,
 	}
 
-	return &tlsCert, nil
+	bundle, err := cert.GenerateWebhookBundle()
+	if err != nil {
+		return err
+	}
+
+	// Create Kubernetes Secret
+	k8sClient := k8s.New(&k8s.WebhookData{
+		WebhookSecretName: parameters.CertSecretName,
+		WebhookCACertName: parameters.CACertFile,
+		WebhookCertName:   parameters.CertFile,
+		WebhookKeyName:    parameters.KeyFile,
+	})
+
+	err = k8sClient.CreateCertSecret(bundle.CACert, bundle.Cert, bundle.PrivKey)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func patchWebhookConfig() error {
+	k8sClient := k8s.New(&k8s.WebhookData{
+		WebhookCfgName: parameters.WebhookCfgName,
+	})
+
+	// Patch MutatingWebhookConfiguration resource with CA certificate from mounted secret
+	err := k8sClient.PatchWebhookConfiguration(parameters.CACertFile)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

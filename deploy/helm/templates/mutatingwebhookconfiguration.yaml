@@ -11,7 +11,6 @@ webhooks:
         name: {{ include "talend-vault-sidecar-injector.service.name" . }}
         namespace: {{ .Release.Namespace }}
         path: "/mutate"
-      caBundle: {{ .Values.mutatingwebhook.cert.caBundle }}
     rules:
       - operations: [ "CREATE" ]
         apiGroups: [""]

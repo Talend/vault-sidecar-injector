@@ -19,5 +19,14 @@ import (
 )
 
 type K8SClient struct {
-	*k8s.Clientset
+	*k8s.Clientset // Inner Kubernetes client
+	*WebhookData   // Webhook data
+}
+
+type WebhookData struct {
+	WebhookSecretName string // Name of Kubernetes secret to create
+	WebhookCACertName string // Name of secret entry for webhook CA certificate
+	WebhookCertName   string // Name of secret entry for webhook certificate
+	WebhookKeyName    string // Name of secret entry for webhook private key
+	WebhookCfgName    string // Name of MutatingWebhookConfiguration resource
 }

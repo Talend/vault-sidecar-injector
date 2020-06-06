@@ -740,7 +740,7 @@ The provided [chart](https://github.com/Talend/vault-sidecar-injector/blob/maste
 
 Installation:
 
-- Kubernetes v1.10+
+- Kubernetes cluster (see compatibility [here](#kubernetes-compatibility))
 - Helm 2 or 3
 
 Runtime:
@@ -1031,11 +1031,12 @@ The following table lists the configurable parameters of the `Vault Sidecar Inje
 | mutatingwebhook.annotations.appLabelKey | Annotation for application's name. Annotation's value used as Vault role by default. | com.talend.application  |
 | mutatingwebhook.annotations.appServiceLabelKey | Annotation for service's name | com.talend.service  |
 | mutatingwebhook.annotations.keyPrefix | Prefix used for all vault sidecar injector annotations | sidecar.vault.talend.org  |
-| mutatingwebhook.cert.caBundle | Base64-encoded PEM-encoded certificate for the CA that signed the webhook certificate. To set if secretName is non-null. | "" |
-| mutatingwebhook.cert.certfile | Default filename for webhook certificate (PEM-encoded) in provided Kubernetes secret | cert.pem |
-| mutatingwebhook.cert.certlifetime | Default lifetime in years for generated certificates. Not used if secretName is non-null. | 10 |
-| mutatingwebhook.cert.keyfile | Default filename for webhook private key (PEM-encoded) in provided Kubernetes secret | key.pem |
-| mutatingwebhook.cert.secretName | Name of the Kubernetes secret that contains the webhook certificate and private key. If null, they are generated. Secret should be in webhook's namespace. | `null` |
+| mutatingwebhook.cert.cacertfile | Default filename for webhook CA certificate (PEM-encoded) in generated or provided Kubernetes secret | ca.crt |
+| mutatingwebhook.cert.certfile | Default filename for webhook certificate (PEM-encoded) in generated or provided Kubernetes secret | tls.crt |
+| mutatingwebhook.cert.certlifetime | Default lifetime in years for generated certificates. Not used if generated is false. | 10 |
+| mutatingwebhook.cert.generated | Controls whether webhook certificates, private key and Kubernetes secret are generated. If not, you have to provide a Kubernetes secret with name secretName. | true |
+| mutatingwebhook.cert.keyfile | Default filename for webhook private key (PEM-encoded) in generated or provided Kubernetes secret | tls.key |
+| mutatingwebhook.cert.secretName | Name of the Kubernetes secret that contains the webhook certificates and private key. Secret should be in webhook's namespace. To provide if generated is false. | talend-vault-sidecar-injector-cert |
 | mutatingwebhook.failurePolicy | Defines how unrecognized errors and timeout errors from the admission webhook are handled. Allowed values are Ignore or Fail | Ignore |
 | mutatingwebhook.loglevel | Webhook log level (set to 5 for debug) | 4 |
 | mutatingwebhook.namespaceSelector.boolean    | Enable to control, with label "vault-injection=enabled", the namespaces where injection is allowed (if false: all namespaces except _kube-system_ and _kube-public_) | false                                                           |

@@ -22,11 +22,14 @@ import (
 type WhSvrParameters struct {
 	Port                  int    // webhook server port
 	MetricsPort           int    // metrics server port (Prometheus)
+	CertGeneration        bool   // generates webhook certificates, private key and Kubernetes secret
+	CertSecretName        string // name of generated or provided Kubernetes secret storing webhook certificates and private key
+	CertHostnames         string // host names to register in webhook certificate (comma-separated list)
+	CertLifetime          int    // lifetime in years for generated certificates
+	CACertFile            string // PEM-encoded webhook CA certificate
+	CertFile              string // PEM-encoded webhook certificate used for TLS
+	KeyFile               string // PEM-encoded webhook private key used for TLS
 	WebhookCfgName        string // name of MutatingWebhookConfiguration resource
-	WebhookHostnames      string // host names to register in webhook certificate (comma-separated list)
-	WebhookCertLifetime   int    // lifetime in years for generated certificates
-	CertFile              string // path to the x509 certificate for https
-	KeyFile               string // path to the x509 private key matching `CertFile`
 	AnnotationKeyPrefix   string // annotations key prefix
 	AppLabelKey           string // key for application label
 	AppServiceLabelKey    string // key for application's service label
