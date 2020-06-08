@@ -6,7 +6,7 @@ To interact with Kubernetes API, following Go modules and versions are in use:
 - k8s.io/apimachinery `kubernetes-1.12.5`
 - k8s.io/client-go `kubernetes-1.12.5`
 
-Those modules versions will be resolved when calling `go mod vendor` or `go get` and `go.mod` file will be updated with timestamp and commid id (which may be confusing and not practical at all to know which kubernetes version we targeted).
+Those modules versions will be resolved when calling `go mod vendor` or `go get` and `go.mod` file will be updated with timestamp and commid id (which may be confusing and not practical at all to determine which kubernetes version we are actually using).
 
 E.g.
 
