@@ -13,4 +13,4 @@ rules:
   verbs: ["get", "list", "create", "delete", "update", "patch"]
 - apiGroups: ["admissionregistration.k8s.io"]
   resources: ["mutatingwebhookconfigurations"]
-  verbs: ["get", "create", "delete", "update", "patch"]
+  verbs: ["get", "create", "update", "patch"]

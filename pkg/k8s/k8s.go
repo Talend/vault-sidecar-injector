@@ -81,6 +81,28 @@ func (k8sctl *K8SClient) CreateCertSecret(ca, cert, key []byte) error {
 	return nil
 }
 
+// DeleteCertSecret deletes the Kubernetes Secret used for storing webhook CA, certificate and private key
+func (k8sctl *K8SClient) DeleteCertSecret() error {
+	// Get current namespace
+	ns, ok := os.LookupEnv("POD_NAMESPACE")
+	if !ok {
+		klog.Errorf("Failed to get current namespace from 'POD_NAMESPACE' env var")
+		return errors.New("Failed to get current namespace")
+	}
+
+	// Other way to get current namespace:
+	//ns, err := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
+
+	// Delete Secret
+	err := k8sctl.CoreV1().Secrets(strings.TrimSpace(string(ns))).Delete(k8sctl.WebhookSecretName, &metav1.DeleteOptions{})
+	if err != nil {
+		klog.Errorf("Failed deleting Webhook secret: %s", err)
+		return err
+	}
+
+	return nil
+}
+
 // PatchWebhookConfiguration generates CA and certificate for webhook then patches MutatingWebhookConfiguration's caBundle
 func (k8sctl *K8SClient) PatchWebhookConfiguration(cacertfile string) error {
 	caPEM, err := ioutil.ReadFile(cacertfile)

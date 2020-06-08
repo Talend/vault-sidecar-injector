@@ -2,13 +2,17 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: "{{ include "talend-vault-sidecar-injector.fullname" . }}-cert"
+  name: "{{ include "talend-vault-sidecar-injector.fullname" . }}-del"
   labels:
 {{ include "talend-vault-sidecar-injector.labels" . | indent 4 }}
+  annotations:
+    # This is what defines this resource as a hook. Without this line, the job is considered part of the release.
+    "helm.sh/hook": pre-delete
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
 spec:
   template:
     metadata:
-      name: "{{ include "talend-vault-sidecar-injector.fullname" . }}-cert"
+      name: "{{ include "talend-vault-sidecar-injector.fullname" . }}-del"
     spec:
       restartPolicy: Never
       {{- if .Values.registryKey }}
@@ -26,13 +30,8 @@ spec:
               fieldRef:
                 fieldPath: metadata.namespace
         args:
-          - -certgen={{ .Values.mutatingwebhook.cert.generated }}
+          - -certop=delete
           - -certsecretname={{ .Values.mutatingwebhook.cert.secretName }}
-          - -certhostnames={{ include "talend-vault-sidecar-injector.service.name" . }},{{ include "talend-vault-sidecar-injector.service.name" . }}.{{ .Release.Namespace }},{{ include "talend-vault-sidecar-injector.service.name" . }}.{{ .Release.Namespace }}.svc
-          - -certlifetime={{ .Values.mutatingwebhook.cert.certlifetime }}
-          - -cacertfile={{ .Values.mutatingwebhook.cert.cacertfile }}
-          - -certfile={{ .Values.mutatingwebhook.cert.certfile }}
-          - -keyfile={{ .Values.mutatingwebhook.cert.keyfile }}
           - -logtostderr
           - -stderrthreshold=0
           - -v={{ .Values.mutatingwebhook.loglevel }}

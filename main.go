@@ -43,7 +43,7 @@ var (
 func parseFlags() {
 	flag.IntVar(&parameters.Port, "port", 8443, "webhook server port")
 	flag.IntVar(&parameters.MetricsPort, "metricsport", 9000, "metrics server port (Prometheus)")
-	flag.BoolVar(&parameters.CertGeneration, "certgen", false, "generates webhook certificates, private key and Kubernetes secret")
+	flag.StringVar(&parameters.CertOperation, "certop", "", "operation on webhook certificates (create, delete)")
 	flag.StringVar(&parameters.CertSecretName, "certsecretname", "", "name of generated or provided Kubernetes secret storing webhook certificates and private key")
 	flag.StringVar(&parameters.CertHostnames, "certhostnames", "", "host names to register in webhook certificate (comma-separated list)")
 	flag.IntVar(&parameters.CertLifetime, "certlifetime", 10, "lifetime in years for generated certificates")
@@ -85,10 +85,16 @@ func parseFlags() {
 func main() {
 	parseFlags()
 
-	if parameters.CertGeneration { // Only generate certificates, private key, K8S secret
-		err := genCertificates()
-		if err != nil {
-			os.Exit(1)
+	if parameters.CertOperation != "" {
+		switch parameters.CertOperation {
+		case config.CreateCert: // Generate certificates, private key, K8S secret
+			if err := genCertificates(); err != nil {
+				os.Exit(1)
+			}
+		case config.DeleteCert: // Delete K8S secret used to store certificates and private key
+			if err := deleteCertificates(); err != nil {
+				os.Exit(1)
+			}
 		}
 	} else {
 		// Init and load config
@@ -180,7 +186,6 @@ func genCertificates() error {
 		return err
 	}
 
-	// Create Kubernetes Secret
 	k8sClient := k8s.New(&k8s.WebhookData{
 		WebhookSecretName: parameters.CertSecretName,
 		WebhookCACertName: parameters.CACertFile,
@@ -188,12 +193,17 @@ func genCertificates() error {
 		WebhookKeyName:    parameters.KeyFile,
 	})
 
-	err = k8sClient.CreateCertSecret(bundle.CACert, bundle.Cert, bundle.PrivKey)
-	if err != nil {
-		return err
-	}
+	// Create Kubernetes Secret
+	return k8sClient.CreateCertSecret(bundle.CACert, bundle.Cert, bundle.PrivKey)
+}
 
-	return nil
+func deleteCertificates() error {
+	k8sClient := k8s.New(&k8s.WebhookData{
+		WebhookSecretName: parameters.CertSecretName,
+	})
+
+	// Delete Kubernetes Secret
+	return k8sClient.DeleteCertSecret()
 }
 
 func patchWebhookConfig() error {
@@ -202,10 +212,5 @@ func patchWebhookConfig() error {
 	})
 
 	// Patch MutatingWebhookConfiguration resource with CA certificate from mounted secret
-	err := k8sClient.PatchWebhookConfiguration(parameters.CACertFile)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return k8sClient.PatchWebhookConfiguration(parameters.CACertFile)
 }

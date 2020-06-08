@@ -164,7 +164,7 @@ func createVaultInjector() (*VaultInjector, error) {
 	vsiCfg, err := cfg.Load(
 		cfg.WhSvrParameters{
 			0, 0,
-			false, "", "", 0, "", "", "",
+			"", "", "", 0, "", "", "",
 			"",
 			"sidecar.vault.talend.org", "com.talend.application", "com.talend.service",
 			"../../test/config/injectionconfig.yaml",

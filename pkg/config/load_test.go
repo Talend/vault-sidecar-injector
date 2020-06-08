@@ -71,7 +71,7 @@ func TestLoadConfig(t *testing.T) {
 		vsiCfg, err := Load(
 			WhSvrParameters{
 				0, 0,
-				false, "", "", 0, "", "", "",
+				"", "", "", 0, "", "", "",
 				"",
 				"", "", "",
 				table.injectionCfgFile,

@@ -22,7 +22,7 @@ import (
 type WhSvrParameters struct {
 	Port                  int    // webhook server port
 	MetricsPort           int    // metrics server port (Prometheus)
-	CertGeneration        bool   // generates webhook certificates, private key and Kubernetes secret
+	CertOperation         string // operation on webhook certificates (create, delete)
 	CertSecretName        string // name of generated or provided Kubernetes secret storing webhook certificates and private key
 	CertHostnames         string // host names to register in webhook certificate (comma-separated list)
 	CertLifetime          int    // lifetime in years for generated certificates
@@ -64,3 +64,5 @@ type VSIConfig struct {
 	TemplateDefaultTmpl              string            // default template content
 	PodslifecycleHooks               *LifecycleHooks   // pod's lifecycle hooks
 }
+
+type CertOperationType string
