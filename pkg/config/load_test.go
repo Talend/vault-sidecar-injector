@@ -70,7 +70,9 @@ func TestLoadConfig(t *testing.T) {
 	for _, table := range tables {
 		vsiCfg, err := Load(
 			WhSvrParameters{
-				0, 0, "", "",
+				0, 0,
+				"", "", "", 0, "", "", "",
+				"",
 				"", "", "",
 				table.injectionCfgFile,
 				table.proxyCfgFile,

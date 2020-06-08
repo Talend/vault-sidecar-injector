@@ -1,0 +1,40 @@
+{{- if eq .Values.mutatingwebhook.cert.generated true }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "talend-vault-sidecar-injector.fullname" . }}-cert"
+  labels:
+{{ include "talend-vault-sidecar-injector.labels" . | indent 4 }}
+spec:
+  template:
+    metadata:
+      name: "{{ include "talend-vault-sidecar-injector.fullname" . }}-cert"
+    spec:
+      restartPolicy: Never
+      {{- if .Values.registryKey }}
+      imagePullSecrets:
+        - name: {{ .Values.registryKey }}
+      {{- end }}
+      serviceAccountName: talend-vault-sidecar-injector
+      containers:
+      - name: {{ include "talend-vault-sidecar-injector.fullname" . }}
+        image: {{ include "talend-vault-sidecar-injector.image" .Values }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        env:
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+        args:
+          - -certop=create
+          - -certsecretname={{ .Values.mutatingwebhook.cert.secretName }}
+          - -certhostnames={{ include "talend-vault-sidecar-injector.service.name" . }},{{ include "talend-vault-sidecar-injector.service.name" . }}.{{ .Release.Namespace }},{{ include "talend-vault-sidecar-injector.service.name" . }}.{{ .Release.Namespace }}.svc
+          - -certlifetime={{ .Values.mutatingwebhook.cert.certlifetime }}
+          - -cacertfile={{ .Values.mutatingwebhook.cert.cacertfile }}
+          - -certfile={{ .Values.mutatingwebhook.cert.certfile }}
+          - -keyfile={{ .Values.mutatingwebhook.cert.keyfile }}
+          - -logtostderr
+          - -stderrthreshold=0
+          - -v={{ .Values.mutatingwebhook.loglevel }}
+          - 2>&1
+{{- end }}

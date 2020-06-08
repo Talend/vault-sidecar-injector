@@ -38,6 +38,14 @@ service:
 # ----------------------------------------------------------------------------
 
 mutatingwebhook:
+  loglevel: 4 # webhook log level (set to 5 for debug)
+  cert:
+    generated: true # controls whether webhook certificates, private key and k8s secret are generated. If not, you have to provide k8s secret with name secretName.
+    secretName: talend-vault-sidecar-injector-cert # name of the k8s secret that contains the webhook certificates and private key. Secret should be in webhook's namespace. To provide if generated is false.
+    certlifetime: 10 # default lifetime in years for generated certificates. Not used if generated is false.
+    cacertfile: ca.crt # default filename for webhook CA certificate (PEM-encoded) in generated or provided k8s secret
+    certfile: tls.crt # default filename for webhook certificate (PEM-encoded) in generated or provided k8s secret
+    keyfile: tls.key # default filename for webhook private key (PEM-encoded) in generated or provided k8s secret 
   annotations:
     keyPrefix: sidecar.vault.talend.org  # prefix used for all vault sidecar injector annotations
     appLabelKey: com.talend.application  # annotation for application's name. Annotation's value used as Vault role by default.
@@ -76,16 +84,6 @@ injectconfig:
       requests:
         cpu: 40m  # Vault sidecar CPU resource requests
         memory: 35Mi  # Vault sidecar memory resource requests
-
-# ----------------------------------------------------------------------------
-# Define Helm Hook properties
-# ----------------------------------------------------------------------------
-
-hook:
-  image:
-    path: "bitnami/kubectl"  # image path
-    tag: "latest" # image tag
-    pullPolicy: Always  # Pull policy for images: IfNotPresent or Always
 
 # ----------------------------------------------------------------------------
 # Define resources requests and limits

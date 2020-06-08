@@ -1,0 +1,39 @@
+{{- if eq .Values.mutatingwebhook.cert.generated true }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "talend-vault-sidecar-injector.fullname" . }}-del"
+  labels:
+{{ include "talend-vault-sidecar-injector.labels" . | indent 4 }}
+  annotations:
+    # This is what defines this resource as a hook. Without this line, the job is considered part of the release.
+    "helm.sh/hook": pre-delete
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
+spec:
+  template:
+    metadata:
+      name: "{{ include "talend-vault-sidecar-injector.fullname" . }}-del"
+    spec:
+      restartPolicy: Never
+      {{- if .Values.registryKey }}
+      imagePullSecrets:
+        - name: {{ .Values.registryKey }}
+      {{- end }}
+      serviceAccountName: talend-vault-sidecar-injector
+      containers:
+      - name: {{ include "talend-vault-sidecar-injector.fullname" . }}
+        image: {{ include "talend-vault-sidecar-injector.image" .Values }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        env:
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+        args:
+          - -certop=delete
+          - -certsecretname={{ .Values.mutatingwebhook.cert.secretName }}
+          - -logtostderr
+          - -stderrthreshold=0
+          - -v={{ .Values.mutatingwebhook.loglevel }}
+          - 2>&1
+{{- end }}

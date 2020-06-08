@@ -7,6 +7,7 @@
 - [Vault Sidecar Injector](#vault-sidecar-injector)
   - [Announcements](#announcements)
   - [Overview](#overview)
+  - [Kubernetes compatibility](#kubernetes-compatibility)
   - [How to invoke Vault Sidecar Injector](#how-to-invoke-vault-sidecar-injector)
     - [Modes](#modes)
     - [Requirements](#requirements)
@@ -31,6 +32,7 @@
     - [Vault Sidecar Injector image](#vault-sidecar-injector-image)
     - [Installing the Chart](#installing-the-chart)
     - [Uninstalling the chart](#uninstalling-the-chart)
+    - [Webhook certificates](#webhook-certificates)
   - [Configuration](#configuration)
   - [Metrics](#metrics)
   - [List of changes](#list-of-changes)
@@ -56,6 +58,10 @@ To ease deployment, a Helm chart is provided under [deploy/helm](https://github.
 > A Kubernetes proposal tries to address those points: <https://github.com/kubernetes/enhancements/blob/master/keps/sig-apps/sidecarcontainers.md>, <https://github.com/kubernetes/enhancements/issues/753>. Implementation of the proposal has started and may be released in Kubernetes 1.19 (in Alpha stage).
 >
 > In the meantime however, `Vault Sidecar Injector` implements **specific sidecar and signaling mechanism** to properly stop all injected containers on job termination.
+
+## Kubernetes compatibility
+
+`Vault Sidecar Injector` can be deployed on Kubernetes `1.12` and higher. Deployment on earlier versions *may work* but has not been tested.
 
 ## How to invoke Vault Sidecar Injector
 
@@ -735,10 +741,8 @@ The provided [chart](https://github.com/Talend/vault-sidecar-injector/blob/maste
 
 Installation:
 
-- Kubernetes v1.10+
+- Kubernetes cluster (see compatibility [here](#kubernetes-compatibility))
 - Helm 2 or 3
-
-> ⚠️ **Important note** ⚠️: the chart is issuing a certificate signing request (CSR) to dynamically generate the key and certificate used to set up TLS on the webhook admission server. Make sure your Kubernetes cluster has been configured with a *signer* in order to enable the certificate API. Refer to Kubernetes documentation here: <https://kubernetes.io/docs/tasks/tls/managing-tls-in-a-cluster/#a-note-to-cluster-administrators>.
 
 Runtime:
 
@@ -853,8 +857,6 @@ $ make image
 </details>
 
 ### Installing the Chart
-
-> **Note:** as `Vault Sidecar Injector` chart makes use of Helm post-install hooks, **do not** provide Helm `--wait` flag since it will prevent post-install hooks from running and installation will fail.
 
 Several options to install the chart:
 
@@ -994,9 +996,26 @@ $ helm delete --purge vault-sidecar-injector
 $ helm delete vault-sidecar-injector -n kube-system
 ```
 
-> Note If you encounter issues trying to uninstall the chart, try option `--no-hooks` then remove remaining parts with kubectl cli.
+This command removes all the Kubernetes resources associated with the chart and deletes the Helm release.
 
-This command removes all the Kubernetes components associated with the chart and deletes the release.
+### Webhook certificates
+
+By default, the webhook certificates (CA and leaf) and private key will be generated as part of the installation. Look at the `mutatingwebhook.cert.*` parameters in configuration for default values.
+
+You can also provide your own certificates and private key by following those steps:
+
+1) set `mutatingwebhook.cert.generated` parameter to `false`
+2) as an option, modify the name of the Kubernetes Secret that will host the certificates and private key (`mutatingwebhook.cert.secretName` parameter)
+3) generate the CA, leaf certificate and private key (using OpenSSL for e.g.) and save them as PEM-encoded files
+4) from those files, create a new Kubernetes Secret using default name or the one you set in step 2:
+
+  ```sh
+  kubectl create secret generic <secret name> \
+                  --from-file=ca.crt=<PATH>/<CA file, PEM-encoded> \
+                  --from-file=tls.crt=<PATH>/<Cert file, PEM-encoded> \
+                  --from-file=tls.key=<PATH>/<PrivKey file, PEM-encoded>
+                  -n <Namespace where Vault Sidecar Injector is installed>
+  ```
 
 ## Configuration
 
@@ -1004,9 +1023,6 @@ The following table lists the configurable parameters of the `Vault Sidecar Inje
 
 | Parameter    | Description          | Default                                                         |
 |:-------------|:---------------------|:----------------------------------------------------------------|
-| hook.image.path            | Image path | bitnami/kubectl |
-| hook.image.pullPolicy      | Pull policy for image: IfNotPresent or Always | Always |
-| hook.image.tag             | Image tag | latest |
 | image.applicationNameLabel   | Application Name. Must match label com.talend.application | talend-vault-sidecar-injector   |
 | image.metricsPort                | Port exposed for metrics collection | 9000 |
 | image.path       | Image path   | talend/vault-sidecar-injector |
@@ -1033,7 +1049,14 @@ The following table lists the configurable parameters of the `Vault Sidecar Inje
 | mutatingwebhook.annotations.appLabelKey | Annotation for application's name. Annotation's value used as Vault role by default. | com.talend.application  |
 | mutatingwebhook.annotations.appServiceLabelKey | Annotation for service's name | com.talend.service  |
 | mutatingwebhook.annotations.keyPrefix | Prefix used for all vault sidecar injector annotations | sidecar.vault.talend.org  |
+| mutatingwebhook.cert.cacertfile | Default filename for webhook CA certificate (PEM-encoded) in generated or provided Kubernetes Secret | ca.crt |
+| mutatingwebhook.cert.certfile | Default filename for webhook certificate (PEM-encoded) in generated or provided Kubernetes Secret | tls.crt |
+| mutatingwebhook.cert.certlifetime | Default lifetime in years for generated certificates. Not used if generated is false. | 10 |
+| mutatingwebhook.cert.generated | Controls whether webhook certificates, private key and Kubernetes Secret are generated. If not, you have to provide a Kubernetes Secret with name secretName. | true |
+| mutatingwebhook.cert.keyfile | Default filename for webhook private key (PEM-encoded) in generated or provided Kubernetes Secret | tls.key |
+| mutatingwebhook.cert.secretName | Name of the Kubernetes Secret that contains the webhook certificates and private key. Secret should be in webhook's namespace. To provide if generated is false. | talend-vault-sidecar-injector-cert |
 | mutatingwebhook.failurePolicy | Defines how unrecognized errors and timeout errors from the admission webhook are handled. Allowed values are Ignore or Fail | Ignore |
+| mutatingwebhook.loglevel | Webhook log level (set to 5 for debug) | 4 |
 | mutatingwebhook.namespaceSelector.boolean    | Enable to control, with label "vault-injection=enabled", the namespaces where injection is allowed (if false: all namespaces except _kube-system_ and _kube-public_) | false                                                           |
 | mutatingwebhook.namespaceSelector.namespaced | Enable to control, with label "vault-injection={{ .Release.Namespace }}", the specific namespace where injection is allowed (ie, restrict to namespace where injector is installed) | false |
 | probes.liveness.failureThreshold                | Number of probe failure before restarting the probe                                 | 3  |

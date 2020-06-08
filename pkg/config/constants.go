@@ -15,6 +15,6 @@
 package config
 
 const (
-	CertsPath       = "/opt/talend/webhook/certs"
-	ConfigFilesPath = "/opt/talend/webhook/config"
+	CreateCert = "create"
+	DeleteCert = "delete"
 )
