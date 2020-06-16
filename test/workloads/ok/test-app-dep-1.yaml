@@ -26,10 +26,3 @@ spec:
             - "-c"
             - >
               while true;do echo "My secrets are: $(cat /opt/talend/secrets/secrets.properties)"; sleep 5; done
-          volumeMounts:
-            - name: secrets
-              mountPath: /opt/talend/secrets
-      volumes:
-        - name: secrets
-          emptyDir:
-            medium: Memory

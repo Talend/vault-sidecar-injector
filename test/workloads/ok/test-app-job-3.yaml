@@ -62,7 +62,3 @@ spec:
           volumeMounts:
             - name: secrets
               mountPath: /opt/talend/secrets
-      volumes:
-        - name: secrets
-          emptyDir:
-            medium: Memory

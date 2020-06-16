@@ -25,13 +25,13 @@ import (
 func jobModeInject(containerBasePath string, podContainers []corev1.Container, containerName string, env []corev1.EnvVar, context *ctx.InjectionContext) (bool, error) {
 	if (containerBasePath == ctx.JsonPathContainers) && (len(podContainers) != 1) {
 		err := errors.New("Submitted pod should contain only one container")
-		klog.Errorf("[%s] %s", vaultInjectorModeJob, err.Error())
+		klog.Errorf("[%s] %s", VaultInjectorModeJob, err.Error())
 		return false, err
 	}
 
 	for _, cntName := range jobContainerNames[containerBasePath] {
 		if cntName == containerName {
-			klog.Infof("[%s] Injecting container %s (path: %s)", vaultInjectorModeJob, containerName, containerBasePath)
+			klog.Infof("[%s] Injecting container %s (path: %s)", VaultInjectorModeJob, containerName, containerBasePath)
 
 			// Resolve job env vars
 			for envIdx := range env {

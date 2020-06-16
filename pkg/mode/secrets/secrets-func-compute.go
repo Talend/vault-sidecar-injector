@@ -25,7 +25,8 @@ import (
 )
 
 func secretsModeCompute(config *cfg.VSIConfig, labels, annotations map[string]string) (ctx.ModeConfig, error) {
-	secretsType := annotations[config.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationSecretsTypeKey]]
+	secretsType := strings.ToLower(annotations[config.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationSecretsTypeKey]])
+	secretsInjectionMethod := strings.ToLower(annotations[config.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationSecretsInjectionMethodKey]])
 	secretsPath := strings.Split(annotations[config.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationSecretsPathKey]], secretsAnnotationSeparator)
 	secretsTemplate := strings.Split(annotations[config.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationSecretsTemplateKey]], secretsAnnotationTemplateSeparator)
 	templateDest := strings.Split(annotations[config.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationTemplateDestKey]], secretsAnnotationSeparator)
@@ -48,16 +49,41 @@ func secretsModeCompute(config *cfg.VSIConfig, labels, annotations map[string]st
 
 		if !secretsTypeSupported {
 			err := fmt.Errorf("Submitted pod makes use of unsupported secrets type '%s'", secretsType)
-			klog.Errorf("[%s] %s", vaultInjectorModeSecrets, err.Error())
+			klog.Errorf("[%s] %s", VaultInjectorModeSecrets, err.Error())
 			return nil, err
+		}
+	}
+
+	if secretsInjectionMethod == "" {
+		secretsInjectionMethod = vaultInjectorSecretsInjectionMethodFile
+	} else {
+		secretsInjectionMethodSupported := false
+		for _, supportedSecretInjectionMethod := range vaultInjectorSecretsInjectionMethods {
+			if secretsInjectionMethod == supportedSecretInjectionMethod {
+				secretsInjectionMethodSupported = true
+				break
+			}
 		}
 
-		// If authentication method is "approle" and static secrets: return error (unsupported because, as static secrets, approle needs initContainer)
-		if secretsType == vaultInjectorSecretsTypeStatic && annotations[config.VaultInjectorAnnotationsFQ[ctx.VaultInjectorAnnotationAuthMethodKey]] == ctx.VaultAppRoleAuthMethod {
-			err := fmt.Errorf("Submitted pod uses unsupported combination of Vault Auth Method '%s' with static secrets", ctx.VaultAppRoleAuthMethod)
-			klog.Errorf("[%s] %s", vaultInjectorModeSecrets, err.Error())
+		if !secretsInjectionMethodSupported {
+			err := fmt.Errorf("Submitted pod makes use of unsupported secrets injection method '%s'", secretsInjectionMethod)
+			klog.Errorf("[%s] %s", VaultInjectorModeSecrets, err.Error())
 			return nil, err
 		}
+	}
+
+	// If dynamic secrets and injection method is "env": return error (unsupported)
+	if secretsType == vaultInjectorSecretsTypeDynamic && secretsInjectionMethod == vaultInjectorSecretsInjectionMethodEnv {
+		err := fmt.Errorf("Submitted pod uses unsupported combination of secrets injection method '%s' with dynamic secrets", vaultInjectorSecretsInjectionMethodEnv)
+		klog.Errorf("[%s] %s", VaultInjectorModeSecrets, err.Error())
+		return nil, err
+	}
+
+	// If authentication method is "approle" and static secrets: return error (unsupported because, as static secrets, approle needs initContainer)
+	if secretsType == vaultInjectorSecretsTypeStatic && annotations[config.VaultInjectorAnnotationsFQ[ctx.VaultInjectorAnnotationAuthMethodKey]] == ctx.VaultAppRoleAuthMethod {
+		err := fmt.Errorf("Submitted pod uses unsupported combination of Vault Auth Method '%s' with static secrets", ctx.VaultAppRoleAuthMethod)
+		klog.Errorf("[%s] %s", VaultInjectorModeSecrets, err.Error())
+		return nil, err
 	}
 
 	if secretsPathNum == 1 && secretsPath[0] == "" { // Build default secrets path: "secret/<application label>/<service label>"
@@ -66,7 +92,7 @@ func secretsModeCompute(config *cfg.VSIConfig, labels, annotations map[string]st
 
 		if applicationLabel == "" || applicationServiceLabel == "" {
 			err := fmt.Errorf("Submitted pod must contain labels %s and %s", config.ApplicationLabelKey, config.ApplicationServiceLabelKey)
-			klog.Errorf("[%s] %s", vaultInjectorModeSecrets, err.Error())
+			klog.Errorf("[%s] %s", VaultInjectorModeSecrets, err.Error())
 			return nil, err
 		}
 
@@ -81,7 +107,7 @@ func secretsModeCompute(config *cfg.VSIConfig, labels, annotations map[string]st
 		// We must have same numbers of secrets path & secrets destinations
 		if templateDestNum != secretsPathNum {
 			err := errors.New("Submitted pod must contain same numbers of secrets path and secrets destinations")
-			klog.Errorf("[%s] %s", vaultInjectorModeSecrets, err.Error())
+			klog.Errorf("[%s] %s", VaultInjectorModeSecrets, err.Error())
 			return nil, err
 		}
 
@@ -94,7 +120,7 @@ func secretsModeCompute(config *cfg.VSIConfig, labels, annotations map[string]st
 		// We must have same numbers of custom templates & secrets destinations ...
 		if templateDestNum != secretsTemplateNum {
 			err := errors.New("Submitted pod must contain same numbers of templates and secrets destinations")
-			klog.Errorf("[%s] %s", vaultInjectorModeSecrets, err.Error())
+			klog.Errorf("[%s] %s", VaultInjectorModeSecrets, err.Error())
 			return nil, err
 		}
 

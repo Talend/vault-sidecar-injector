@@ -22,6 +22,7 @@ import (
 
 	ctx "talend/vault-sidecar-injector/pkg/context"
 	m "talend/vault-sidecar-injector/pkg/mode"
+	"talend/vault-sidecar-injector/pkg/mode/job"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
@@ -44,20 +45,21 @@ func (vaultInjector *VaultInjector) updatePodSpec(pod *corev1.Pod) (patch []ctx.
 			klog.Infof("context=%+v", context)
 		}
 
-		// 2) Patch submitted pod
+		// 2) If needed, add volumeMounts and volumes to submitted pod.
+		// Do it *before* injecting new init container(s)/container(s) because container index will then change.
+		patch = append(patch, vaultInjector.addStorage(pod.Spec, ctx.JsonPathVolumes)...)
+
+		// 3) Patch submitted pod
 		if patchPod, err = vaultInjector.patchPod(pod.Spec, pod.Annotations, context); err == nil {
 			patch = append(patch, patchPod...)
 
-			// 3) Add init container(s) to submitted pod
+			// 4) Add init container(s) to submitted pod
 			if patchInitContainers, err = vaultInjector.addContainer(pod.Spec.InitContainers, ctx.JsonPathInitContainers, context); err == nil {
 				patch = append(patch, patchInitContainers...)
 
-				// 4) Add sidecar(s) to submitted pod
+				// 5) Add sidecar(s) to submitted pod
 				if patchContainers, err = vaultInjector.addContainer(pod.Spec.Containers, ctx.JsonPathContainers, context); err == nil {
 					patch = append(patch, patchContainers...)
-
-					// 5) Add volume(s)
-					patch = append(patch, vaultInjector.addVolume(pod.Spec.Volumes, ctx.JsonPathVolumes)...)
 				}
 			}
 		}
@@ -74,14 +76,14 @@ func (vaultInjector *VaultInjector) computeContext(podContainers []corev1.Contai
 	m.GetModesStatus(strings.Split(annotations[vaultInjector.VaultInjectorAnnotationsFQ[ctx.VaultInjectorAnnotationModeKey]], ","), modesStatus)
 
 	// !!! This annotation is deprecated !!! Enable job mode if used
-	if annotations[vaultInjector.VaultInjectorAnnotationsFQ[ctx.VaultInjectorAnnotationWorkloadKey]] == ctx.VaultInjectorWorkloadJob {
+	if annotations[vaultInjector.VaultInjectorAnnotationsFQ[ctx.VaultInjectorAnnotationWorkloadKey]] == job.VaultInjectorModeJob {
 		klog.Warningf("Annotation '%s' is deprecated but still supported. Use '%s' instead", vaultInjector.VaultInjectorAnnotationsFQ[ctx.VaultInjectorAnnotationWorkloadKey], vaultInjector.VaultInjectorAnnotationsFQ[ctx.VaultInjectorAnnotationModeKey])
-		modesStatus[ctx.VaultInjectorWorkloadJob] = true
+		modesStatus[job.VaultInjectorModeJob] = true
 	}
 
 	klog.Infof("Modes status: %+v", modesStatus)
 
-	vaultAuthMethod := annotations[vaultInjector.VaultInjectorAnnotationsFQ[ctx.VaultInjectorAnnotationAuthMethodKey]]
+	vaultAuthMethod := strings.ToLower(annotations[vaultInjector.VaultInjectorAnnotationsFQ[ctx.VaultInjectorAnnotationAuthMethodKey]])
 	vaultRole := annotations[vaultInjector.VaultInjectorAnnotationsFQ[ctx.VaultInjectorAnnotationRoleKey]]
 	vaultSATokenPath := annotations[vaultInjector.VaultInjectorAnnotationsFQ[ctx.VaultInjectorAnnotationSATokenKey]]
 
@@ -269,11 +271,70 @@ func (vaultInjector *VaultInjector) addContainer(podContainers []corev1.Containe
 	return patch, nil
 }
 
+func (vaultInjector *VaultInjector) addStorage(podSpec corev1.PodSpec, basePath string) (patch []ctx.PatchOperation) {
+	patch = append(patch, vaultInjector.addVolumeMount(podSpec.InitContainers, ctx.JsonPathInitContainers)...)
+	patch = append(patch, vaultInjector.addVolumeMount(podSpec.Containers, ctx.JsonPathContainers)...)
+	patch = append(patch, vaultInjector.addVolume(podSpec.Volumes, ctx.JsonPathVolumes)...)
+	return
+}
+
+func (vaultInjector *VaultInjector) addVolumeMount(podContainers []corev1.Container, basePath string) (patch []ctx.PatchOperation) {
+	var value interface{}
+	initContainer := (basePath == ctx.JsonPathInitContainers)
+
+	// Just inject 'secrets' volumeMount, if not already defined, in the initcontainer(s)/container(s) of the submitted pod
+	for sourceContainerIdx, sourceContainer := range podContainers {
+		isSecretsVolumeMountInCnt := false
+		firstVolMount := len(sourceContainer.VolumeMounts) == 0
+		for _, volMount := range sourceContainer.VolumeMounts {
+			if volMount.Name == secretsVolName {
+				isSecretsVolumeMountInCnt = true
+				break
+			}
+		}
+
+		if isSecretsVolumeMountInCnt {
+			if initContainer {
+				klog.Infof("Found existing '%s' volumeMount in init container '%s': skip injector volumeMount definition", secretsVolName, sourceContainer.Name)
+			} else {
+				klog.Infof("Found existing '%s' volumeMount in container '%s': skip injector volumeMount definition", secretsVolName, sourceContainer.Name)
+			}
+
+			continue
+		}
+
+		if initContainer {
+			klog.Infof("Injecting volumeMount '%s' in init container '%s'", secretsVolName, sourceContainer.Name)
+		} else {
+			klog.Infof("Injecting volumeMount '%s' in container '%s'", secretsVolName, sourceContainer.Name)
+		}
+
+		value = corev1.VolumeMount{Name: secretsVolName, MountPath: secretsDefaultMountPath}
+		path := basePath + "/" + strconv.Itoa(sourceContainerIdx) + "/volumeMounts"
+
+		if firstVolMount {
+			firstVolMount = false
+			value = []corev1.VolumeMount{value.(corev1.VolumeMount)}
+		} else {
+			// JSON Patch: use '-' to add our volumeMounts at the end of the array (to not overwrite existing ones)
+			path = path + "/-"
+		}
+
+		patch = append(patch, ctx.PatchOperation{
+			Op:    ctx.JsonPatchOpAdd,
+			Path:  path,
+			Value: value,
+		})
+	}
+
+	return patch
+}
+
 func (vaultInjector *VaultInjector) addVolume(podVolumes []corev1.Volume, basePath string) (patch []ctx.PatchOperation) {
+	var value interface{}
 	first := len(podVolumes) == 0
 
-	var value interface{}
-
+	// Here we inject volumes defined in the injection configuration
 	for _, sidecarVol := range vaultInjector.InjectionConfig.Volumes {
 		// Do not inject the 'secrets' volume we define in our injector config if the pod we mutate already has a definition for such volume
 		isSecretsVolumeInPod := false

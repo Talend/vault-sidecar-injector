@@ -28,10 +28,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const (
-	defaultSecretsFilesPath = "/opt/talend/secrets"
-)
-
 func init() {
 	jsonLog, _ := strconv.ParseBool(os.Getenv("VSI_ENV_LOG_JSON"))
 	if jsonLog {
@@ -43,6 +39,10 @@ func init() {
 	log.SetLevel(log.WarnLevel)
 }
 
+// Program accepts following env vars:
+//
+// VSI_ENV_LOG_JSON				true/false (default)			Log as JSON
+//
 func main() {
 	var entrypointCmd []string
 	if len(os.Args) == 1 {
@@ -56,12 +56,10 @@ func main() {
 		log.Fatalln(err.Error())
 	}
 
-	env := os.Environ()
-
-	// Enrich env vars with content of all secrets files
-	secretsFilesPath := os.Getenv("VSI_ENV_SECRETS_FILES_PATH")
-	if secretsFilesPath == "" {
-		secretsFilesPath = defaultSecretsFilesPath
+	// Our program has been copied in same location as secrets files
+	secretsFilesPath, err := os.Getwd()
+	if err != nil {
+		log.Fatalln(err.Error())
 	}
 
 	secretsFiles, err := ioutil.ReadDir(secretsFilesPath)
@@ -69,6 +67,10 @@ func main() {
 		log.Fatalln(err.Error())
 	}
 
+	// Get currently defined env vars
+	env := os.Environ()
+
+	// Enrich env vars with content of all secrets files
 	for _, fsecrets := range secretsFiles {
 		props, err := parsePropertiesFile(path.Join(secretsFilesPath, fsecrets.Name()))
 		if err != nil {

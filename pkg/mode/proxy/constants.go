@@ -36,5 +36,5 @@ const (
 
 const (
 	//--- Vault Sidecar Injector supported modes
-	vaultInjectorModeProxy = "proxy" // Enable local Vault proxy
+	VaultInjectorModeProxy = "proxy" // Enable local Vault proxy
 )

@@ -16,12 +16,13 @@ package secrets
 
 const (
 	//--- Vault Sidecar Injector modes annotation keys (without prefix)
-	vaultInjectorAnnotationSecretsPathKey     = "secrets-path"        // Optional. Full path, e.g.: "secret/<some value>", "aws/creds/<some role>", ... Several values separated by ','.
-	vaultInjectorAnnotationSecretsTemplateKey = "secrets-template"    // Optional. Allow to override default template. Ignore 'secrets-path' annotation. Several values separated by ','.
-	vaultInjectorAnnotationTemplateDestKey    = "secrets-destination" // Optional. If not set, secrets will be stored in file "secrets.properties". Several values separated by ','.
-	vaultInjectorAnnotationLifecycleHookKey   = "secrets-hook"        // Optional. If set, lifecycle hooks loaded from config will be added to pod's container(s)
-	vaultInjectorAnnotationSecretsTypeKey     = "secrets-type"        // Optional. Type of secrets to handle: dynamic (default) or static
-	vaultInjectorAnnotationTemplateCmdKey     = "notify"              // Optional. Command to run after template is rendered. Several values separated by ','.
+	vaultInjectorAnnotationSecretsPathKey            = "secrets-path"             // Optional. Full path, e.g.: "secret/<some value>", "aws/creds/<some role>", ... Several values separated by ','.
+	vaultInjectorAnnotationSecretsTemplateKey        = "secrets-template"         // Optional. Allow to override default template. Ignore 'secrets-path' annotation. Several values separated by ','.
+	vaultInjectorAnnotationTemplateDestKey           = "secrets-destination"      // Optional. If not set, secrets will be stored in file "secrets.properties". Several values separated by ','.
+	vaultInjectorAnnotationLifecycleHookKey          = "secrets-hook"             // Optional. If set, lifecycle hooks loaded from config will be added to pod's container(s)
+	vaultInjectorAnnotationSecretsTypeKey            = "secrets-type"             // Optional. Type of secrets to handle: dynamic (default) or static
+	vaultInjectorAnnotationSecretsInjectionMethodKey = "secrets-injection-method" // Optional. Method used to provide secrets to applications: file (default) or env
+	vaultInjectorAnnotationTemplateCmdKey            = "notify"                   // Optional. Command to run after template is rendered. Several values separated by ','.
 )
 
 const (
@@ -50,11 +51,17 @@ const (
 
 const (
 	//--- Vault Sidecar Injector supported modes
-	vaultInjectorModeSecrets = "secrets" // Enable fetching of secrets from Vault store
+	VaultInjectorModeSecrets = "secrets" // Enable fetching of secrets from Vault store
 )
 
 const (
 	//--- Vault Sidecar Injector secrets type
 	vaultInjectorSecretsTypeDynamic = "dynamic"
 	vaultInjectorSecretsTypeStatic  = "static"
+)
+
+const (
+	//--- Vault Sidecar Injector secrets injection method
+	vaultInjectorSecretsInjectionMethodFile = "file"
+	vaultInjectorSecretsInjectionMethodEnv  = "env"
 )

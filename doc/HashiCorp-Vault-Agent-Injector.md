@@ -135,7 +135,7 @@ Features comparison `Vault Sidecar Injector` vs `HashiCorp Vault Agent Injector`
 | Custom Vault Agent config | **Not possible** | By providing K8S ConfigMap with custom Vault Agent config + using annotation to load config *(`vault.hashicorp.com/agent-configmap`)* |
 | Vault AppRole Auth support | At pod level *(using annotation)* | By providing K8S ConfigMap with custom Vault Agent config + using annotation to load config *(`vault.hashicorp.com/agent-configmap`)* |
 | Secrets volume mount path |  Any path associated to the `secrets` Volume   | Cannot be changed *(set to `/vault/secrets`)* |
-| Shared secrets volume| Injection of In-memory Volume **only** if not defined. VolumeMount is not injected if not defined | Injection of both In-memory Volume and VolumeMount. **Failure** if `vault-secrets` Volume already defined |
+| Shared secrets volume| Injection of In-memory Volume **only** if not defined. VolumeMount is not injected if not defined ***(1)*** | Injection of both In-memory Volume and VolumeMount. **Failure** if `vault-secrets` Volume already defined |
 | Resources (CPU, mem) for injected container(s) | At webhook level *(helm chart values)* | At pod level *(default values or custom via annotations)* |
 | Resources (CPU, mem) for webhook | Using Helm chart values | Using Helm chart values |
 | Vault server to use | At webhook level *(helm chart value)* | Both at webhook *(helm chart value)* and pod levels *(via annotation)* |
@@ -147,3 +147,9 @@ Most of the differences are less the result of technical choice than philosophic
 **The major advantage brought by the Vault Sidecar Injector lies in how it supports dynamic secrets in Kubernetes Jobs, a feature currently not properly implemented on HashiCorp side.**
 
 Future Vault Sidecar Injector releases will continue focusing on a feature-oriented, non-technical path to make injector usage as seamless as possible. Results from this comparison test show that there is room for some improvements on volume management that will be taking care of soon. Stay tuned !
+
+<hr>
+
+**Changes since comparison:**
+
+> *(1), June 2020: as of Vault Sidecar Injector release 7.0.0, volumeMount is also injected if not defined*

@@ -22,7 +22,7 @@ func init() {
 	// Register mode
 	m.RegisterMode(
 		m.VaultInjectorModeInfo{
-			Key:                 vaultInjectorModeJob,
+			Key:                 VaultInjectorModeJob,
 			DefaultMode:         false,
 			EnableDefaultMode:   true, // Default mode will also be enabled if job is **the only mode on** (as it does not make sense to have only this mode)
 			InjectContainerFunc: jobModeInject,

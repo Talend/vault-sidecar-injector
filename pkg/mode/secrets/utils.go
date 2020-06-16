@@ -43,7 +43,7 @@ func getSecretsType(config ctx.ModeConfig) (string, error) {
 }
 
 func isSecretsStatic(context *ctx.InjectionContext) bool {
-	if secretsType, err := getSecretsType(context.ModesConfig[vaultInjectorModeSecrets]); err == nil {
+	if secretsType, err := getSecretsType(context.ModesConfig[VaultInjectorModeSecrets]); err == nil {
 		return secretsType == vaultInjectorSecretsTypeStatic
 	}
 

@@ -55,4 +55,3 @@ spec:
               echo "$cleartext" | base64 -d
               echo
               echo "Job stopped"
-      # Note in this sample we do not add 'secrets' volume definition as we only asked for the 'proxy' mode.

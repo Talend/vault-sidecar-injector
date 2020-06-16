@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: app
+  name: test-app-inject-env-dynamic-secrets
   namespace: default
 spec:
   replicas: 1
@@ -13,16 +13,22 @@ spec:
     metadata:
       annotations:
         sidecar.vault.talend.org/inject: "true"
+        sidecar.vault.talend.org/secrets-injection-method: "env"  # Secrets from env vars ('file' by default)
+        # env vars injection only support static secrets (no annotation or set to 'dynamic' will raise an error)
       labels:
         com.talend.application: test
         com.talend.service: test-app-svc
     spec:
       serviceAccountName: default
       containers:
-        - name: app-container
+        - name: test-app-inject-env-dynamic-secrets
           image: busybox:1.28
           command:
             - "sh"
             - "-c"
-            - >
-              while true;do echo "My secrets are: $(cat /opt/talend/secrets/secrets.properties)"; sleep 5; done
+            - |
+              set -e
+              echo "My secrets are: SECRET1_FROM_ENV=${SECRET1}, SECRET2_FROM_ENV=${SECRET2}"
+              while true;do
+                sleep 5
+              done

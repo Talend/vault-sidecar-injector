@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: app7
+  name: test-app-inject-env
   namespace: default
 spec:
   replicas: 1
@@ -21,7 +21,7 @@ spec:
     spec:
       serviceAccountName: default
       containers:
-        - name: app7-container
+        - name: test-app-inject-env
           image: busybox:1.28
           command:
             - "sh"

@@ -1,34 +1,7 @@
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: job-sa
-  namespace: default
----
-kind: Role
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: job-pod-status
-rules:
-  - apiGroups: [""]
-    resources: ["pods"]
-    verbs: ["get"]
----
-kind: RoleBinding
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: job-pod-status
-subjects:
-  - kind: ServiceAccount
-    name: job-sa
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: job-pod-status
----
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: app-job
+  name: test-app-job-with-secrets-hook
   namespace: default
 spec:
   backoffLimit: 1
@@ -36,10 +9,8 @@ spec:
     metadata:
       annotations:
         sidecar.vault.talend.org/inject: "true"
-        sidecar.vault.talend.org/mode: "job"  # Enable 'job' mode (will also enable 'secrets' mode)
-        # Vault Sidecar Injector receive the pod spec: don't know whether it is a job or a deployment. 
-        # Annotation below is deprecated, use 'sidecar.vault.talend.org/mode' instead.
-        #sidecar.vault.talend.org/workload: "job"
+        sidecar.vault.talend.org/mode: "job"
+        sidecar.vault.talend.org/secrets-hook: "true" # this annotation should not be used with jobs
       labels:
         com.talend.application: test
         com.talend.service: test-app-svc
@@ -48,7 +19,7 @@ spec:
       # custom serviceAccountName with role allowing to perform GET on pods (needed to poll for job's pod status)
       serviceAccountName: job-sa
       containers:
-        - name: app-job-container
+        - name: test-app-job-with-secrets-hook
           image: busybox:1.28
           command:
             - "sh"

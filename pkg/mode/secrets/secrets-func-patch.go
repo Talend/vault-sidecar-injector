@@ -16,10 +16,12 @@ package secrets
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	cfg "talend/vault-sidecar-injector/pkg/config"
 	ctx "talend/vault-sidecar-injector/pkg/context"
+	"talend/vault-sidecar-injector/pkg/mode/job"
 
 	corev1 "k8s.io/api/core/v1"
 
@@ -27,8 +29,10 @@ import (
 )
 
 func secretsModePatch(config *cfg.VSIConfig, podSpec corev1.PodSpec, annotations map[string]string, context *ctx.InjectionContext) (patch []ctx.PatchOperation, err error) {
+	var patchHooks []ctx.PatchOperation
+
 	// Add lifecycle hooks to requesting pod's container(s) if needed
-	if patchHooks, err := addLifecycleHooks(config, podSpec.Containers, annotations, context); err == nil {
+	if patchHooks, err = addLifecycleHooks(config, podSpec.Containers, annotations, context); err == nil {
 		patch = append(patch, patchHooks...)
 		return patch, nil
 	}
@@ -43,6 +47,13 @@ func addLifecycleHooks(config *cfg.VSIConfig, podContainers []corev1.Container, 
 		default:
 			return patch, nil
 		case "y", "yes", "true", "on":
+			// Check if job mode is enabled: this annotation should not be used then
+			if context.ModesStatus[job.VaultInjectorModeJob] {
+				err := fmt.Errorf("Submitted pod uses unsupported combination of '%s' annotation with '%s' mode", config.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationLifecycleHookKey], job.VaultInjectorModeJob)
+				klog.Errorf("[%s] %s", VaultInjectorModeSecrets, err.Error())
+				return nil, err
+			}
+
 			if config.PodslifecycleHooks.PostStart != nil {
 				secretsVolMountPath, err := getMountPathOfSecretsVolume(podContainers)
 				if err != nil {
@@ -51,7 +62,7 @@ func addLifecycleHooks(config *cfg.VSIConfig, podContainers []corev1.Container, 
 
 				if config.PodslifecycleHooks.PostStart.Exec == nil {
 					err = errors.New("Unsupported lifecycle hook. Only support Exec type")
-					klog.Errorf("[%s] %s", vaultInjectorModeSecrets, err.Error())
+					klog.Errorf("[%s] %s", VaultInjectorModeSecrets, err.Error())
 					return nil, err
 				}
 
@@ -69,7 +80,7 @@ func addLifecycleHooks(config *cfg.VSIConfig, podContainers []corev1.Container, 
 				for podCntIdx, podCnt := range podContainers {
 					if podCnt.Lifecycle != nil {
 						if podCnt.Lifecycle.PostStart != nil {
-							klog.Warningf("[%s] Replacing existing postStart hook for container %s", vaultInjectorModeSecrets, podCnt.Name)
+							klog.Warningf("[%s] Replacing existing postStart hook for container %s", VaultInjectorModeSecrets, podCnt.Name)
 						}
 
 						podCnt.Lifecycle.PostStart = postStartHook

@@ -2,7 +2,7 @@
 
 ## Next Release
 
-New with this release: Vault secrets can now be injected right into environment variables. Only **static** secrets are supported.
+New with this release: Vault secrets can now be injected right into environment variables. Only **static** secrets are supported. Coming with this new feature, the `secrets` volumeMount is now automatically injected in your containers if not already defined, as it was the case with the `secrets` volume. It results in simpler manifests, all the previous constraints on volumes being relaxed.
 
 Default Vault image is now set to `1.4.2` to fix several CVEs (CVE-2020-13223, CVE-2020-12757: see HashiCorp's [CHANGELOG](https://github.com/hashicorp/vault/blob/master/CHANGELOG.md#142-may-21st-2020)).
 

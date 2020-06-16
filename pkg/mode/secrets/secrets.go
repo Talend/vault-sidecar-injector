@@ -22,7 +22,7 @@ func init() {
 	// Register mode
 	m.RegisterMode(
 		m.VaultInjectorModeInfo{
-			Key:               vaultInjectorModeSecrets,
+			Key:               VaultInjectorModeSecrets,
 			DefaultMode:       true, // Secrets will be enabled if no mode explicitly set via mode annotation in manifest
 			EnableDefaultMode: false,
 			Annotations: []string{
@@ -31,6 +31,7 @@ func init() {
 				vaultInjectorAnnotationTemplateDestKey,
 				vaultInjectorAnnotationLifecycleHookKey,
 				vaultInjectorAnnotationSecretsTypeKey,
+				vaultInjectorAnnotationSecretsInjectionMethodKey,
 				vaultInjectorAnnotationTemplateCmdKey,
 			},
 			ComputeTemplatesFunc: secretsModeCompute,

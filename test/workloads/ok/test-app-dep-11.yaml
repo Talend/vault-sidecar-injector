@@ -28,9 +28,6 @@ spec:
             - |
               echo "d65ef3ef-4cb3-74f1-2e9c-b069b6d21e21" > /opt/talend/secrets/approle_roleid
               echo "840e8694-e7dc-282c-eef8-523e828eacfc" > /opt/talend/secrets/approle_secretid
-          volumeMounts:
-            - name: secrets
-              mountPath: /opt/talend/secrets
       containers:
         - name: test-app-approle
           image: busybox:1.28
@@ -39,10 +36,3 @@ spec:
             - "-c"
             - >
               while true;do echo "My secrets are: $(cat /opt/talend/secrets/secrets.properties)"; sleep 5; done
-          volumeMounts:
-            - name: secrets
-              mountPath: /opt/talend/secrets
-      volumes:
-        - name: secrets
-          emptyDir:
-            medium: Memory

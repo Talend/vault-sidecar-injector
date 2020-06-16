@@ -21,6 +21,11 @@ var vaultInjectorSecretsTypes = [...]string{
 	vaultInjectorSecretsTypeStatic,
 }
 
+var vaultInjectorSecretsInjectionMethods = [...]string{
+	vaultInjectorSecretsInjectionMethodFile,
+	vaultInjectorSecretsInjectionMethodEnv,
+}
+
 var secretsContainerNames = map[string][]string{
 	ctx.JsonPathInitContainers: {secretsInitContainerName},
 	ctx.JsonPathContainers:     {secretsContainerName},
