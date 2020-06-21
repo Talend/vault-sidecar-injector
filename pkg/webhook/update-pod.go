@@ -23,6 +23,7 @@ import (
 	ctx "talend/vault-sidecar-injector/pkg/context"
 	m "talend/vault-sidecar-injector/pkg/mode"
 	"talend/vault-sidecar-injector/pkg/mode/job"
+	"talend/vault-sidecar-injector/pkg/mode/secrets"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
@@ -45,13 +46,13 @@ func (vaultInjector *VaultInjector) updatePodSpec(pod *corev1.Pod) (patch []ctx.
 			klog.Infof("context=%+v", context)
 		}
 
-		// 2) If needed, add volumeMounts and volumes to submitted pod.
-		// Do it *before* injecting new init container(s)/container(s) because container index will then change.
-		patch = append(patch, vaultInjector.addStorage(pod.Spec, ctx.JsonPathVolumes)...)
-
-		// 3) Patch submitted pod
+		// 2) Patch submitted pod
 		if patchPod, err = vaultInjector.patchPod(pod.Spec, pod.Annotations, context); err == nil {
 			patch = append(patch, patchPod...)
+
+			// 3) If needed, add volumeMounts and volumes to submitted pod.
+			// Do it *before* injecting new init container(s)/container(s) because container index will then change (index used when adding volumeMounts).
+			patch = append(patch, vaultInjector.addStorage(pod.Spec)...)
 
 			// 4) Add init container(s) to submitted pod
 			if patchInitContainers, err = vaultInjector.addContainer(pod.Spec.InitContainers, ctx.JsonPathInitContainers, context); err == nil {
@@ -271,10 +272,10 @@ func (vaultInjector *VaultInjector) addContainer(podContainers []corev1.Containe
 	return patch, nil
 }
 
-func (vaultInjector *VaultInjector) addStorage(podSpec corev1.PodSpec, basePath string) (patch []ctx.PatchOperation) {
+func (vaultInjector *VaultInjector) addStorage(podSpec corev1.PodSpec) (patch []ctx.PatchOperation) {
 	patch = append(patch, vaultInjector.addVolumeMount(podSpec.InitContainers, ctx.JsonPathInitContainers)...)
 	patch = append(patch, vaultInjector.addVolumeMount(podSpec.Containers, ctx.JsonPathContainers)...)
-	patch = append(patch, vaultInjector.addVolume(podSpec.Volumes, ctx.JsonPathVolumes)...)
+	patch = append(patch, vaultInjector.addVolume(podSpec.Volumes)...)
 	return
 }
 
@@ -287,7 +288,7 @@ func (vaultInjector *VaultInjector) addVolumeMount(podContainers []corev1.Contai
 		isSecretsVolumeMountInCnt := false
 		firstVolMount := len(sourceContainer.VolumeMounts) == 0
 		for _, volMount := range sourceContainer.VolumeMounts {
-			if volMount.Name == secretsVolName {
+			if volMount.Name == secrets.SecretsVolName {
 				isSecretsVolumeMountInCnt = true
 				break
 			}
@@ -295,21 +296,21 @@ func (vaultInjector *VaultInjector) addVolumeMount(podContainers []corev1.Contai
 
 		if isSecretsVolumeMountInCnt {
 			if initContainer {
-				klog.Infof("Found existing '%s' volumeMount in init container '%s': skip injector volumeMount definition", secretsVolName, sourceContainer.Name)
+				klog.Infof("Found existing '%s' volumeMount in init container '%s': skip injector volumeMount definition", secrets.SecretsVolName, sourceContainer.Name)
 			} else {
-				klog.Infof("Found existing '%s' volumeMount in container '%s': skip injector volumeMount definition", secretsVolName, sourceContainer.Name)
+				klog.Infof("Found existing '%s' volumeMount in container '%s': skip injector volumeMount definition", secrets.SecretsVolName, sourceContainer.Name)
 			}
 
 			continue
 		}
 
 		if initContainer {
-			klog.Infof("Injecting volumeMount '%s' in init container '%s'", secretsVolName, sourceContainer.Name)
+			klog.Infof("Injecting volumeMount '%s' in init container '%s'", secrets.SecretsVolName, sourceContainer.Name)
 		} else {
-			klog.Infof("Injecting volumeMount '%s' in container '%s'", secretsVolName, sourceContainer.Name)
+			klog.Infof("Injecting volumeMount '%s' in container '%s'", secrets.SecretsVolName, sourceContainer.Name)
 		}
 
-		value = corev1.VolumeMount{Name: secretsVolName, MountPath: secretsDefaultMountPath}
+		value = corev1.VolumeMount{Name: secrets.SecretsVolName, MountPath: secrets.SecretsDefaultMountPath}
 		path := basePath + "/" + strconv.Itoa(sourceContainerIdx) + "/volumeMounts"
 
 		if firstVolMount {
@@ -327,10 +328,10 @@ func (vaultInjector *VaultInjector) addVolumeMount(podContainers []corev1.Contai
 		})
 	}
 
-	return patch
+	return
 }
 
-func (vaultInjector *VaultInjector) addVolume(podVolumes []corev1.Volume, basePath string) (patch []ctx.PatchOperation) {
+func (vaultInjector *VaultInjector) addVolume(podVolumes []corev1.Volume) (patch []ctx.PatchOperation) {
 	var value interface{}
 	first := len(podVolumes) == 0
 
@@ -338,24 +339,24 @@ func (vaultInjector *VaultInjector) addVolume(podVolumes []corev1.Volume, basePa
 	for _, sidecarVol := range vaultInjector.InjectionConfig.Volumes {
 		// Do not inject the 'secrets' volume we define in our injector config if the pod we mutate already has a definition for such volume
 		isSecretsVolumeInPod := false
-		if sidecarVol.Name == secretsVolName && len(podVolumes) > 0 {
+		if sidecarVol.Name == secrets.SecretsVolName && len(podVolumes) > 0 {
 			for _, podVol := range podVolumes {
-				if podVol.Name == secretsVolName {
+				if podVol.Name == secrets.SecretsVolName {
 					isSecretsVolumeInPod = true
 					break
 				}
 			}
 
 			if isSecretsVolumeInPod { // Volume 'secrets' exists in pod so do not add ours
-				klog.Infof("Found existing '%s' volume in submitted pod: skip injector volume definition", secretsVolName)
+				klog.Infof("Found existing '%s' volume in submitted pod: skip injector volume definition", secrets.SecretsVolName)
 				continue
 			}
 
-			klog.Infof("Injecting volume '%s' in submitted pod", secretsVolName)
+			klog.Infof("Injecting volume '%s' in submitted pod", secrets.SecretsVolName)
 		}
 
 		value = sidecarVol
-		path := basePath
+		path := ctx.JsonPathVolumes
 
 		if first {
 			first = false
@@ -372,5 +373,5 @@ func (vaultInjector *VaultInjector) addVolume(podVolumes []corev1.Volume, basePa
 		})
 	}
 
-	return patch
+	return
 }

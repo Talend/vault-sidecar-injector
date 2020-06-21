@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
@@ -35,33 +36,42 @@ func init() {
 		log.SetFormatter(&log.JSONFormatter{})
 	}
 
-	// Only log the warning severity or above
-	log.SetLevel(log.WarnLevel)
+	logLevel, err := strconv.Atoi(os.Getenv("VSI_ENV_LOG_LEVEL"))
+	if err != nil {
+		// Only log the warning severity or above
+		log.SetLevel(log.WarnLevel)
+	} else {
+		log.SetLevel(log.Level(logLevel))
+	}
 }
 
 // Program accepts following env vars:
 //
 // VSI_ENV_LOG_JSON				true/false (default)			Log as JSON
+// VSI_ENV_LOG_LEVEL			0 to 6 (default: 3 fo warning)	Log level
 //
 func main() {
 	var entrypointCmd []string
 	if len(os.Args) == 1 {
-		log.Fatalln("failed to determine entrypoint")
+		// a 'command' attribute must be set on images in pod manifest. If not we cannot start the expected process
+		log.Fatalln("no command explicitly provided in submitted manifest, cannot determine image entrypoint")
 	} else {
 		entrypointCmd = os.Args[1:]
 	}
 
 	binary, err := exec.LookPath(entrypointCmd[0])
+	log.Infof("Process to execute=%s", binary)
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
 
 	// Our program has been copied in same location as secrets files
-	secretsFilesPath, err := os.Getwd()
+	vsienvProcess, err := os.Executable()
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
 
+	secretsFilesPath := filepath.Dir(vsienvProcess)
 	secretsFiles, err := ioutil.ReadDir(secretsFilesPath)
 	if err != nil {
 		log.Fatalln(err.Error())
@@ -72,7 +82,16 @@ func main() {
 
 	// Enrich env vars with content of all secrets files
 	for _, fsecrets := range secretsFiles {
-		props, err := parsePropertiesFile(path.Join(secretsFilesPath, fsecrets.Name()))
+		secretsFile := path.Join(secretsFilesPath, fsecrets.Name())
+
+		// Do not consider our program
+		if secretsFile == vsienvProcess {
+			continue
+		}
+
+		log.Infof("Secrets file=%s", secretsFile)
+
+		props, err := parsePropertiesFile(secretsFile)
 		if err != nil {
 			log.Fatalln(err.Error())
 		}

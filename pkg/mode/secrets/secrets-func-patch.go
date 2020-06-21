@@ -17,6 +17,7 @@ package secrets
 import (
 	"errors"
 	"fmt"
+	"path"
 	"strconv"
 	"strings"
 	cfg "talend/vault-sidecar-injector/pkg/config"
@@ -29,41 +30,79 @@ import (
 )
 
 func secretsModePatch(config *cfg.VSIConfig, podSpec corev1.PodSpec, annotations map[string]string, context *ctx.InjectionContext) (patch []ctx.PatchOperation, err error) {
-	var patchHooks []ctx.PatchOperation
+	var patchHooks, patchCmd []ctx.PatchOperation
 
-	// Add lifecycle hooks to requesting pod's container(s) if needed
-	if patchHooks, err = addLifecycleHooks(config, podSpec.Containers, annotations, context); err == nil {
-		patch = append(patch, patchHooks...)
-		return patch, nil
+	if !isSecretsStatic(context) { // Only for dynamic secrets
+		// Add lifecycle hooks to requesting pod's container(s) if needed
+		if patchHooks, err = addLifecycleHooks(config, podSpec.Containers, annotations, context); err == nil {
+			patch = append(patch, patchHooks...)
+		}
+	} else {
+		if isSecretsInjectionEnv(context) { // Look if injection method is set to 'env'
+			// Patch containers' commands to invoke 'vaultinjector-env' process first to add env vars from secrets
+			if patchCmd, err = patchCommand(podSpec.Containers); err == nil {
+				patch = append(patch, patchCmd...)
+			}
+		}
 	}
 
-	return nil, err
+	return
+}
+
+func patchCommand(podContainers []corev1.Container) (patch []ctx.PatchOperation, err error) {
+	for podCntIdx, podCnt := range podContainers {
+		secretsVolMountPath := getMountPathOfSecretsVolume(podCnt)
+
+		if secretsVolMountPath == "" { // As we force volumeMount on 'secrets' volume if not defined on containers, pick default value
+			secretsVolMountPath = SecretsDefaultMountPath
+		}
+
+		// We currently require an explicit command to determine what is the process to run in the end
+		if podCnt.Command != nil {
+			// Prepend existing command array with our specific env process
+			command := append([]string{path.Join(secretsVolMountPath, vaultInjectorEnvProcess)}, podCnt.Command...)
+
+			// Here we have to use 'replace' JSON Patch operation
+			patch = append(patch, ctx.PatchOperation{
+				Op:    ctx.JsonPatchOpReplace,
+				Path:  ctx.JsonPathContainers + "/" + strconv.Itoa(podCntIdx) + "/command",
+				Value: command,
+			})
+		} else {
+			err = fmt.Errorf("No explicit command found for container %s", podCnt.Name)
+			klog.Errorf("[%s] %s", VaultInjectorModeSecrets, err.Error())
+			return
+		}
+	}
+
+	return
 }
 
 func addLifecycleHooks(config *cfg.VSIConfig, podContainers []corev1.Container, annotations map[string]string, context *ctx.InjectionContext) (patch []ctx.PatchOperation, err error) {
-	// Only for dynamic secrets
-	if !isSecretsStatic(context) {
-		switch strings.ToLower(annotations[config.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationLifecycleHookKey]]) {
-		default:
-			return patch, nil
-		case "y", "yes", "true", "on":
-			// Check if job mode is enabled: this annotation should not be used then
-			if context.ModesStatus[job.VaultInjectorModeJob] {
-				err := fmt.Errorf("Submitted pod uses unsupported combination of '%s' annotation with '%s' mode", config.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationLifecycleHookKey], job.VaultInjectorModeJob)
+	switch strings.ToLower(annotations[config.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationLifecycleHookKey]]) {
+	default:
+		return
+	case "y", "yes", "true", "on":
+		// Check if job mode is enabled: this annotation should not be used then
+		if context.ModesStatus[job.VaultInjectorModeJob] {
+			err = fmt.Errorf("Submitted pod uses unsupported combination of '%s' annotation with '%s' mode", config.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationLifecycleHookKey], job.VaultInjectorModeJob)
+			klog.Errorf("[%s] %s", VaultInjectorModeSecrets, err.Error())
+			return
+		}
+
+		if config.PodslifecycleHooks.PostStart != nil {
+			if config.PodslifecycleHooks.PostStart.Exec == nil {
+				err = errors.New("Unsupported lifecycle hook. Only support Exec type")
 				klog.Errorf("[%s] %s", VaultInjectorModeSecrets, err.Error())
-				return nil, err
+				return
 			}
 
-			if config.PodslifecycleHooks.PostStart != nil {
-				secretsVolMountPath, err := getMountPathOfSecretsVolume(podContainers)
-				if err != nil {
-					return nil, err
-				}
+			// Add hooks to container(s) of requesting pod
+			for podCntIdx, podCnt := range podContainers {
+				secretsVolMountPath := getMountPathOfSecretsVolume(podCnt)
 
-				if config.PodslifecycleHooks.PostStart.Exec == nil {
-					err = errors.New("Unsupported lifecycle hook. Only support Exec type")
-					klog.Errorf("[%s] %s", VaultInjectorModeSecrets, err.Error())
-					return nil, err
+				if secretsVolMountPath == "" { // As we force volumeMount on 'secrets' volume if not defined on containers, pick default value
+					secretsVolMountPath = SecretsDefaultMountPath
 				}
 
 				// We will modify some values here so make a copy to not change origin
@@ -76,32 +115,27 @@ func addLifecycleHooks(config *cfg.VSIConfig, podContainers []corev1.Container, 
 
 				postStartHook := &corev1.Handler{Exec: &corev1.ExecAction{Command: hookCommand}}
 
-				// Add hooks to container(s) of requesting pod
-				for podCntIdx, podCnt := range podContainers {
-					if podCnt.Lifecycle != nil {
-						if podCnt.Lifecycle.PostStart != nil {
-							klog.Warningf("[%s] Replacing existing postStart hook for container %s", VaultInjectorModeSecrets, podCnt.Name)
-						}
-
-						podCnt.Lifecycle.PostStart = postStartHook
-					} else {
-						podCnt.Lifecycle = &corev1.Lifecycle{
-							PostStart: postStartHook,
-						}
+				if podCnt.Lifecycle != nil {
+					if podCnt.Lifecycle.PostStart != nil {
+						klog.Warningf("[%s] Replacing existing postStart hook for container %s", VaultInjectorModeSecrets, podCnt.Name)
 					}
 
-					// Here we have to use 'replace' JSON Patch operation
-					patch = append(patch, ctx.PatchOperation{
-						Op:    ctx.JsonPatchOpReplace,
-						Path:  ctx.JsonPathContainers + "/" + strconv.Itoa(podCntIdx),
-						Value: podCnt,
-					})
+					podCnt.Lifecycle.PostStart = postStartHook
+				} else {
+					podCnt.Lifecycle = &corev1.Lifecycle{
+						PostStart: postStartHook,
+					}
 				}
-			}
 
-			return patch, nil
+				// Here we have to use 'replace' JSON Patch operation
+				patch = append(patch, ctx.PatchOperation{
+					Op:    ctx.JsonPatchOpReplace,
+					Path:  ctx.JsonPathContainers + "/" + strconv.Itoa(podCntIdx),
+					Value: podCnt,
+				})
+			}
 		}
-	} else {
-		return patch, nil
+
+		return
 	}
 }

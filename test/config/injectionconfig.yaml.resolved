@@ -183,6 +183,18 @@ initContainers:
   - mountPath: /var/run/secrets/talend/vault-sidecar-injector/serviceaccount
     name: TVSI_SA_SECRETS_VOL_NAME
     readOnly: true
+- command:
+  - sh
+  - -c
+  - |
+    cp /opt/talend/vaultinjector-env /opt/talend/secrets
+  image: talend/vault-sidecar-injector
+  imagePullPolicy: IfNotPresent
+  name: tvsi-env-init
+  resources: {}
+  volumeMounts:
+  - mountPath: /opt/talend/secrets
+    name: secrets
 volumes:
 - emptyDir:
     medium: Memory

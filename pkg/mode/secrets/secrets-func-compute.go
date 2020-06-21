@@ -147,5 +147,5 @@ func secretsModeCompute(config *cfg.VSIConfig, labels, annotations map[string]st
 		templates.WriteString("\n")
 	}
 
-	return &secretsModeConfig{secretsType, templates.String()}, nil
+	return &secretsModeConfig{secretsType, secretsInjectionMethod, templates.String()}, nil
 }

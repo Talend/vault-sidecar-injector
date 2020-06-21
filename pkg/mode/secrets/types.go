@@ -27,11 +27,12 @@ var vaultInjectorSecretsInjectionMethods = [...]string{
 }
 
 var secretsContainerNames = map[string][]string{
-	ctx.JsonPathInitContainers: {secretsInitContainerName},
+	ctx.JsonPathInitContainers: {secretsInitContainerName, secretsEnvInitContainerName},
 	ctx.JsonPathContainers:     {secretsContainerName},
 }
 
 type secretsModeConfig struct {
-	secretsType string
-	template    string
+	secretsType            string
+	secretsInjectionMethod string
+	template               string
 }

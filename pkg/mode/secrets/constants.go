@@ -28,11 +28,17 @@ const (
 const (
 	secretsContainerName               = "tvsi-vault-agent"      // Name of our secrets container to inject
 	secretsInitContainerName           = "tvsi-vault-agent-init" // Name of our secrets init container to inject
-	secretsVolName                     = "secrets"               // Name of the volume shared between containers to store secrets file(s)
+	secretsEnvInitContainerName        = "tvsi-env-init"         // Name of our env process init container to inject
 	templateAppSvcDefaultDestination   = "secrets.properties"    // Default secrets destination
 	vaultDefaultSecretsEnginePath      = "secret"                // Default path for Vault K/V Secrets Engine if no 'secrets-path' annotation
 	secretsAnnotationSeparator         = ","                     // Generic separator for secrets annotations' values
 	secretsAnnotationTemplateSeparator = "---"                   // Separator for secrets templates annotation's values
+)
+
+const (
+	//--- Volume & VolumeMount for secrets
+	SecretsVolName          = "secrets"             // Name of the volume shared between containers to store secrets file(s)
+	SecretsDefaultMountPath = "/opt/talend/secrets" // Default mount path for secretsVolName volume
 )
 
 const (
@@ -64,4 +70,8 @@ const (
 	//--- Vault Sidecar Injector secrets injection method
 	vaultInjectorSecretsInjectionMethodFile = "file"
 	vaultInjectorSecretsInjectionMethodEnv  = "env"
+)
+
+const (
+	vaultInjectorEnvProcess = "vaultinjector-env"
 )

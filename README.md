@@ -40,7 +40,7 @@
 
 ## Announcements
 
-- 2020-06: [Inject secrets in your pod as environment variables]()
+- 2020-06: [Inject secrets in your pod as environment variables](https://github.com/Talend/vault-sidecar-injector/blob/master/doc/Injecting-secrets-in-env.md)
 - 2020-03: [Vault Sidecar Injector vs HashiCorp Vault Agent Injector - Features Comparison](https://github.com/Talend/vault-sidecar-injector/blob/master/doc/HashiCorp-Vault-Agent-Injector.md)
 - 2020-03: [Static vs Dynamic secrets](https://github.com/Talend/vault-sidecar-injector/blob/master/doc/Static-vs-Dynamic-Secrets.md)
 - 2019-12: [Discovering Vault Sidecar Injector's Proxy feature](https://github.com/Talend/vault-sidecar-injector/blob/master/doc/Discovering-Vault-Sidecar-Injector-Proxy.md)
@@ -199,7 +199,7 @@ Depending on the modes you decide to enable and whether you opt for static or dy
 
 **Ready to use sample manifests are provided under [samples](https://github.com/Talend/vault-sidecar-injector/blob/master/samples) folder**. Just deploy them using `kubectl apply -f <sample file>`.
 
-Examples hereafter go further and highlight all the features of `Vault Sidecar Injector` through the supported annotations.
+Examples hereafter highlight all the features of `Vault Sidecar Injector` through the supported annotations.
 
 #### Using Vault Kubernetes Auth Method
 
@@ -300,6 +300,8 @@ With the provided manifest below:
 - secrets fetched from Vault's path `secret/test-app-1/test-app-1-svc` using default template
 - secrets to be injected into environment values named after secret keys
 
+> Note: you **must** set an explicit `command` attribute on containers (even if your image already defines a default ENTRYPOINT/CMD directive) to let the injector determine the process to be run once secrets are mounted as environment variables.
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -325,8 +327,12 @@ spec:
       containers:
         - name: ...
           image: ...
+          command: ...
           ...
 ```
+
+Refer to [samples](samples) folder for complete examples.
+
 </details>
 
 ##### Secrets mode - Usage with a K8S Job workload
@@ -551,6 +557,10 @@ spec:
           volumeMounts:
             - name: secrets
               mountPath: /opt/app
+      volumes:
+        - name: secrets
+          emptyDir:
+            medium: Memory
 ```
 </details>
 
@@ -607,6 +617,10 @@ spec:
           volumeMounts:
             - name: secrets
               mountPath: /custom-folder
+      volumes:
+        - name: secrets
+          emptyDir:
+            medium: Memory
 ```
 <!-- {% endraw %}) -->
 </details>
@@ -1050,7 +1064,7 @@ The following table lists the configurable parameters of the `Vault Sidecar Inje
 | mutatingwebhook.cert.keyfile | Default filename for webhook private key (PEM-encoded) in generated or provided Kubernetes Secret | tls.key |
 | mutatingwebhook.cert.secretName | Name of the Kubernetes Secret that contains the webhook certificates and private key. Secret should be in webhook's namespace. To provide if generated is false. | talend-vault-sidecar-injector-cert |
 | mutatingwebhook.failurePolicy | Defines how unrecognized errors and timeout errors from the admission webhook are handled. Allowed values are Ignore or Fail | Ignore |
-| mutatingwebhook.loglevel | Webhook log level (set to 5 for debug) | 4 |
+| mutatingwebhook.loglevel | Enable V-leveled logging at the specified level | 4 |
 | mutatingwebhook.namespaceSelector.boolean    | Enable to control, with label "vault-injection=enabled", the namespaces where injection is allowed (if false: all namespaces except _kube-system_ and _kube-public_) | false                                                           |
 | mutatingwebhook.namespaceSelector.namespaced | Enable to control, with label "vault-injection={{ .Release.Namespace }}", the specific namespace where injection is allowed (ie, restrict to namespace where injector is installed) | false |
 | probes.liveness.failureThreshold                | Number of probe failure before restarting the probe                                 | 3  |
