@@ -24,12 +24,12 @@ import (
 func proxyModeInject(containerBasePath string, podContainers []corev1.Container, containerName string, env []corev1.EnvVar, context *ctx.InjectionContext) (bool, error) {
 	for _, cntName := range proxyContainerNames[containerBasePath] {
 		if cntName == containerName {
-			klog.Infof("[%s] Injecting container %s (path: %s)", vaultInjectorModeProxy, containerName, containerBasePath)
+			klog.Infof("[%s] Injecting container %s (path: %s)", VaultInjectorModeProxy, containerName, containerBasePath)
 
 			// Resolve proxy env vars
 			for envIdx := range env {
 				if env[envIdx].Name == vaultProxyConfigPlaceholderEnv {
-					env[envIdx].Value = context.ModesConfig[vaultInjectorModeProxy].GetTemplate()
+					env[envIdx].Value = context.ModesConfig[VaultInjectorModeProxy].GetTemplate()
 				}
 			}
 

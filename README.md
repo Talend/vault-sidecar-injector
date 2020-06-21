@@ -21,10 +21,11 @@
       - [Using Vault Kubernetes Auth Method](#using-vault-kubernetes-auth-method)
         - [Secrets mode - Usage with a K8S Deployment workload](#secrets-mode---usage-with-a-k8s-deployment-workload)
         - [Secrets mode - Static secrets](#secrets-mode---static-secrets)
+        - [Secrets mode - Injection into environment variables](#secrets-mode---injection-into-environment-variables)
         - [Secrets mode - Usage with a K8S Job workload](#secrets-mode---usage-with-a-k8s-job-workload)
         - [Secrets and Proxy modes - K8S Job workload](#secrets-and-proxy-modes---k8s-job-workload)
         - [Secrets mode - Custom secrets path and notification command](#secrets-mode---custom-secrets-path-and-notification-command)
-        - [Secrets mode - Ask for secrets hook injection, custom secrets file and template](#secrets-mode---ask-for-secrets-hook-injection-custom-secrets-file-and-template)
+        - [Secrets mode - Ask for secrets hook injection, custom secrets file, location and template](#secrets-mode---ask-for-secrets-hook-injection-custom-secrets-file-location-and-template)
         - [Secrets mode - Ask for secrets hook injection, several custom secrets files and templates](#secrets-mode---ask-for-secrets-hook-injection-several-custom-secrets-files-and-templates)
       - [Using Vault AppRole Auth Method](#using-vault-approle-auth-method)
   - [How to deploy Vault Sidecar Injector](#how-to-deploy-vault-sidecar-injector)
@@ -39,6 +40,7 @@
 
 ## Announcements
 
+- 2020-06: [Inject secrets in your pod as environment variables](https://github.com/Talend/vault-sidecar-injector/blob/master/doc/Injecting-secrets-in-env.md)
 - 2020-03: [Vault Sidecar Injector vs HashiCorp Vault Agent Injector - Features Comparison](https://github.com/Talend/vault-sidecar-injector/blob/master/doc/HashiCorp-Vault-Agent-Injector.md)
 - 2020-03: [Static vs Dynamic secrets](https://github.com/Talend/vault-sidecar-injector/blob/master/doc/Static-vs-Dynamic-Secrets.md)
 - 2019-12: [Discovering Vault Sidecar Injector's Proxy feature](https://github.com/Talend/vault-sidecar-injector/blob/master/doc/Discovering-Vault-Sidecar-Injector-Proxy.md)
@@ -47,17 +49,15 @@
 
 ## Overview
 
-`Vault Sidecar Injector` consists in a **Webhook Admission Server**, registered in the Kubernetes Mutating Admission Webhook Controller, that will mutate resources depending on defined criteriae. See here for more details: <https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#admission-webhooks>.
+`Vault Sidecar Injector` allows to dynamically inject Vault Agent as either an init or a sidecar container, along with configuration and volumes, in any matching pod manifest **to seamlessly fetch secrets from Vault**. Pods willing to benefit from this feature just have to add some custom annotations to ask for the injection **at deployment time**.
 
-This component allows **to dynamically inject Vault Agent as either an init or a sidecar container** (along with configuration and volumes) in any matching pod manifest to seamlessly fetch secrets from Vault. Pods willing to benefit from this feature just have to add some custom annotations to ask for the injection **at deployment time**.
+This component consists in a *Webhook Admission Server*, registered in the Kubernetes Mutating Admission Webhook Controller, that will mutate resources depending on defined criteriae. See here for more details: <https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#admission-webhooks>.
 
 To ease deployment, a Helm chart is provided under [deploy/helm](https://github.com/Talend/vault-sidecar-injector/blob/master/deploy/helm) folder of this repository as well as instructions to [install it](https://github.com/Talend/vault-sidecar-injector/blob/master/README.md#installing-the-chart).
 
 > ⚠️ **Important note** ⚠️: support for sidecars in Kubernetes **jobs** suffers from limitations and issues exposed here: <https://github.com/kubernetes/kubernetes/issues/25908>.
 >
-> A Kubernetes proposal tries to address those points: <https://github.com/kubernetes/enhancements/blob/master/keps/sig-apps/sidecarcontainers.md>, <https://github.com/kubernetes/enhancements/issues/753>. Implementation of the proposal has started and may be released in Kubernetes 1.19 (in Alpha stage).
->
-> In the meantime however, `Vault Sidecar Injector` implements **specific sidecar and signaling mechanism** to properly stop all injected containers on job termination.
+> Fortunately, `Vault Sidecar Injector` implements **specific sidecar and signaling mechanism** to properly stop all injected containers on job termination.
 
 ## Kubernetes compatibility
 
@@ -77,15 +77,9 @@ For details, refer to [Modes and Injection Config Overview](https://github.com/T
 
 ### Requirements
 
-Invoking `Vault Sidecar Injector` is pretty straightforward. In your application manifest:
+Invoking `Vault Sidecar Injector` is pretty straightforward: in your application manifest, just add annotation **`sidecar.vault.talend.org/inject: "true"`**. This is the only mandatory annotation (see list of supported annotations below).
 
-- Add annotation `sidecar.vault.talend.org/inject: "true"`. This is the only mandatory annotation (see list of supported annotations below).
-- When using **secrets** mode:
-  - Add volume `secrets`, setting field `emptyDir.medium` to *Memory*. Deciphered secrets will be made available in file `secrets.properties` (using format `<secret key>=<secret value>`) by default or in the secrets destination you provide with annotation `sidecar.vault.talend.org/secrets-destination`.
-    > Note: as a fallback measure, if your manifest does not define a `secrets` volume, `Vault Sidecar Injector` will add one to the resulting pod.
-  - For Kubernetes **Job workloads dealing with dynamic secrets only**:
-    - **Use of `serviceAccountName` attribute**, with role allowing to perform GET on pods (needed to poll for job's pod status)
-    - **Do not make use of annotation `sidecar.vault.talend.org/secrets-hook`** as it will immediately put the job in error state. This hook is meant to be used with regular workloads only (ie Kubernetes Deployments) as it forces a restart of the application container until secrets are available in application's context. With jobs, as we look after status of the job container, our special signaling mechanism will terminate all the sidecars upon job exit thus preventing use of the hook.
+By default, when using **secrets** mode, deciphered secrets are made available in file `secrets.properties` (using format `<secret key>=<secret value>`) under folder `/opt/talend/secrets`. You can change the secrets filename using an annotation, and the location by mounting the `secrets` injected volume where you want to.
 
 Refer to provided [sample files](https://github.com/Talend/vault-sidecar-injector/blob/master/samples) and [examples](https://github.com/Talend/vault-sidecar-injector/blob/master/README.md#examples) section.
 
@@ -103,11 +97,12 @@ Following annotations in requesting pods are supported:
 | `sidecar.vault.talend.org/role`       | O           |    N/A          | "\<`com.talend.application` label\>" | Any string    | **Only used with "kubernetes" Vault Auth Method**. Vault role associated to requesting pod. If annotation not used, role is read from label defined by `mutatingwebhook.annotations.appLabelKey` key (refer to [configuration](https://github.com/Talend/vault-sidecar-injector/blob/master/README.md#configuration)) which is `com.talend.application` by default |
 | `sidecar.vault.talend.org/sa-token`   | O           |    N/A         | "/var/run/secrets/kubernetes.io/serviceaccount/token" | Any string | Full path to service account token used for Vault Kubernetes authentication |
 | `sidecar.vault.talend.org/secrets-destination` | O     | secrets | "secrets.properties" | Comma-separated strings  | List of secrets filenames (without path), one per secrets path |
-| `sidecar.vault.talend.org/secrets-hook`        | O     | secrets | *nil* | "true" / "on" / "yes" / "y" | If set, lifecycle hooks will be added to pod's container(s) to wait for secrets files. **Usage context: dynamic secrets only** |
+| `sidecar.vault.talend.org/secrets-hook`        | O     | secrets |  | "true" / "on" / "yes" / "y" | If set, lifecycle hooks will be added to pod's container(s) to wait for secrets files. **Usage context: dynamic secrets only. Do not use with `job` mode** |
+| `sidecar.vault.talend.org/secrets-injection-method` | O   | secrets | "file" | "file" / "env" | Method used to provide secrets to applications. **Note: `env` method only supports static secrets** |
 | `sidecar.vault.talend.org/secrets-path`        | O     | secrets | "secret/<`com.talend.application` label>/<`com.talend.service` label>" | Comma-separated strings | List of secrets engines and path. If annotation not used, path is set from labels defined by `mutatingwebhook.annotations.appLabelKey`  and `mutatingwebhook.annotations.appServiceLabelKey` keys (refer to [configuration](https://github.com/Talend/vault-sidecar-injector/blob/master/README.md#configuration))      |
 | `sidecar.vault.talend.org/secrets-template`    | O     | secrets  | [Default template](https://github.com/Talend/vault-sidecar-injector/blob/master/README.md#default-template) | templates separated with `---` | Allow to override default template. Ignore `sidecar.vault.talend.org/secrets-path` annotation if set |
 | `sidecar.vault.talend.org/secrets-type` | O  | secrets | "dynamic" | "static" / "dynamic" | Type of secrets to handle (see details [here](https://github.com/Talend/vault-sidecar-injector/blob/master/doc/Static-vs-Dynamic-Secrets.md)) |
-| `sidecar.vault.talend.org/workload`   | O      | N/A | *nil*  | "job" | Type of submitted workload. **⚠️ Deprecated: use `sidecar.vault.talend.org/mode` instead. Using this annotation will enable `job` mode ⚠️** |
+| `sidecar.vault.talend.org/workload`   | O      | N/A |   | "job" | Type of submitted workload. **⚠️ Deprecated: use `sidecar.vault.talend.org/mode` instead. Using this annotation will enable `job` mode ⚠️** |
 
 Upon successful injection, Vault Sidecar Injector will add annotation(s) to the requesting pods:
 
@@ -204,7 +199,7 @@ Depending on the modes you decide to enable and whether you opt for static or dy
 
 **Ready to use sample manifests are provided under [samples](https://github.com/Talend/vault-sidecar-injector/blob/master/samples) folder**. Just deploy them using `kubectl apply -f <sample file>`.
 
-Examples hereafter go further and highlight all the features of `Vault Sidecar Injector` through the supported annotations.
+Examples hereafter highlight all the features of `Vault Sidecar Injector` through the supported annotations.
 
 #### Using Vault Kubernetes Auth Method
 
@@ -247,13 +242,6 @@ spec:
         - name: ...
           image: ...
           ...
-          volumeMounts:
-            - name: secrets
-              mountPath: /opt/talend/secrets
-      volumes:
-        - name: secrets
-          emptyDir:
-            medium: Memory
 ```
 </details>
 
@@ -296,17 +284,65 @@ spec:
         - name: ...
           image: ...
           ...
-          volumeMounts:
-            - name: secrets
-              mountPath: /opt/talend/secrets
-      volumes:
-        - name: secrets
-          emptyDir:
-            medium: Memory
 ```
 </details>
 
+##### Secrets mode - Injection into environment variables
+
+<details>
+<summary>
+Show example
+</summary>
+
+With the provided manifest below:
+
+- Vault authentication done using role `test-app-1` (value of `com.talend.application` label)
+- secrets fetched from Vault's path `secret/test-app-1/test-app-1-svc` using default template
+- secrets to be injected into environment values named after secret keys
+
+> Note: you **must** set an explicit `command` attribute on containers (even if your image already defines a default ENTRYPOINT/CMD directive) to let the injector determine the process to be run once secrets are mounted as environment variables.
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: example-1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      com.talend.application: test-app-1
+      com.talend.service: test-app-1-svc
+  template:
+    metadata:
+      annotations:
+        sidecar.vault.talend.org/inject: "true"
+        sidecar.vault.talend.org/secrets-injection-method: "env"  # Secrets from env vars
+        sidecar.vault.talend.org/secrets-type: "static" # env vars injection only support static secrets
+      labels:
+        com.talend.application: test-app-1
+        com.talend.service: test-app-1-svc
+    spec:
+      serviceAccountName: ...
+      containers:
+        - name: ...
+          image: ...
+          command: ...
+          ...
+```
+
+Refer to [samples](samples) folder for complete examples.
+
+</details>
+
 ##### Secrets mode - Usage with a K8S Job workload
+
+When using Kubernetes Jobs, there are specific additional requirements:
+
+- **Use of `serviceAccountName` attribute** in manifest, with role allowing to perform GET action on pods (needed to poll for job's pod status)
+- **Do not make use of annotation `sidecar.vault.talend.org/secrets-hook`** as it will immediately put the job in error state. An error will be raised if this annotation is set on jobs.
+
+> Note: This hook is meant to be used with regular workloads only (ie Kubernetes Deployments) as it forces a restart of the application container until secrets are available in application's context. With jobs, as `Vault Sidecar Injector` looks after status of the job container, the injected signaling mechanism will terminate all the sidecars upon job exit thus preventing use of the hook.
 
 <details>
 <summary>
@@ -387,13 +423,6 @@ spec:
               exit_code=$?
               echo "Job stopped"
               exit $exit_code
-          volumeMounts:
-            - name: secrets
-              mountPath: /opt/talend/secrets
-      volumes:
-        - name: secrets
-          emptyDir:
-            medium: Memory
 ```
 </details>
 
@@ -482,13 +511,6 @@ spec:
 
               (...)
               echo "Job stopped"
-          volumeMounts:
-            - name: secrets
-              mountPath: /opt/talend/secrets
-      volumes:
-        - name: secrets
-          emptyDir:
-            medium: Memory
 ```
 </details>
 
@@ -542,7 +564,7 @@ spec:
 ```
 </details>
 
-##### Secrets mode - Ask for secrets hook injection, custom secrets file and template
+##### Secrets mode - Ask for secrets hook injection, custom secrets file, location and template
 
 <details>
 <summary>
@@ -554,7 +576,7 @@ Several optional annotations to end up with:
 - Vault authentication using role `test-app-6` (value of `com.talend.application` label)
 - hook injected in application's container(s) to wait for secrets file availability
 - secrets fetched from Vault's path `aws/creds/test-app-6` using **one custom template**
-- secrets to be stored into `/opt/talend/secrets/creds.properties`
+- secrets to be stored into `/custom-folder/creds.properties`
 
 <!-- {% raw %} -->
 ```yaml
@@ -594,7 +616,7 @@ spec:
           ...
           volumeMounts:
             - name: secrets
-              mountPath: /opt/talend/secrets
+              mountPath: /custom-folder
       volumes:
         - name: secrets
           emptyDir:
@@ -656,13 +678,6 @@ spec:
         - name: ...
           image: ...
           ...
-          volumeMounts:
-            - name: secrets
-              mountPath: /opt/talend/secrets
-      volumes:
-        - name: secrets
-          emptyDir:
-            medium: Memory
 ```
 <!-- {% endraw %}) -->
 </details>
@@ -721,13 +736,6 @@ spec:
             - "-c"
             - >
               while true;do echo "My secrets are: $(cat /opt/talend/secrets/secrets.properties)"; sleep 5; done
-          volumeMounts:
-            - name: secrets
-              mountPath: /opt/talend/secrets
-      volumes:
-        - name: secrets
-          emptyDir:
-            medium: Memory
 ```
 </details>
 
@@ -1056,7 +1064,7 @@ The following table lists the configurable parameters of the `Vault Sidecar Inje
 | mutatingwebhook.cert.keyfile | Default filename for webhook private key (PEM-encoded) in generated or provided Kubernetes Secret | tls.key |
 | mutatingwebhook.cert.secretName | Name of the Kubernetes Secret that contains the webhook certificates and private key. Secret should be in webhook's namespace. To provide if generated is false. | talend-vault-sidecar-injector-cert |
 | mutatingwebhook.failurePolicy | Defines how unrecognized errors and timeout errors from the admission webhook are handled. Allowed values are Ignore or Fail | Ignore |
-| mutatingwebhook.loglevel | Webhook log level (set to 5 for debug) | 4 |
+| mutatingwebhook.loglevel | Enable V-leveled logging at the specified level | 4 |
 | mutatingwebhook.namespaceSelector.boolean    | Enable to control, with label "vault-injection=enabled", the namespaces where injection is allowed (if false: all namespaces except _kube-system_ and _kube-public_) | false                                                           |
 | mutatingwebhook.namespaceSelector.namespaced | Enable to control, with label "vault-injection={{ .Release.Namespace }}", the specific namespace where injection is allowed (ie, restrict to namespace where injector is installed) | false |
 | probes.liveness.failureThreshold                | Number of probe failure before restarting the probe                                 | 3  |

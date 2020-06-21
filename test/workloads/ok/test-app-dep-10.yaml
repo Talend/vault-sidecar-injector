@@ -25,7 +25,7 @@ spec:
             - "sh"
             - "-c"
             - >
-              while true;do echo "My secrets are: $(cat /opt/talend/secrets/secrets.properties)"; sleep 5; done
+              while true;do echo "My secrets are: $(cat /my-custom-secrets-folder/secrets.properties)"; sleep 5; done
           volumeMounts:
             - name: secrets
-              mountPath: /opt/talend/secrets
+              mountPath: /my-custom-secrets-folder

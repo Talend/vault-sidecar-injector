@@ -22,7 +22,7 @@ const (
 	VaultInjectorAnnotationModeKey       = "mode"     // Optional. Comma-separated list of mode(s) to enable.
 	VaultInjectorAnnotationRoleKey       = "role"     // Optional. To explicitly provide Vault role to use
 	VaultInjectorAnnotationSATokenKey    = "sa-token" // Optional. Full path to service account token used for Vault Kubernetes authentication
-	VaultInjectorAnnotationWorkloadKey   = "workload" // Optional. If set to "job", supplementary container and signaling mechanism will also be injected to properly handle k8s job
+	VaultInjectorAnnotationWorkloadKey   = "workload" // Optional and deprecated. If set to "job", supplementary container and signaling mechanism will also be injected to properly handle k8s job
 	// Output annotation (set by VSI webhook)
 	VaultInjectorAnnotationStatusKey = "status" // Not to be set by requesting pods: set by the Webhook Admission Controller if injection ok
 )
@@ -35,11 +35,6 @@ const (
 const (
 	VaultK8sAuthMethod     = "kubernetes" // Vault K8S auth method. Default for VSI.
 	VaultAppRoleAuthMethod = "approle"    // Vault AppRole auth method
-)
-
-const (
-	//--- Vault Sidecar Injector workloads
-	VaultInjectorWorkloadJob = "job"
 )
 
 const (

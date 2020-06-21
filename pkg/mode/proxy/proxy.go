@@ -22,7 +22,7 @@ func init() {
 	// Register mode
 	m.RegisterMode(
 		m.VaultInjectorModeInfo{
-			Key:                  vaultInjectorModeProxy,
+			Key:                  VaultInjectorModeProxy,
 			DefaultMode:          false,
 			EnableDefaultMode:    false,
 			Annotations:          []string{vaultInjectorAnnotationProxyPortKey},

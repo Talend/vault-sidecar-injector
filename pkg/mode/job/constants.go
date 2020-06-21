@@ -26,5 +26,5 @@ const (
 
 const (
 	//--- Vault Sidecar Injector supported modes
-	vaultInjectorModeJob = "job" // Enable handling of Kubernetes Job
+	VaultInjectorModeJob = "job" // Enable handling of Kubernetes Job
 )

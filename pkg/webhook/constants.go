@@ -18,8 +18,6 @@ const (
 	//--- Vault Sidecar Injector mount path for service accounts
 	vaultInjectorSATokenVolMountPath = "/var/run/secrets/talend/vault-sidecar-injector/serviceaccount"
 	k8sDefaultSATokenVolMountPath    = "/var/run/secrets/kubernetes.io/serviceaccount"
-	//-- Volumes
-	secretsVolName = "secrets" // Name of the volume shared between containers to store secrets file(s)
 )
 
 const (

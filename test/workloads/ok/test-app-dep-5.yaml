@@ -31,10 +31,3 @@ spec:
               while true;do
                 sleep 5
               done
-          volumeMounts:
-            - name: secrets
-              mountPath: /opt/talend/secrets
-      volumes:
-        - name: secrets
-          emptyDir:
-            medium: Memory

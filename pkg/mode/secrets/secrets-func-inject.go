@@ -27,12 +27,18 @@ func secretsModeInject(containerBasePath string, podContainers []corev1.Containe
 			// Look type of secrets: inject init container only for static secrets
 			if (isSecretsStatic(context) && (containerBasePath == ctx.JsonPathInitContainers)) ||
 				(!isSecretsStatic(context) && (containerBasePath == ctx.JsonPathContainers)) {
-				klog.Infof("[%s] Injecting container %s (path: %s)", vaultInjectorModeSecrets, containerName, containerBasePath)
+
+				if (cntName == secretsEnvInitContainerName) && !isSecretsInjectionEnv(context) {
+					// Do not inject env init container if injection method is not 'env'
+					return false, nil
+				}
+
+				klog.Infof("[%s] Injecting container %s (path: %s)", VaultInjectorModeSecrets, containerName, containerBasePath)
 
 				// Resolve secrets env vars
 				for envIdx := range env {
 					if env[envIdx].Name == secretsTemplatesPlaceholderEnv {
-						env[envIdx].Value = context.ModesConfig[vaultInjectorModeSecrets].GetTemplate()
+						env[envIdx].Value = context.ModesConfig[VaultInjectorModeSecrets].GetTemplate()
 					}
 				}
 

@@ -6,24 +6,21 @@ CHART_VERSION:=$(shell cat VERSION_CHART)
 
 OWNER:=Talend
 REPO:=vault-sidecar-injector
-TARGET:=target/vaultinjector-webhook
-SRC:=$(shell find . -type f -name '*.go' -not -path "./vendor/*")
+TARGET_WEBHOOK:=target/vaultinjector-webhook
+TARGET_ENV:=target/vaultinjector-env
 
 # Inject VSI version into code at build time
 LDFLAGS=-ldflags "-X=main.VERSION=$(VSI_VERSION)"
 
 .SILENT: ;  	# No need for @
 .ONESHELL: ; 	# Single shell for a target (required to properly use local variables)
-.PHONY: all clean fmt test build release image
+.PHONY: all clean test build-vsi-webhook build-vsi-env build package image image-from-build release
 .DEFAULT_GOAL := build
 
 all: release
 
 clean:
 	rm -f target/*
-
-fmt:
-	gofmt -l -w $(SRC)
 
 test: # for detailed outputs, run 'make test VERBOSE=true'
 	if [ -z ${OFFLINE} ] || [ ${OFFLINE} != true ];then \
@@ -36,15 +33,21 @@ test: # for detailed outputs, run 'make test VERBOSE=true'
 		go test -mod=vendor -v ./...; \
 	fi
 
-build: clean test # run 'make build OFFLINE=true' to build from vendor folder
+build-vsi-webhook: clean test # run 'make build-vsi-webhook OFFLINE=true' to build from vendor folder
 	if [ -z ${OFFLINE} ] || [ ${OFFLINE} != true ];then \
-		echo "Building ..."; \
-		GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -mod=mod -a -o $(TARGET); \
+		echo "Building vsi-webhook ..."; \
+		GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -mod=mod -a -o $(TARGET_WEBHOOK) ./cmd/vaultinjector-webhook; \
 	else \
-		echo "Building using local vendor folder (ie offline build) ..."; \
-		GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -mod=vendor -a -o $(TARGET); \
+		echo "Building vsi-webhook using local vendor folder (ie offline build) ..."; \
+		GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -mod=vendor -a -o $(TARGET_WEBHOOK) ./cmd/vaultinjector-webhook; \
 	fi
 	cd target && sha512sum vaultinjector-webhook > vaultinjector-webhook.sha512
+
+build-vsi-env:
+	echo "Building vsi-env ..."
+	GOOS=linux GOARCH=amd64 go build -mod=mod -a -o $(TARGET_ENV) ./cmd/vaultinjector-env
+
+build: build-vsi-webhook build-vsi-env
 
 package:
 	set -e

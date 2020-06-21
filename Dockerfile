@@ -40,5 +40,6 @@ LABEL com.talend.maintainer="Talend <support@talend.com>" \
       com.talend.description="Kubernetes Webhook Admission Server for Vault sidecar injection"
 
 COPY --chown=talend:talend --from=buildTVSI /vaultsidecarinjector/target/vaultinjector-webhook ${TALEND_HOME}/webhook/
+COPY --chown=talend:talend --from=buildTVSI /vaultsidecarinjector/target/vaultinjector-env ${TALEND_HOME}/
 
 ENTRYPOINT ["/opt/talend/webhook/vaultinjector-webhook"]

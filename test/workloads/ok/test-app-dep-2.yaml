@@ -45,9 +45,6 @@ spec:
             - "-c"
             - >
               while true;do echo "My secrets are: $(cat /opt/talend/secrets/secrets.properties)"; sleep 5; done
-          volumeMounts:
-            - name: secrets
-              mountPath: /opt/talend/secrets
         - name: test-app2-container-2
           image: busybox:1.28
           command:
@@ -55,9 +52,6 @@ spec:
             - "-c"
             - >
               while true;do echo "My secrets 2 are: $(cat /opt/talend/secrets/secrets2.properties)"; sleep 5; done
-          volumeMounts:
-            - name: secrets
-              mountPath: /opt/talend/secrets
         - name: test-app2-container-3
           image: busybox:1.28
           command:
@@ -65,10 +59,3 @@ spec:
             - "-c"
             - >
               while true;do echo "My secrets 3 are: $(cat /opt/talend/secrets/secrets3.properties)"; sleep 5; done
-          volumeMounts:
-            - name: secrets
-              mountPath: /opt/talend/secrets
-      volumes:
-        - name: secrets
-          emptyDir:
-            medium: Memory
