@@ -46,6 +46,7 @@ build-vsi-webhook: clean test # run 'make build-vsi-webhook OFFLINE=true' to bui
 build-vsi-env:
 	echo "Building vsi-env ..."
 	GOOS=linux GOARCH=amd64 go build -mod=mod -a -o $(TARGET_ENV) ./cmd/vaultinjector-env
+	cd target && sha512sum vaultinjector-env > vaultinjector-env.sha512
 
 build: build-vsi-webhook build-vsi-env
 
