@@ -6,7 +6,7 @@ New `Vault Sidecar Injector` **`7.0.0`** release comes with the ability to injec
 
 As of today, this feature only supports **static** secrets (i.e. secrets whose values will not be updated). To leverage it, just add new annotation `sidecar.vault.talend.org/secrets-injection-method` with value `env` and you are good to go.
 
-As an example, available in the [samples](samples) folder:
+As an example, available in the [samples](../samples) folder:
 
 ```yaml
 apiVersion: apps/v1
