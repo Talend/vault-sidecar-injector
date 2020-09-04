@@ -10,6 +10,6 @@ To do so, we set in the injected sidecar the necessary configuration to transfor
 
 It is also possible to disable dynamic secrets retrieval and benefit only from the proxy capabilities of the injected Vault Agent sidecar (as you may not need or want to deal with secrets on some occasions).
 
-All of this is achieved using the brand new **modes** mechanism relying on the `sidecar.vault.talend.org/mode` annotation. With **modes** you can enable part or all of the features you need depending on your use case. Details are available in the [documentation](https://github.com/Talend/vault-sidecar-injector/blob/master/README.md#modes).
+All of this is achieved using the brand new **modes** mechanism relying on the `sidecar.vault.talend.org/mode` annotation. With **modes** you can enable part or all of the features you need depending on your use case. Details are available in the [documentation](../Usage.md#modes).
 
 The provided `app-job-2-proxy` and `app-job-3-secrets-proxy` [samples](https://github.com/Talend/vault-sidecar-injector/blob/master/samples) show some of the possible combinations.
