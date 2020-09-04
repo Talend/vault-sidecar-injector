@@ -1,6 +1,6 @@
 # Vault Sidecar Injector vs HashiCorp Vault Agent Injector - Features Comparison
 
-*March 2020, [Post by Alain Saint-Sever, Senior Cloud Software Architect (@alstsever)](https://twitter.com/alstsever)*
+*March 2020, [Post by Alain Saint-Sever, Principal Cloud Software Architect (@alstsever)](https://twitter.com/alstsever)*
 
 - [Vault Sidecar Injector vs HashiCorp Vault Agent Injector - Features Comparison](#vault-sidecar-injector-vs-hashicorp-vault-agent-injector---features-comparison)
   - [Intro](#intro)
@@ -111,7 +111,7 @@ $ helm delete --purge hashicorp-vault-injector
 Assessment has been done with the help of following workloads:
 
 - For Vault Sidecar Injector: [samples](https://github.com/Talend/vault-sidecar-injector/tree/v6.0.0/samples)
-- For HashiCorp Vault Agent Injector: [hashicorp-injector-samples](https://github.com/Talend/vault-sidecar-injector/blob/master/doc/hashicorp-injector-samples)
+- For HashiCorp Vault Agent Injector: [hashicorp-injector-samples](https://github.com/Talend/vault-sidecar-injector/blob/master/doc/announcements/hashicorp-injector-samples)
 
 ## Features Comparison
 

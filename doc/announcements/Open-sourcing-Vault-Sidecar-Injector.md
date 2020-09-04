@@ -1,6 +1,6 @@
 # Open sourcing Vault Sidecar Injector, Talend's Vault-based secrets management on Kubernetes
 
-*October 2019, [Post by Alain Saint-Sever, Senior Cloud Software Architect (@alstsever)](https://twitter.com/alstsever)*
+*October 2019, [Post by Alain Saint-Sever, Principal Cloud Software Architect (@alstsever)](https://twitter.com/alstsever)*
 
 Handling secrets has always been a challenging and critical task within organizations. As production workloads deployed in remote clouds or following hybrid patterns are ever increasing, this problematic becomes more complex: we still want to manage secrets from a central place, using state-of-the-art security practices (encryption at rest, secrets rotation), with as less adherence on the underlying technology as possible to maximize components reusability across deployment topologies and ease testability.
 
@@ -87,7 +87,7 @@ Figure below depicts what's happening when you submit a manifest with custom ann
 
 To help you installing and using Vault Sidecar Injector and for detailed description, go look at the [README](https://github.com/Talend/vault-sidecar-injector/blob/master/README.md) on GitHub.
 
-The repository also comes with [samples](https://github.com/Talend/vault-sidecar-injector/tree/master/samples) of annotated workloads to allow you to quickly test the component.
+The repository also comes with [samples](https://github.com/Talend/vault-sidecar-injector/blob/master/samples) of annotated workloads to allow you to quickly test the component.
 
 ## Community
 

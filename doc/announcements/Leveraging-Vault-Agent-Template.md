@@ -1,6 +1,6 @@
 # Leveraging new Vault Agent Template feature
 
-*November 2019, [Post by Alain Saint-Sever, Senior Cloud Software Architect (@alstsever)](https://twitter.com/alstsever)*
+*November 2019, [Post by Alain Saint-Sever, Principal Cloud Software Architect (@alstsever)](https://twitter.com/alstsever)*
 
 Fostering adoption of any open source project is a never ending challenge. Last month first public release was a great step forward but we must keep looking after any means for improvements and meet the needs from the community.
 
