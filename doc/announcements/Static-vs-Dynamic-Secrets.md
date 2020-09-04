@@ -8,7 +8,7 @@ A new annotation, `sidecar.vault.talend.org/secrets-type`, is supported to expli
 
 When *static secrets* are set, `Vault Sidecar Injector` will only inject an init container in your workload's pod. Fetched secrets will be stored in a file in a shared memory volume, the same way it is already done for *dynamic secrets*. As a result, if you do not enable other modes (e.g. *proxy*, *job*) no sidecar will be added. It also means that you don't have to leverage hooks or wait for the injected Vault Agent to fetch your secrets: your workload can access the values right after its container is started. The drawback of course is that your secrets **will not be automatically refreshed upon changes**, opt for *dynamic secrets* if this behavior is required.
 
-If you enable several modes, you may end up with both init container and sidecar(s) in your workload. A comprehensive table is provided in the main documention in section [Modes and Injection Config Overview](https://github.com/Talend/vault-sidecar-injector/blob/master/README.md#modes-and-injection-config-overview).
+If you enable several modes, you may end up with both init container and sidecar(s) in your workload. A comprehensive table is provided in the main documention in section [Modes and Injection Config Overview](../Usage.md#modes-and-injection-config-overview).
 
 New [samples](https://github.com/Talend/vault-sidecar-injector/blob/master/samples) are available to quickly demonstrate how to benefit from this feature:
 
