@@ -1,6 +1,6 @@
 # Static vs Dynamic Secrets
 
-*March 2020, [Post by Alain Saint-Sever, Senior Cloud Software Architect (@alstsever)](https://twitter.com/alstsever)*
+*March 2020, [Post by Alain Saint-Sever, Principal Cloud Software Architect (@alstsever)](https://twitter.com/alstsever)*
 
 Available with `Vault Sidecar Injector` version **`6.0.0`**, *static secrets* submode (part of **secrets** mode) allows to handle simpler needs where you only want to fetch secrets that are not meant to change over your workload's lifetime. Such secrets may be database credentials (depending on your credentials rotation policy of course) or any confidential data static by nature.
 

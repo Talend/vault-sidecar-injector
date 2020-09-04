@@ -1,12 +1,12 @@
 # Injecting secrets in environment variables
 
-*June 2020, [Post by Alain Saint-Sever, Senior Cloud Software Architect (@alstsever)](https://twitter.com/alstsever)*
+*June 2020, [Post by Alain Saint-Sever, Principal Cloud Software Architect (@alstsever)](https://twitter.com/alstsever)*
 
 New `Vault Sidecar Injector` **`7.0.0`** release comes with the ability to inject fetched secrets from Vault right into your application's environment variables.
 
 As of today, this feature only supports **static** secrets (i.e. secrets whose values will not be updated). To leverage it, just add new annotation `sidecar.vault.talend.org/secrets-injection-method` with value `env` and you are good to go.
 
-As an example, available in the [samples](../samples) folder:
+As an example, available in the [samples](https://github.com/Talend/vault-sidecar-injector/blob/master/samples) folder:
 
 ```yaml
 apiVersion: apps/v1

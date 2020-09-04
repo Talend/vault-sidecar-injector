@@ -1,6 +1,6 @@
 # Discovering Vault Sidecar Injector's Proxy feature
 
-*December 2019, [Post by Alain Saint-Sever, Senior Cloud Software Architect (@alstsever)](https://twitter.com/alstsever)*
+*December 2019, [Post by Alain Saint-Sever, Principal Cloud Software Architect (@alstsever)](https://twitter.com/alstsever)*
 
 Release **`5.0.0`** of `Vault Sidecar Injector` introduces a new Vault proxy feature. This feature unlocks many scenarios as it opens up full access to every Vault endpoints without the hassle to authenticate against the Vault server and manage issued tokens on your side.
 
