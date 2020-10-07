@@ -1,5 +1,11 @@
 # Changelog for Vault Sidecar Injector
 
+## Release v7.0.1 - TBD
+
+**Changed**
+
+- [VSI #36](https://github.com/Talend/vault-sidecar-injector/pull/36) - Update HashiCorp Vault image to 1.5.4
+
 ## Release v7.0.0 - 2020-06-21
 
 New with this release: Vault secrets can now be injected right into environment variables. Only **static** secrets are supported at the moment. Along with this feature, the `secrets` volumeMount is now automatically injected in your containers if not already defined (as it was the case with the `secrets` volume).

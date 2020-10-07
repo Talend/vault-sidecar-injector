@@ -76,7 +76,7 @@ Using HashiCorp's Vault Helm chart:
 ```bash
 $ git clone https://github.com/hashicorp/vault-helm.git
 $ cd vault-helm
-$ git checkout v0.5.0
+$ git checkout v0.7.0
 $ helm install . --name=vault --set injector.enabled=false --set server.dev.enabled=true --set ui.enabled=true --set ui.serviceType="NodePort"
 ```
 
@@ -172,6 +172,8 @@ $ export CHART_LOCATION=./vault-sidecar-injector-<x.y.z>.tgz
 ```
 
 - if you install from the chart's folder:
+
+> *Note: you previously need to build the image to use this install option, refer to "Building the image" in [Vault Sidecar Injector image](#vault-sidecar-injector-image)*
 
 ```bash
 $ export CHART_LOCATION=.

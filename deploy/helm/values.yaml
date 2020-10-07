@@ -74,7 +74,7 @@ injectconfig:
   vault:
     image:
       path: "vault" # image path
-      tag: "1.4.2" # image tag
+      tag: "1.5.4" # image tag
       pullPolicy: Always # Pull policy for images: IfNotPresent or Always
     loglevel: info # Vault log level: trace, debug, info, warn, err
     resources:

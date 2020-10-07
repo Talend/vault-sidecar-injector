@@ -2,7 +2,7 @@
 
 set -e
 
-SCRIPT_PATH="$(dirname "$0")"
+SCRIPT_PATH="$(cd "$(dirname $0)" && pwd)"
 VAULT_POD="kubectl exec -i vault-0 -- sh -c"
 
 # Create policies to allow read access to our secrets

@@ -43,9 +43,14 @@ build-vsi-webhook: clean test # run 'make build-vsi-webhook OFFLINE=true' to bui
 	fi
 	cd target && sha512sum vaultinjector-webhook > vaultinjector-webhook.sha512
 
-build-vsi-env:
-	echo "Building vsi-env ..."
-	GOOS=linux GOARCH=amd64 go build -mod=mod -a -o $(TARGET_ENV) ./cmd/vaultinjector-env
+build-vsi-env: # run 'make build-vsi-env OFFLINE=true' to build from vendor folder
+	if [ -z ${OFFLINE} ] || [ ${OFFLINE} != true ];then \
+		echo "Building vsi-env ..."; \
+		GOOS=linux GOARCH=amd64 go build -mod=mod -a -o $(TARGET_ENV) ./cmd/vaultinjector-env; \
+	else \
+		echo "Building vsi-env using local vendor folder (ie offline build) ..."; \
+		GOOS=linux GOARCH=amd64 go build -mod=vendor -a -o $(TARGET_ENV) ./cmd/vaultinjector-env; \
+	fi
 	cd target && sha512sum vaultinjector-env > vaultinjector-env.sha512
 
 build: build-vsi-webhook build-vsi-env
