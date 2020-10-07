@@ -3,7 +3,7 @@ FROM golang:1.14.4 AS buildTVSI
 COPY . /vaultsidecarinjector
 RUN cd /vaultsidecarinjector && make build OFFLINE=true
 
-FROM centos:7.7.1908
+FROM centos:7.8.2003
 
 USER root
 

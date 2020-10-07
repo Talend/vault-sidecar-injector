@@ -5,6 +5,7 @@
 **Changed**
 
 - [VSI #36](https://github.com/Talend/vault-sidecar-injector/pull/36) - Update HashiCorp Vault image to 1.5.4
+- [VSI #37](https://github.com/Talend/vault-sidecar-injector/pull/37) - Update base image to CentOS 7.8.2003
 
 ## Release v7.0.0 - 2020-06-21
 
