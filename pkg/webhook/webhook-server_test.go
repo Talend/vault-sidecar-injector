@@ -163,7 +163,9 @@ func createVaultInjector() (*VaultInjector, error) {
 
 	vsiCfg, err := cfg.Load(
 		cfg.WhSvrParameters{
+			cfg.WebhookMode,
 			0, 0,
+			"",
 			"", "", "", 0, "", "", "",
 			"",
 			"sidecar.vault.talend.org", "com.talend.application", "com.talend.service",

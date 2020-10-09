@@ -65,7 +65,7 @@ func New(config *cfg.VSIConfig, server *http.Server) *VaultInjector {
 	}
 }
 
-// Create mutation patch for resoures
+// Create mutation patch for resources
 func (vaultInjector *VaultInjector) createPatch(pod *corev1.Pod, annotations map[string]string) ([]byte, error) {
 
 	patchPodSpec, err := vaultInjector.updatePodSpec(pod)

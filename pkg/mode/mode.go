@@ -22,7 +22,8 @@ import (
 
 // RegisterMode : register mode
 func RegisterMode(modeInfo VaultInjectorModeInfo) {
-	klog.Infof("Registering mode: %s", modeInfo.Key)
+	//klog.Infof("Registering mode: %s", modeInfo.Key)
+
 	VaultInjectorModes[modeInfo.Key] = modeInfo
 
 	if modeInfo.InjectContainerFunc == nil {

@@ -20,8 +20,10 @@ import (
 
 // WhSvrParameters : Webhook Server parameters
 type WhSvrParameters struct {
+	Mode                  string // operational mode (cert, inline, webhook)
 	Port                  int    // webhook server port
 	MetricsPort           int    // metrics server port (Prometheus)
+	Manifest              string // manifest as input for inline injection
 	CertOperation         string // operation on webhook certificates (create, delete)
 	CertSecretName        string // name of generated or provided Kubernetes secret storing webhook certificates and private key
 	CertHostnames         string // host names to register in webhook certificate (comma-separated list)

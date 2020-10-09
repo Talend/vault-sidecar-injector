@@ -12,17 +12,4 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config
-
-// Operational modes
-const (
-	CertMode    = "cert"
-	InlineMode  = "inline"
-	WebhookMode = "webhook"
-)
-
-// Certificate operations
-const (
-	CreateCert = "create"
-	DeleteCert = "delete"
-)
+package main
