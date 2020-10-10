@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -45,74 +46,66 @@ type testResource struct {
 	podTemplateSpec *corev1.PodTemplateSpec
 }
 
+type assertFunc func(*v1beta1.AdmissionResponse)
+
 func TestWebhookServerOK(t *testing.T) {
-	// Create webhook instance
-	vaultInjector, err := createVaultInjector()
-	if err != nil {
-		t.Fatalf("Loading error \"%s\"", err)
-	}
-
-	// Get all test workloads
-	workloads, err := filepath.Glob("../../test/workloads/ok/*.yaml")
-	if err != nil {
-		t.Fatalf("Fail listing files: %s", err)
-	}
-
-	// Loop on all test workloads: mutate and display JSON Patch structure
-	for _, workloadManifest := range workloads {
-		klog.Info("\n\n ")
-		klog.Infof("Loading workload %s", workloadManifest)
-
-		ar, err := (&testResource{
-			manifest: workloadManifest,
-			workloadType: func(w string) string {
-				if bMatched, _ := filepath.Match("*-dep-*.yaml", filepath.Base(w)); bMatched {
-					return "deployment"
-				} else if bMatched, _ := filepath.Match("*-job-*.yaml", filepath.Base(w)); bMatched {
-					return "job"
-				} else {
-					return ""
+	err := mutateWorkloads("../../test/workloads/ok/*.yaml",
+		func(resp *v1beta1.AdmissionResponse) {
+			assert.Condition(t, func() bool {
+				// Handle injection cases *and* also pod submitted without `inject: "true"` annotation
+				if (resp.Allowed && resp.Patch != nil && resp.Result == nil) || (resp.Allowed && resp.Patch == nil && resp.Result == nil) {
+					return true
 				}
-			}(workloadManifest),
-		}).load()
-		if err != nil {
-			t.Fatalf("Error creating AR \"%s\"", err)
-		}
 
-		// Mutate pod
-		resp := vaultInjector.mutate(ar)
+				return false
+			}, "Inconsistent AdmissionResponse")
 
-		assert.Condition(t, func() bool {
-			// Handle injection cases *and* also pod submitted without `inject: "true"` annotation
-			if (resp.Allowed && resp.Patch != nil && resp.Result == nil) || (resp.Allowed && resp.Patch == nil && resp.Result == nil) {
-				return true
+			if resp.Patch != nil {
+				var patch []ctx.PatchOperation
+				if err := yaml.Unmarshal(resp.Patch, &patch); err != nil {
+					t.Errorf("JSON Patch unmarshal error \"%s\"", err)
+				}
+
+				klog.Infof("JSON Patch=%+v", patch)
 			}
+		})
 
-			return false
-		}, "Inconsistent AdmissionResponse")
-
-		if resp.Patch != nil {
-			var patch []ctx.PatchOperation
-			if err = yaml.Unmarshal(resp.Patch, &patch); err != nil {
-				t.Errorf("JSON Patch unmarshal error \"%s\"", err)
-			}
-
-			klog.Infof("JSON Patch=%+v", patch)
-		}
+	if err != nil {
+		t.Fatalf("%s", err)
 	}
 }
 
 func TestWebhookServerKO(t *testing.T) {
+	err := mutateWorkloads("../../test/workloads/ko/*.yaml",
+		func(resp *v1beta1.AdmissionResponse) {
+			assert.Condition(t, func() bool {
+				// Handle error cases
+				if !resp.Allowed && resp.Patch == nil && resp.Result != nil {
+					return true
+				}
+
+				return false
+			}, "Inconsistent AdmissionResponse")
+
+			klog.Infof("Result=%+v", resp.Result)
+		})
+
+	if err != nil {
+		t.Fatalf("%s", err)
+	}
+}
+
+func mutateWorkloads(manifestsPattern string, test assertFunc) error {
 	// Create webhook instance
 	vaultInjector, err := createVaultInjector()
 	if err != nil {
-		t.Fatalf("Loading error \"%s\"", err)
+		return fmt.Errorf("Loading error: %s", err)
 	}
 
 	// Get all test workloads
-	workloads, err := filepath.Glob("../../test/workloads/ko/*.yaml")
+	workloads, err := filepath.Glob(manifestsPattern)
 	if err != nil {
-		t.Fatalf("Fail listing files: %s", err)
+		return fmt.Errorf("Fail listing files: %s", err)
 	}
 
 	// Loop on all test workloads: mutate and display JSON Patch structure
@@ -133,23 +126,14 @@ func TestWebhookServerKO(t *testing.T) {
 			}(workloadManifest),
 		}).load()
 		if err != nil {
-			t.Fatalf("Error creating AR \"%s\"", err)
+			return fmt.Errorf("Error creating AR: %s", err)
 		}
 
-		// Mutate pod
-		resp := vaultInjector.mutate(ar)
-
-		assert.Condition(t, func() bool {
-			// Handle error cases
-			if !resp.Allowed && resp.Patch == nil && resp.Result != nil {
-				return true
-			}
-
-			return false
-		}, "Inconsistent AdmissionResponse")
-
-		klog.Infof("Result=%+v", resp.Result)
+		// Mutate pod and test result
+		test(vaultInjector.mutate(ar))
 	}
+
+	return nil
 }
 
 func createVaultInjector() (*VaultInjector, error) {
