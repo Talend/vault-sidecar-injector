@@ -29,21 +29,21 @@ func createVaultInjector() (*webhook.VaultInjector, error) {
 	// Patch MutatingWebhookConfiguration resource with CA certificate from mounted secret (set 'caBundle' attribute from Webhook CA)
 	err := k8s.New(
 		&k8s.WebhookData{
-			WebhookCfgName: parameters.WebhookCfgName,
-		}).PatchWebhookConfiguration(parameters.CACertFile)
+			WebhookCfgName: webhookParameters.WebhookCfgName,
+		}).PatchWebhookConfiguration(webhookParameters.CACertFile)
 	if err != nil {
 		return nil, err
 	}
 
 	// Load TLS cert and key from mounted secret
-	tlsCert, err := tls.LoadX509KeyPair(parameters.CertFile, parameters.KeyFile)
+	tlsCert, err := tls.LoadX509KeyPair(webhookParameters.CertFile, webhookParameters.KeyFile)
 	if err != nil {
 		klog.Errorf("Failed to load key pair: %v", err)
 		return nil, err
 	}
 
 	// Load webhook admission server's config
-	vsiCfg, err := config.Load(parameters)
+	vsiCfg, err := config.Load(webhookParameters)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func createVaultInjector() (*webhook.VaultInjector, error) {
 	vaultInjector := webhook.New(
 		vsiCfg,
 		&http.Server{
-			Addr:      fmt.Sprintf(":%v", parameters.Port),
+			Addr:      fmt.Sprintf(":%v", webhookParameters.Port),
 			TLSConfig: &tls.Config{Certificates: []tls.Certificate{tlsCert}},
 		},
 	)

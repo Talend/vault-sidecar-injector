@@ -30,7 +30,7 @@ spec:
               fieldRef:
                 fieldPath: metadata.namespace
         args:
-          - -mode=cert
+          - cert
           - -certop=delete
           - -certsecretname={{ .Values.mutatingwebhook.cert.secretName }}
           - -logtostderr

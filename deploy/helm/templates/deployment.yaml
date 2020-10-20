@@ -31,7 +31,7 @@ spec:
           image: {{ include "talend-vault-sidecar-injector.image" .Values }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
-            - -mode=webhook
+            - webhook
             - -port={{ .Values.image.port }}
             - -metricsport={{ .Values.image.metricsPort }}
             - -cacertfile=/opt/talend/webhook/certs/{{ .Values.mutatingwebhook.cert.cacertfile }}

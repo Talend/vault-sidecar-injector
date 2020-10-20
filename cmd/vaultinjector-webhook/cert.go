@@ -24,8 +24,8 @@ func genCertificates() error {
 	// Generate certificates and key
 	cert := &certs.Cert{
 		CN:       "Vault Sidecar Injector",
-		Hosts:    strings.Split(parameters.CertHostnames, ","),
-		Lifetime: parameters.CertLifetime,
+		Hosts:    strings.Split(certParameters.CertHostnames, ","),
+		Lifetime: certParameters.CertLifetime,
 	}
 
 	bundle, err := cert.GenerateWebhookBundle()
@@ -36,10 +36,10 @@ func genCertificates() error {
 	// Create Kubernetes Secret
 	return k8s.New(
 		&k8s.WebhookData{
-			WebhookSecretName: parameters.CertSecretName,
-			WebhookCACertName: parameters.CACertFile,
-			WebhookCertName:   parameters.CertFile,
-			WebhookKeyName:    parameters.KeyFile,
+			WebhookSecretName: certParameters.CertSecretName,
+			WebhookCACertName: certParameters.CACertFile,
+			WebhookCertName:   certParameters.CertFile,
+			WebhookKeyName:    certParameters.KeyFile,
 		}).CreateCertSecret(bundle.CACert, bundle.Cert, bundle.PrivKey)
 }
 
@@ -47,6 +47,6 @@ func deleteCertificates() error {
 	// Delete Kubernetes Secret
 	return k8s.New(
 		&k8s.WebhookData{
-			WebhookSecretName: parameters.CertSecretName,
+			WebhookSecretName: certParameters.CertSecretName,
 		}).DeleteCertSecret()
 }

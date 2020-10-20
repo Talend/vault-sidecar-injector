@@ -34,15 +34,17 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/klog"
 
 	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
 )
 
+var clientDeserializer = scheme.Codecs.UniversalDeserializer()
+
 type testResource struct {
 	manifest        string
-	workloadType    string
 	podTemplateSpec *corev1.PodTemplateSpec
 }
 
@@ -110,21 +112,10 @@ func mutateWorkloads(manifestsPattern string, test assertFunc) error {
 
 	// Loop on all test workloads: mutate and display JSON Patch structure
 	for _, workloadManifest := range workloads {
-		klog.Info("\n\n ")
+		klog.Info("================================================================================================")
 		klog.Infof("Loading workload %s", workloadManifest)
 
-		ar, err := (&testResource{
-			manifest: workloadManifest,
-			workloadType: func(w string) string {
-				if bMatched, _ := filepath.Match("*-dep-*.yaml", filepath.Base(w)); bMatched {
-					return "deployment"
-				} else if bMatched, _ := filepath.Match("*-job-*.yaml", filepath.Base(w)); bMatched {
-					return "job"
-				} else {
-					return ""
-				}
-			}(workloadManifest),
-		}).load()
+		ar, err := (&testResource{manifest: workloadManifest}).load()
 		if err != nil {
 			return fmt.Errorf("Error creating AR: %s", err)
 		}
@@ -147,17 +138,15 @@ func createVaultInjector() (*VaultInjector, error) {
 
 	vsiCfg, err := cfg.Load(
 		cfg.WhSvrParameters{
-			cfg.WebhookMode,
-			0, 0,
-			"",
-			"", "", "", 0, "", "", "",
-			"",
-			"sidecar.vault.talend.org", "com.talend.application", "com.talend.service",
-			"../../test/config/injectionconfig.yaml",
-			"../../test/config/proxyconfig.hcl",
-			"../../test/config/tmplblock.hcl",
-			"../../test/config/tmpldefault.tmpl",
-			"../../test/config/podlifecyclehooks.yaml",
+			Port: 0, MetricsPort: 0,
+			CACertFile: "", CertFile: "", KeyFile: "",
+			WebhookCfgName:      "",
+			AnnotationKeyPrefix: "sidecar.vault.talend.org", AppLabelKey: "com.talend.application", AppServiceLabelKey: "com.talend.service",
+			InjectionCfgFile:      "../../test/config/injectionconfig.yaml",
+			ProxyCfgFile:          "../../test/config/proxyconfig.hcl",
+			TemplateBlockFile:     "../../test/config/tmplblock.hcl",
+			TemplateDefaultFile:   "../../test/config/tmpldefault.tmpl",
+			PodLifecycleHooksFile: "../../test/config/podlifecyclehooks.yaml",
 		},
 	)
 	if err != nil {
@@ -169,29 +158,23 @@ func createVaultInjector() (*VaultInjector, error) {
 }
 
 func (tr *testResource) load() (*v1beta1.AdmissionReview, error) {
-	// TODO: Beware, there may be several resources. Only keep and mutate the ones with Vault Sidecar Injector's `sidecar.vault.talend.org/inject: "true"` annotation
 	data, err := ioutil.ReadFile(tr.manifest)
 	if err != nil {
 		return nil, err
 	}
 
-	if tr.workloadType == "deployment" {
-		resource := appsv1.Deployment{}
-		_, _, err = deserializer.Decode(data, nil, &resource)
-		if err != nil {
-			return nil, err
-		}
+	obj, _, err := clientDeserializer.Decode(data, nil, nil)
+	if err != nil {
+		return nil, err
+	}
 
+	switch resource := obj.(type) {
+	// Beware: despite content being the same, golang does not support 'fallthrough' keyword in type switch (see https://stackoverflow.com/questions/11531264/why-isnt-fallthrough-allowed-in-a-type-switch)
+	case *appsv1.Deployment: // here 'resource' type is now *appsv1.Deployment
 		tr.podTemplateSpec = &resource.Spec.Template
-	} else if tr.workloadType == "job" {
-		resource := batchv1.Job{}
-		_, _, err = deserializer.Decode(data, nil, &resource)
-		if err != nil {
-			return nil, err
-		}
-
+	case *batchv1.Job: // here 'resource' type is now *batchv1.Job
 		tr.podTemplateSpec = &resource.Spec.Template
-	} else {
+	default:
 		return nil, errors.New("Worload not supported")
 	}
 

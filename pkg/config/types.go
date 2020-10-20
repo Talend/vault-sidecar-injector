@@ -18,16 +18,26 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+// CertParameters : Cert parameters
+type CertParameters struct {
+	CertOperation  string // operation on webhook certificates
+	CertSecretName string // name of generated or provided Kubernetes secret storing webhook certificates and private key
+	CertHostnames  string // host names to register in webhook certificate (comma-separated list)
+	CertLifetime   int    // lifetime in years for generated certificates
+	CACertFile     string // default filename for webhook CA certificate (PEM-encoded) in generated or provided k8s secret
+	CertFile       string // default filename for webhook certificate (PEM-encoded) in generated or provided k8s secret
+	KeyFile        string // default filename for webhook private key (PEM-encoded) in generated or provided k8s secret
+}
+
+// InlineParameters : Inline parameters
+type InlineParameters struct {
+	Manifest string // manifest as input for inline injection
+}
+
 // WhSvrParameters : Webhook Server parameters
 type WhSvrParameters struct {
-	Mode                  string // operational mode (cert, inline, webhook)
 	Port                  int    // webhook server port
 	MetricsPort           int    // metrics server port (Prometheus)
-	Manifest              string // manifest as input for inline injection
-	CertOperation         string // operation on webhook certificates (create, delete)
-	CertSecretName        string // name of generated or provided Kubernetes secret storing webhook certificates and private key
-	CertHostnames         string // host names to register in webhook certificate (comma-separated list)
-	CertLifetime          int    // lifetime in years for generated certificates
 	CACertFile            string // PEM-encoded webhook CA certificate
 	CertFile              string // PEM-encoded webhook certificate used for TLS
 	KeyFile               string // PEM-encoded webhook private key used for TLS

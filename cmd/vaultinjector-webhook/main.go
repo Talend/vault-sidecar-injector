@@ -31,27 +31,33 @@ var (
 	// VERSION stores current version. Set in Makefile (see build flag -ldflags "-X=main.VERSION=$(VERSION)")
 	VERSION string
 
-	parameters config.WhSvrParameters
+	certParameters    config.CertParameters
+	inlineParameters  config.InlineParameters
+	webhookParameters config.WhSvrParameters
 )
 
 func main() {
-	parseFlags()
-
-	switch parameters.Mode {
-	case config.CertMode:
-		switch parameters.CertOperation {
-		case config.CreateCert: // Generate certificates, private key, K8S secret
+	switch parseFlags() {
+	case CertCmd:
+		switch certParameters.CertOperation {
+		case CreateCert: // Generate certificates, private key, K8S secret
 			if err := genCertificates(); err != nil {
 				os.Exit(1)
 			}
-		case config.DeleteCert: // Delete K8S secret used to store certificates and private key
+		case DeleteCert: // Delete K8S secret used to store certificates and private key
 			if err := deleteCertificates(); err != nil {
 				os.Exit(1)
 			}
 		}
-	case config.InlineMode:
+	case InlineCmd:
+		if _, err := os.Stat(inlineParameters.Manifest); os.IsNotExist(err) {
+			klog.Errorf("File does not exist: %s", inlineParameters.Manifest)
+			os.Exit(1)
+		}
 		//TODO
-	case config.WebhookMode:
+		//Add flag to tell VSI to not check for serviceaccount token volume (see how to reuse that to simplify tests, not having to invoke our addSATokenVolume() func)
+
+	case WebhookCmd:
 		// Init and load config
 		vaultInjector, err := createVaultInjector()
 		if err != nil {
@@ -75,7 +81,7 @@ func main() {
 		metricsMux.Handle("/metrics", promhttp.Handler())
 
 		metricsServer := &http.Server{
-			Addr:    fmt.Sprintf(":%v", parameters.MetricsPort),
+			Addr:    fmt.Sprintf(":%v", webhookParameters.MetricsPort),
 			Handler: metricsMux,
 		}
 

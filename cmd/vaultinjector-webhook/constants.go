@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config
+package main
 
-// Operational modes
+// Operational subcommands
 const (
-	CertMode    = "cert"
-	InlineMode  = "inline"
-	WebhookMode = "webhook"
+	CertCmd    = "cert"
+	InlineCmd  = "inline"
+	WebhookCmd = "webhook"
+	VersionCmd = "version"
 )
 
 // Certificate operations
