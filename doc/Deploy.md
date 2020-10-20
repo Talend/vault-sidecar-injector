@@ -136,22 +136,19 @@ export CHART_LOCATION=./vault-sidecar-injector-<x.y.z>.tgz
 > *Note: you previously need to build the image to use this install option, refer to "Building the image" in [Vault Sidecar Injector image](#vault-sidecar-injector-image)*
 
 ```bash
-export CHART_LOCATION=.
+cd deploy/helm
+export CHART_LOCATION=$(pwd)
 ```
 
 To see Chart content before installing it, perform a dry run first:
 
 ```bash
-cd deploy/helm
-
 helm install vault-sidecar-injector $CHART_LOCATION --namespace <namespace for deployment> --set vault.addr=<Vault server address> --debug --dry-run
 ```
 
 To install the chart on the cluster:
 
 ```bash
-cd deploy/helm
-
 helm install vault-sidecar-injector $CHART_LOCATION --namespace <namespace for deployment> --set vault.addr=<Vault server address>
 ```
 
@@ -162,8 +159,6 @@ helm install vault-sidecar-injector $CHART_LOCATION --namespace <namespace for d
 As an example, to install `Vault Sidecar Injector` on our test cluster:
 
 ```bash
-cd deploy/helm
-
 helm install vault-sidecar-injector $CHART_LOCATION --namespace kube-system --set vault.addr=http://vault:8200 --set vault.ssl.verify=false
 ```
 
@@ -179,8 +174,6 @@ The [configuration](Configuration.md) section lists all the parameters that can 
 In a dev environment, you may want to install your own test instance of `Vault Sidecar Injector`, connected to your own Vault server and limiting injection to a given namespace. To do so, use following options:
 
 ```bash
-cd deploy/helm
-
 helm install vault-sidecar-injector $CHART_LOCATION --namespace <your dev namespace> --set vault.addr=<your dev Vault server address> --set mutatingwebhook.namespaceSelector.namespaced=true
 ```
 
@@ -204,8 +197,6 @@ By default `Vault Sidecar Injector` monitors all namespaces (except `kube-system
 If you want to strictly control the list of namespaces where injection is allowed, set value `mutatingwebhook.namespaceSelector.boolean=true` when installing the chart as follows:
 
 ```bash
-cd deploy/helm
-
 helm install vault-sidecar-injector $CHART_LOCATION --namespace <namespace for deployment> --set vault.addr=<Vault server address> --set mutatingwebhook.namespaceSelector.boolean=true
 ```
 
