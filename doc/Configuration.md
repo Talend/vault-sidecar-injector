@@ -70,13 +70,6 @@ The following table lists the configurable parameters of the `Vault Sidecar Inje
 You can override these values at runtime using the `--set key=value[,key=value]` argument to `helm install`. For example,
 
 ```bash
-# If using Helm 2
-$ helm install <chart_folder_location> \
-               --name vault-sidecar-injector \
-               --namespace <your namespace> \
-               --set <parameter1>=<value1>,<parameter2>=<value2>
-
-# If using Helm 3
 $ helm install vault-sidecar-injector \
                <chart_folder_location> \
                --namespace <your namespace> \
