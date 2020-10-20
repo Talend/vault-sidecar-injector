@@ -215,7 +215,7 @@ kubectl get namespace -L vault-injection
 To uninstall/delete the `Vault Sidecar Injector` deployment:
 
 ```bash
-helm delete vault-sidecar-injector -n kube-system
+helm delete vault-sidecar-injector -n <namespace for deployment>
 ```
 
 This command removes all the Kubernetes resources associated with the chart and deletes the Helm release.
