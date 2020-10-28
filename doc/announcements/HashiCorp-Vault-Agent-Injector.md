@@ -28,7 +28,7 @@ Tests and comparisons will be done based on following versions (last releases at
 
 | Injector | Version | Helm chart version | Vault Agent version | Repo |
 |----------|---------|--------------------|---------------------|------|
-| Vault Sidecar Injector | `6.0.0` | `3.2.0` | `1.3.2` | <https://github.com/Talend/vault-sidecar-injector/releases/tag/v6.0.0><BR><https://hub.helm.sh/charts/talend/vault-sidecar-injector/3.2.0> |
+| Vault Sidecar Injector | `6.0.0` | `3.2.0` | `1.3.2` | <https://github.com/Talend/vault-sidecar-injector/releases/tag/v6.0.0><BR><https://artifacthub.io/packages/helm/talend/vault-sidecar-injector/3.2.0> |
 | HashiCorp Vault Agent Injector | `0.2.0` | `0.4.0` | `1.3.2` | <https://github.com/hashicorp/vault-k8s/releases/tag/v0.2.0><BR><https://github.com/hashicorp/vault-helm/releases/tag/v0.4.0> |
 
 For both injectors, installation will be performed using the Helm chart, which is the recommended installation method according to HashiCorp (see <https://github.com/hashicorp/vault-k8s#installation>).
