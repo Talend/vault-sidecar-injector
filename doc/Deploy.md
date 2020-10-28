@@ -11,56 +11,16 @@
 
 ## Prerequisites
 
+> *Note: Vault Sidecar Injector chart version > `4.0.0` requires Helm 3. Helm 2 is no more supported.*
+
 Installation:
 
 - Kubernetes cluster (see compatibility [here](../README.md#kubernetes-compatibility))
-- Helm 2 or 3
+- Helm 3
 
 Runtime:
 
 - Vault server deployed (either *in cluster* with official chart <https://github.com/hashicorp/vault-helm> or *out of cluster*), started and reachable through Kubernetes service & endpoint deployed into cluster
-
-<details>
-<summary>
-<b>Helm 2: Tiller installation</b>
-</summary>
-
-> Note: this step does not apply if you are using Helm 3.
-
-Install Tiller using a service account:
-
-```bash
-$ cat <<EOF | kubectl apply -f -
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: tiller
-  namespace: kube-system
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: tiller
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: cluster-admin
-subjects:
-- kind: ServiceAccount
-  name: tiller
-  namespace: kube-system
-EOF
-
-$ helm init --service-account tiller
-```
-
-> On Kubernetes `1.16+`: make sure to use Helm **`2.16.0` or higher** as previous Helm 2 versions rely on deprecated APIs no longer served (see <https://kubernetes.io/blog/2019/09/18/kubernetes-1-16-release-announcement/>).
-
-For details on using Tiller with RBAC:
-
-- <https://v2.helm.sh/docs/using_helm/#tiller-and-user-permissions>
-- <https://v2.helm.sh/docs/using_helm/#tiller-and-role-based-access-control>
-</details>
 
 <details>
 <summary>
@@ -74,22 +34,22 @@ We will install a test Vault server in Kubernetes cluster but an external, out o
 Using HashiCorp's Vault Helm chart:
 
 ```bash
-$ git clone https://github.com/hashicorp/vault-helm.git
-$ cd vault-helm
-$ git checkout v0.7.0
-$ helm install . --name=vault --set injector.enabled=false --set server.dev.enabled=true --set ui.enabled=true --set ui.serviceType="NodePort"
+git clone https://github.com/hashicorp/vault-helm.git
+cd vault-helm
+git checkout v0.7.0
+helm install vault . --set injector.enabled=false --set server.dev.enabled=true --set ui.enabled=true --set ui.serviceType="NodePort"
 ```
 
 Then init Vault server with our test config:
 
 ```bash
 # Check status
-$ kubectl exec -it vault-0 -- vault status
-$ kubectl logs vault-0
+kubectl exec -it vault-0 -- vault status
+kubectl logs vault-0
 
 # Set up needed auth methods, secrets engines, policies, roles and secrets
-$ cd vault-sidecar-injector/deploy/vault
-$ ./init-dev-vault-server.sh
+cd vault-sidecar-injector/deploy/vault
+./init-dev-vault-server.sh
 ```
 </details>
 
@@ -107,7 +67,7 @@ Official Docker images are published on [Talend's public Docker Hub](https://hub
 For manual pull of a specific tag:
 
 ```bash
-$ docker pull talend/vault-sidecar-injector:<tag>
+docker pull talend/vault-sidecar-injector:<tag>
 ```
 </details>
 
@@ -121,7 +81,7 @@ A [Dockerfile](../Dockerfile) is also provided to both compile `Vault Sidecar In
 Just run following command:
 
 ```bash
-$ make image
+make image
 ```
 
 > Note: if you have Go installed on your machine, you can use `make image-from-build` instead. You need Golang 1.14 or higher.
@@ -160,15 +120,15 @@ Depending on what you chose, define a `CHART_LOCATION` env var as follows:
 - if you use [Helm Hub](https://hub.helm.sh/charts/talend/vault-sidecar-injector) / [Talend's public Helm charts registry](https://talend.github.io/helm-charts-public):
 
 ```bash
-$ helm repo add talend https://talend.github.io/helm-charts-public/stable
-$ helm repo update
-$ export CHART_LOCATION=talend/vault-sidecar-injector
+helm repo add talend https://talend.github.io/helm-charts-public/stable
+helm repo update
+export CHART_LOCATION=talend/vault-sidecar-injector
 ```
 
 - if you use the downloaded chart archive:
 
 ```bash
-$ export CHART_LOCATION=./vault-sidecar-injector-<x.y.z>.tgz
+export CHART_LOCATION=./vault-sidecar-injector-<x.y.z>.tgz
 ```
 
 - if you install from the chart's folder:
@@ -176,31 +136,20 @@ $ export CHART_LOCATION=./vault-sidecar-injector-<x.y.z>.tgz
 > *Note: you previously need to build the image to use this install option, refer to "Building the image" in [Vault Sidecar Injector image](#vault-sidecar-injector-image)*
 
 ```bash
-$ export CHART_LOCATION=.
+cd deploy/helm
+export CHART_LOCATION=$(pwd)
 ```
 
 To see Chart content before installing it, perform a dry run first:
 
 ```bash
-$ cd deploy/helm
-
-# If using Helm 2
-$ helm install $CHART_LOCATION --name vault-sidecar-injector --namespace <namespace for deployment> --set vault.addr=<Vault server address> --debug --dry-run
-
-# If using Helm 3
-$ helm install vault-sidecar-injector $CHART_LOCATION --namespace <namespace for deployment> --set vault.addr=<Vault server address> --debug --dry-run
+helm install vault-sidecar-injector $CHART_LOCATION --namespace <namespace for deployment> --set vault.addr=<Vault server address> --debug --dry-run
 ```
 
 To install the chart on the cluster:
 
 ```bash
-$ cd deploy/helm
-
-# If using Helm 2
-$ helm install $CHART_LOCATION --name vault-sidecar-injector --namespace <namespace for deployment> --set vault.addr=<Vault server address>
-
-# If using Helm 3
-$ helm install vault-sidecar-injector $CHART_LOCATION --namespace <namespace for deployment> --set vault.addr=<Vault server address>
+helm install vault-sidecar-injector $CHART_LOCATION --namespace <namespace for deployment> --set vault.addr=<Vault server address>
 ```
 
 > **Note:** `Vault Sidecar Injector` should be deployed only once (except for testing purpose, see below). It will mutate any "vault-sidecar annotated" pod from any namespace. **It *shall not* be deployed in every namespaces**.
@@ -210,13 +159,7 @@ $ helm install vault-sidecar-injector $CHART_LOCATION --namespace <namespace for
 As an example, to install `Vault Sidecar Injector` on our test cluster:
 
 ```bash
-$ cd deploy/helm
-
-# If using Helm 2
-$ helm install $CHART_LOCATION --name vault-sidecar-injector --namespace kube-system --set vault.addr=http://vault:8200 --set vault.ssl.verify=false
-
-# If using Helm 3
-$ helm install vault-sidecar-injector $CHART_LOCATION --namespace kube-system --set vault.addr=http://vault:8200 --set vault.ssl.verify=false
+helm install vault-sidecar-injector $CHART_LOCATION --namespace kube-system --set vault.addr=http://vault:8200 --set vault.ssl.verify=false
 ```
 
 This command deploys the component on the Kubernetes cluster with modified configuration to target our Vault server in-cluster test instance (no verification of certificates): such settings *are no fit for production*.
@@ -231,22 +174,16 @@ The [configuration](Configuration.md) section lists all the parameters that can 
 In a dev environment, you may want to install your own test instance of `Vault Sidecar Injector`, connected to your own Vault server and limiting injection to a given namespace. To do so, use following options:
 
 ```bash
-$ cd deploy/helm
-
-# If using Helm 2
-$ helm install $CHART_LOCATION --name vault-sidecar-injector --namespace <your dev namespace> --set vault.addr=<your dev Vault server address> --set mutatingwebhook.namespaceSelector.namespaced=true
-
-# If using Helm 3
-$ helm install vault-sidecar-injector $CHART_LOCATION --namespace <your dev namespace> --set vault.addr=<your dev Vault server address> --set mutatingwebhook.namespaceSelector.namespaced=true
+helm install vault-sidecar-injector $CHART_LOCATION --namespace <your dev namespace> --set vault.addr=<your dev Vault server address> --set mutatingwebhook.namespaceSelector.namespaced=true
 ```
 
 And then **add a label on your namespace** as follows (if not done, no injection will be performed):
 
 ```bash
-$ kubectl label namespace <your dev namespace> vault-injection=<your dev namespace> --overwrite
+kubectl label namespace <your dev namespace> vault-injection=<your dev namespace> --overwrite
 
 # check label on namespace
-$ kubectl get namespace -L vault-injection
+kubectl get namespace -L vault-injection
 ```
 </details>
 
@@ -260,22 +197,16 @@ By default `Vault Sidecar Injector` monitors all namespaces (except `kube-system
 If you want to strictly control the list of namespaces where injection is allowed, set value `mutatingwebhook.namespaceSelector.boolean=true` when installing the chart as follows:
 
 ```bash
-$ cd deploy/helm
-
-# If using Helm 2
-$ helm install $CHART_LOCATION --name vault-sidecar-injector --namespace <namespace for deployment> --set vault.addr=<Vault server address> --set mutatingwebhook.namespaceSelector.boolean=true
-
-# If using Helm 3
-$ helm install vault-sidecar-injector $CHART_LOCATION --namespace <namespace for deployment> --set vault.addr=<Vault server address> --set mutatingwebhook.namespaceSelector.boolean=true
+helm install vault-sidecar-injector $CHART_LOCATION --namespace <namespace for deployment> --set vault.addr=<Vault server address> --set mutatingwebhook.namespaceSelector.boolean=true
 ```
 
 Then apply label `vault-injection=enabled` on **all** required namespaces:
 
 ```bash
-$ kubectl label namespace <namespace> vault-injection=enabled
+kubectl label namespace <namespace> vault-injection=enabled
 
 # check label on namespace
-$ kubectl get namespace -L vault-injection
+kubectl get namespace -L vault-injection
 ```
 </details>
 
@@ -284,11 +215,7 @@ $ kubectl get namespace -L vault-injection
 To uninstall/delete the `Vault Sidecar Injector` deployment:
 
 ```bash
-# If using Helm 2
-$ helm delete --purge vault-sidecar-injector
-
-# If using Helm 3
-$ helm delete vault-sidecar-injector -n kube-system
+helm delete vault-sidecar-injector -n <namespace for deployment>
 ```
 
 This command removes all the Kubernetes resources associated with the chart and deletes the Helm release.
