@@ -111,13 +111,13 @@ You can also provide your own certificates and private key by following those st
 
 Several options to install the chart:
 
-- from [Helm Hub](https://hub.helm.sh/charts/talend/vault-sidecar-injector) leveraging [Talend's public Helm charts registry](https://talend.github.io/helm-charts-public)
+- from [Artifact Hub](https://artifacthub.io/packages/helm/talend/vault-sidecar-injector) leveraging [Talend's public Helm charts registry](https://talend.github.io/helm-charts-public)
 - by downloading the chart archive (`.tgz` file) from GitHub [releases](https://github.com/Talend/vault-sidecar-injector/releases)
 - or cloning `Vault Sidecar Injector` GitHub repo and cd into `deploy/helm` directory
 
 Depending on what you chose, define a `CHART_LOCATION` env var as follows:
 
-- if you use [Helm Hub](https://hub.helm.sh/charts/talend/vault-sidecar-injector) / [Talend's public Helm charts registry](https://talend.github.io/helm-charts-public):
+- if you use [Artifact Hub](https://artifacthub.io/packages/helm/talend/vault-sidecar-injector) / [Talend's public Helm charts registry](https://talend.github.io/helm-charts-public):
 
 ```bash
 helm repo add talend https://talend.github.io/helm-charts-public/stable
