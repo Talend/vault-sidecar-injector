@@ -39,7 +39,7 @@ func must(err error) {
 	}
 }
 
-// Check whether the target resoured need to be mutated
+// Check whether the target resource need to be mutated
 func mutationRequired(ignoredList []string, vaultInjectorAnnotations map[string]string, podMetadata *metav1.ObjectMeta) bool {
 	var entityName string
 	var entityNamespace string
@@ -56,7 +56,7 @@ func mutationRequired(ignoredList []string, vaultInjectorAnnotations map[string]
 		entityNamespace = podMetadata.Namespace
 	}
 
-	// skip special kubernete system namespaces
+	// skip special Kubernetes system namespaces
 	for _, namespace := range ignoredList {
 		if entityNamespace == namespace {
 			klog.Infof("Skip mutation for %v for it's in special namespace:%v", entityName, entityNamespace)

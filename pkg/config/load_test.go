@@ -70,15 +70,15 @@ func TestLoadConfig(t *testing.T) {
 	for _, table := range tables {
 		vsiCfg, err := Load(
 			WhSvrParameters{
-				0, 0,
-				"", "", "", 0, "", "", "",
-				"",
-				"", "", "",
-				table.injectionCfgFile,
-				table.proxyCfgFile,
-				table.templateBlockFile,
-				table.templateDefaultFile,
-				table.podLifecycleHooksFile,
+				Port: 0, MetricsPort: 0,
+				CACertFile: "", CertFile: "", KeyFile: "",
+				WebhookCfgName:      "",
+				AnnotationKeyPrefix: "", AppLabelKey: "", AppServiceLabelKey: "",
+				InjectionCfgFile:      table.injectionCfgFile,
+				ProxyCfgFile:          table.proxyCfgFile,
+				TemplateBlockFile:     table.templateBlockFile,
+				TemplateDefaultFile:   table.templateDefaultFile,
+				PodLifecycleHooksFile: table.podLifecycleHooksFile,
 			},
 		)
 		if err != nil {

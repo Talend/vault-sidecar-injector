@@ -45,7 +45,7 @@ mutatingwebhook:
     certlifetime: 10 # default lifetime in years for generated certificates. Not used if generated is false.
     cacertfile: ca.crt # default filename for webhook CA certificate (PEM-encoded) in generated or provided k8s secret
     certfile: tls.crt # default filename for webhook certificate (PEM-encoded) in generated or provided k8s secret
-    keyfile: tls.key # default filename for webhook private key (PEM-encoded) in generated or provided k8s secret 
+    keyfile: tls.key # default filename for webhook private key (PEM-encoded) in generated or provided k8s secret
   annotations:
     keyPrefix: sidecar.vault.talend.org  # prefix used for all vault sidecar injector annotations
     appLabelKey: com.talend.application  # annotation for application's name. Annotation's value used as Vault role by default.

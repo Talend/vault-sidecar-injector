@@ -8,6 +8,7 @@ OWNER:=Talend
 REPO:=vault-sidecar-injector
 TARGET_WEBHOOK:=target/vaultinjector-webhook
 TARGET_ENV:=target/vaultinjector-env
+IMAGE_FQIN:=talend/vault-sidecar-injector
 
 # Inject VSI version into code at build time
 LDFLAGS=-ldflags "-X=main.VERSION=$(VSI_VERSION)"
@@ -68,27 +69,27 @@ package:
 
 image:
 	echo "Build image using Go container and multi-stage build ..."
-	docker build -t talend/vault-sidecar-injector:${VSI_VERSION} .
-	docker tag talend/vault-sidecar-injector:${VSI_VERSION} talend/vault-sidecar-injector
+	docker build -t ${IMAGE_FQIN}:${VSI_VERSION} .
+	docker tag ${IMAGE_FQIN}:${VSI_VERSION} ${IMAGE_FQIN}
 
 image-from-build: build
 	echo "Build image from local build ..."
-	docker build -f Dockerfile.local -t talend/vault-sidecar-injector:${VSI_VERSION} .
-	docker tag talend/vault-sidecar-injector:${VSI_VERSION} talend/vault-sidecar-injector
+	docker build -f Dockerfile.local -t ${IMAGE_FQIN}:${VSI_VERSION} .
+	docker tag ${IMAGE_FQIN}:${VSI_VERSION} ${IMAGE_FQIN}
 
 release: image-from-build package
-	read -p "Publish image on Docker Hub (y/n)? " answer
+	read -p "Publish image (y/n)? " answer
 	case $$answer in \
 	y|Y ) \
 		docker login; \
-		docker push talend/vault-sidecar-injector:${VSI_VERSION}; \
+		docker push ${IMAGE_FQIN}:${VSI_VERSION}; \
 		if [ "$$?" -ne 0 ]; then \
 			echo "Unable to publish image"; \
 			exit 1; \
 		fi; \
 	;; \
 	* ) \
-		echo "Image not published on Docker Hub"; \
+		echo "Image not published"; \
 	;; \
 	esac
 	cd target
