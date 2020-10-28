@@ -1,15 +1,16 @@
 # Changelog for Vault Sidecar Injector
 
-## Release v7.1.0 - TBD
+## Release v7.0.1 - TBD
+
+Minor release with new default Vault image to address several security issues in HashiCorp Vault (CVE-2020-25816, CVE-2020-16250, CVE-2020-16251, CVE-2020-17455).
+
+Note that provided chart now requires Helm v3.
 
 **Changed**
 
 - [VSI #36](https://github.com/Talend/vault-sidecar-injector/pull/36) - Update HashiCorp Vault image to 1.5.4
 - [VSI #37](https://github.com/Talend/vault-sidecar-injector/pull/37) - Update base image to CentOS 7.8.2003
-
-**Added**
-
-- [VSI #38](https://github.com/Talend/vault-sidecar-injector/pull/38) - Inline injection mode
+- [VSI #39](https://github.com/Talend/vault-sidecar-injector/pull/39) - Refactor code
 
 ## Release v7.0.0 - 2020-06-21
 
