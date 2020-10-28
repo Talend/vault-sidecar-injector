@@ -1,6 +1,6 @@
 # Changelog for Vault Sidecar Injector
 
-## Release v7.0.1 - 2020-10-29
+## Release v7.0.1 - 2020-10-28
 
 Minor release with new default Vault image to address several security issues in HashiCorp Vault (CVE-2020-25816, CVE-2020-16250, CVE-2020-16251, CVE-2020-17455).
 
