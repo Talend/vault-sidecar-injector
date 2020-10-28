@@ -4,7 +4,7 @@ Your release is named {{ .Release.Name }}.
 
 =====
 To get status:
-$ helm status {{ .Release.Name }}
+$ helm status {{ .Release.Name }} -n {{ .Release.Namespace }}
 
 To uninstall:
 $ helm delete {{ .Release.Name }} -n {{ .Release.Namespace }}
