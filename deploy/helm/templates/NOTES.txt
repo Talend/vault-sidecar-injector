@@ -7,9 +7,5 @@ To get status:
 $ helm status {{ .Release.Name }}
 
 To uninstall:
-# Using Helm 2
-$ helm delete --purge {{ .Release.Name }}
-
-# Using Helm 3
 $ helm delete {{ .Release.Name }} -n {{ .Release.Namespace }}
 =====

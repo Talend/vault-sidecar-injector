@@ -29,11 +29,6 @@ type CertParameters struct {
 	KeyFile        string // default filename for webhook private key (PEM-encoded) in generated or provided k8s secret
 }
 
-// InlineParameters : Inline parameters
-type InlineParameters struct {
-	Manifest string // manifest as input for inline injection
-}
-
 // WhSvrParameters : Webhook Server parameters
 type WhSvrParameters struct {
 	Port                  int    // webhook server port

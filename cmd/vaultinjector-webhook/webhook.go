@@ -48,13 +48,11 @@ func createVaultInjector() (*webhook.VaultInjector, error) {
 		return nil, err
 	}
 
-	vaultInjector := webhook.New(
+	return webhook.New(
 		vsiCfg,
 		&http.Server{
 			Addr:      fmt.Sprintf(":%v", webhookParameters.Port),
 			TLSConfig: &tls.Config{Certificates: []tls.Certificate{tlsCert}},
 		},
-	)
-
-	return vaultInjector, nil
+	), nil
 }

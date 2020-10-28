@@ -32,7 +32,6 @@ var (
 	VERSION string
 
 	certParameters    config.CertParameters
-	inlineParameters  config.InlineParameters
 	webhookParameters config.WhSvrParameters
 )
 
@@ -41,22 +40,17 @@ func main() {
 	case CertCmd:
 		switch certParameters.CertOperation {
 		case CreateCert: // Generate certificates, private key, K8S secret
-			if err := genCertificates(); err != nil {
+			if genCertificates() != nil {
 				os.Exit(1)
 			}
 		case DeleteCert: // Delete K8S secret used to store certificates and private key
-			if err := deleteCertificates(); err != nil {
+			if deleteCertificates() != nil {
 				os.Exit(1)
 			}
-		}
-	case InlineCmd:
-		if _, err := os.Stat(inlineParameters.Manifest); os.IsNotExist(err) {
-			klog.Errorf("File does not exist: %s", inlineParameters.Manifest)
+		default:
+			klog.Errorf("Unsupported certificate operation: %s", certParameters.CertOperation)
 			os.Exit(1)
 		}
-		//TODO
-		//Add flag to tell VSI to not check for serviceaccount token volume (see how to reuse that to simplify tests, not having to invoke our addSATokenVolume() func)
-
 	case WebhookCmd:
 		// Init and load config
 		vaultInjector, err := createVaultInjector()

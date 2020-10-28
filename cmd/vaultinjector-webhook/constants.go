@@ -17,7 +17,6 @@ package main
 // Operational subcommands
 const (
 	CertCmd    = "cert"
-	InlineCmd  = "inline"
 	WebhookCmd = "webhook"
 	VersionCmd = "version"
 )

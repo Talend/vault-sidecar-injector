@@ -23,21 +23,23 @@ import (
 )
 
 func parseFlags() string {
+	// Cert command parameters
 	certCmd := flag.NewFlagSet(CertCmd, flag.ExitOnError)
 	certCmd.StringVar(&certParameters.CertOperation, "certop", CreateCert, "operation on webhook certificates (create, delete)")
 	certCmd.StringVar(&certParameters.CertSecretName, "certsecretname", "", "name of generated or provided Kubernetes secret storing webhook certificates and private key")
 	certCmd.StringVar(&certParameters.CertHostnames, "certhostnames", "", "host names to register in webhook certificate (comma-separated list)")
 	certCmd.IntVar(&certParameters.CertLifetime, "certlifetime", 10, "lifetime in years for generated certificates")
+	certCmd.StringVar(&certParameters.CACertFile, "cacertfile", "ca.crt", "default filename for webhook CA certificate (PEM-encoded) in generated or provided k8s secret")
+	certCmd.StringVar(&certParameters.CertFile, "certfile", "tls.crt", "default filename for webhook certificate (PEM-encoded) in generated or provided k8s secret")
+	certCmd.StringVar(&certParameters.KeyFile, "keyfile", "tls.key", "default filename for webhook private key (PEM-encoded) in generated or provided k8s secret")
 
-	inlineCmd := flag.NewFlagSet(InlineCmd, flag.ExitOnError)
-	inlineCmd.StringVar(&inlineParameters.Manifest, "manifest", "", "manifest as input for inline injection")
-
+	// Webhook command parameters
 	webhookCmd := flag.NewFlagSet(WebhookCmd, flag.ExitOnError)
 	webhookCmd.IntVar(&webhookParameters.Port, "port", 8443, "webhook server port")
 	webhookCmd.IntVar(&webhookParameters.MetricsPort, "metricsport", 9000, "metrics server port (Prometheus)")
-	webhookCmd.StringVar(&webhookParameters.CACertFile, "cacertfile", "", "PEM-encoded webhook CA certificate")
-	webhookCmd.StringVar(&webhookParameters.CertFile, "certfile", "", "PEM-encoded webhook certificate used for TLS")
-	webhookCmd.StringVar(&webhookParameters.KeyFile, "keyfile", "", "PEM-encoded webhook private key used for TLS")
+	webhookCmd.StringVar(&webhookParameters.CACertFile, "cacertfile", "ca.crt", "PEM-encoded webhook CA certificate")
+	webhookCmd.StringVar(&webhookParameters.CertFile, "certfile", "tls.crt", "PEM-encoded webhook certificate used for TLS")
+	webhookCmd.StringVar(&webhookParameters.KeyFile, "keyfile", "tls.key", "PEM-encoded webhook private key used for TLS")
 	webhookCmd.StringVar(&webhookParameters.WebhookCfgName, "webhookcfgname", "", "name of MutatingWebhookConfiguration resource")
 	webhookCmd.StringVar(&webhookParameters.AnnotationKeyPrefix, "annotationkeyprefix", "sidecar.vault", "annotations key prefix")
 	webhookCmd.StringVar(&webhookParameters.AppLabelKey, "applabelkey", "application.name", "key for application label")
@@ -47,22 +49,6 @@ func parseFlags() string {
 	webhookCmd.StringVar(&webhookParameters.TemplateBlockFile, "tmplblockfile", "", "file containing the template block")
 	webhookCmd.StringVar(&webhookParameters.TemplateDefaultFile, "tmpldefaultfile", "", "file containing the default template")
 	webhookCmd.StringVar(&webhookParameters.PodLifecycleHooksFile, "podlchooksfile", "", "file containing the lifecycle hooks to inject in the requesting pod")
-
-	versionCmd := flag.NewFlagSet(VersionCmd, flag.ExitOnError)
-	//flag.Parse()
-
-	// Beware as glog is here behind the scene and we use klog here
-	// So logging command line parameters -v, -logtostderr, -alsologtostderr, -log_dir, -log_file, ... are already initialized (see klog init() func)
-	//klogFlags := flag.NewFlagSet("klog", flag.ExitOnError)
-
-	// Sync the glog and klog flags
-	/*flag.CommandLine.VisitAll(func(f1 *flag.Flag) {
-		f2 := klogFlags.Lookup(f1.Name)
-		if f2 != nil {
-			value := f1.Value.String()
-			f2.Value.Set(value)
-		}
-	})*/
 
 	if len(os.Args) == 1 {
 		usage(os.Args[0])
@@ -75,14 +61,10 @@ func parseFlags() string {
 	case CertCmd:
 		klog.InitFlags(certCmd)
 		certCmd.Parse(os.Args[2:])
-	case InlineCmd:
-		klog.InitFlags(inlineCmd)
-		inlineCmd.Parse(os.Args[2:])
 	case WebhookCmd:
 		klog.InitFlags(webhookCmd)
 		webhookCmd.Parse(os.Args[2:])
 	case VersionCmd:
-		versionCmd.Parse(os.Args[2:])
 		fmt.Println("VSI (Vault Sidecar Injector) version " + VERSION)
 		os.Exit(0)
 	default:
@@ -96,7 +78,7 @@ func parseFlags() string {
 func usage(program string) {
 	fmt.Printf("Usage: %s <command> [<args>]\n\nCommands:\n", program)
 	fmt.Printf("  %s\n", CertCmd)
-	fmt.Printf("  %s\n", InlineCmd)
 	fmt.Printf("  %s\n", WebhookCmd)
 	fmt.Printf("  %s\n", VersionCmd)
+	fmt.Printf("\nUse \"%s <command> --help\" for more information about a given command.\n", program)
 }

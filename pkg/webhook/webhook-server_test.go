@@ -98,6 +98,14 @@ func TestWebhookServerKO(t *testing.T) {
 }
 
 func mutateWorkloads(manifestsPattern string, test assertFunc) error {
+	verbose, _ := strconv.ParseBool(os.Getenv("VERBOSE"))
+	if verbose {
+		// Set Klog verbosity level to have detailed logs from our webhook (where we use level 5+ to log such info)
+		klogFlags := flag.NewFlagSet("klog", flag.ExitOnError)
+		klog.InitFlags(klogFlags)
+		klogFlags.Set("v", "5")
+	}
+
 	// Create webhook instance
 	vaultInjector, err := createVaultInjector()
 	if err != nil {
@@ -128,14 +136,6 @@ func mutateWorkloads(manifestsPattern string, test assertFunc) error {
 }
 
 func createVaultInjector() (*VaultInjector, error) {
-	verbose, _ := strconv.ParseBool(os.Getenv("VERBOSE"))
-	if verbose {
-		// Set Klog verbosity level to have detailed logs from our webhook (where we use level 5+ to log such info)
-		klogFlags := flag.NewFlagSet("klog", flag.ExitOnError)
-		klog.InitFlags(klogFlags)
-		klogFlags.Set("v", "5")
-	}
-
 	vsiCfg, err := cfg.Load(
 		cfg.WhSvrParameters{
 			Port: 0, MetricsPort: 0,

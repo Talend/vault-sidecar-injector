@@ -103,7 +103,7 @@ func (k8sctl *K8SClient) DeleteCertSecret() error {
 	return nil
 }
 
-// PatchWebhookConfiguration generates CA and certificate for webhook then patches MutatingWebhookConfiguration's caBundle
+// PatchWebhookConfiguration reads CA certificate then patches MutatingWebhookConfiguration's caBundle
 func (k8sctl *K8SClient) PatchWebhookConfiguration(cacertfile string) error {
 	caPEM, err := ioutil.ReadFile(cacertfile)
 	if err != nil {
