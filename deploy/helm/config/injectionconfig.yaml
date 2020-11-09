@@ -7,6 +7,8 @@ initContainers:
         value: "true"
       - name: VAULT_ADDR
         value: {{ required "Vault server's address must be specified" .Values.vault.addr | quote }}
+      - name: VAULT_LOG_FORMAT
+        value: {{ .Values.injectconfig.vault.log.format }}
       # env var set by webhook
       - name: VSI_SECRETS_TEMPLATES_PLACEHOLDER
         value: ""
@@ -39,7 +41,7 @@ initContainers:
         ${VSI_SECRETS_TEMPLATES_PLACEHOLDER}
         EOF
         
-        docker-entrypoint.sh agent -config=vault-agent-config.hcl -exit-after-auth=true {{ include "talend-vault-sidecar-injector.vault.cert.skip.verify" .Values }} -log-level={{- .Values.injectconfig.vault.loglevel }}
+        docker-entrypoint.sh agent -config=vault-agent-config.hcl -exit-after-auth=true {{ include "talend-vault-sidecar-injector.vault.cert.skip.verify" .Values }} -log-level={{- .Values.injectconfig.vault.log.level }}
         export VAULT_TOKEN=$(cat /home/vault/.vault-token)
         vault token revoke {{ include "talend-vault-sidecar-injector.vault.cert.skip.verify" .Values }} -self
     volumeMounts:
@@ -125,6 +127,8 @@ containers:
         value: "true"
       - name: VAULT_ADDR
         value: {{ required "Vault server's address must be specified" .Values.vault.addr | quote }}
+      - name: VAULT_LOG_FORMAT
+        value: {{ .Values.injectconfig.vault.log.format }}
       # env var set by webhook
       - name: VSI_JOB_WORKLOAD
         value: "false"
@@ -195,7 +199,7 @@ containers:
         EOF
         fi
         if [ "${VSI_JOB_WORKLOAD}" = "true" ]; then
-          docker-entrypoint.sh agent -config=vault-agent-config.hcl {{ include "talend-vault-sidecar-injector.vault.cert.skip.verify" .Values }} -log-level={{- .Values.injectconfig.vault.loglevel }} &
+          docker-entrypoint.sh agent -config=vault-agent-config.hcl {{ include "talend-vault-sidecar-injector.vault.cert.skip.verify" .Values }} -log-level={{- .Values.injectconfig.vault.log.level }} &
           while true; do
             if [ -f "/opt/talend/tvsi/vault-sidecars-signal-terminate" ]; then
               echo "=> exit (signal received)"
@@ -206,7 +210,7 @@ containers:
             sleep 2
           done
         else
-          docker-entrypoint.sh agent -config=vault-agent-config.hcl {{ include "talend-vault-sidecar-injector.vault.cert.skip.verify" .Values }} -log-level={{- .Values.injectconfig.vault.loglevel }}
+          docker-entrypoint.sh agent -config=vault-agent-config.hcl {{ include "talend-vault-sidecar-injector.vault.cert.skip.verify" .Values }} -log-level={{- .Values.injectconfig.vault.log.level }}
         fi
     lifecycle:
       preStop:

@@ -1,5 +1,15 @@
 # Changelog for Vault Sidecar Injector
 
+## Release v7.0.2 - 2020-11-09
+
+**Changed**
+
+- [VSI #40](https://github.com/Talend/vault-sidecar-injector/pull/40) - Update doc references to Helm Hub (now Artifact Hub)
+
+**Added**
+
+- [VSI #41](https://github.com/Talend/vault-sidecar-injector/pull/41) - New configuration value to set Vault Agent log format
+
 ## Release v7.0.1 - 2020-10-28
 
 Minor release with new default Vault image to address several security issues in HashiCorp Vault (CVE-2020-25816, CVE-2020-16250, CVE-2020-16251, CVE-2020-17455).
