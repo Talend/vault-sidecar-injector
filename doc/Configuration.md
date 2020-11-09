@@ -22,7 +22,8 @@ The following table lists the configurable parameters of the `Vault Sidecar Inje
 | injectconfig.vault.image.path  | Image path  | vault |
 | injectconfig.vault.image.pullPolicy    | Pull policy for image: IfNotPresent or Always  | Always   |
 | injectconfig.vault.image.tag  | Image tag | 1.5.4 |
-| injectconfig.vault.loglevel                    | Vault log level: trace, debug, info, warn, err    | info    |
+| injectconfig.vault.log.format                    | Vault log format: standard, json    | json    |
+| injectconfig.vault.log.level                    | Vault log level: trace, debug, info, warn, err    | info    |
 | injectconfig.vault.resources.limits.cpu | Vault sidecar CPU resource limits | 50m |
 | injectconfig.vault.resources.limits.memory | Vault sidecar memory resource limits | 50Mi |
 | injectconfig.vault.resources.requests.cpu | Vault sidecar CPU resource requests | 40m |

@@ -76,7 +76,9 @@ injectconfig:
       path: "vault" # image path
       tag: "1.5.4" # image tag
       pullPolicy: Always # Pull policy for images: IfNotPresent or Always
-    loglevel: info # Vault log level: trace, debug, info, warn, err
+    log:
+      level: info # Vault log level: trace, debug, info, warn, err
+      format: json # Vault log format: standard, json
     resources:
       limits:
         cpu: 50m  # Vault sidecar CPU resource limits
