@@ -146,7 +146,7 @@ spec:
           ...
 ```
 
-Refer to [samples](samples) folder for complete examples.
+Refer to [samples](../samples) folder for complete examples.
 
 </details>
 
