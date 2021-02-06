@@ -38,7 +38,8 @@ Following annotations in requesting pods are supported:
 
 | Annotation                            | (M)andatory / (O)ptional |  Apply to mode | Default Value        | Supported Values               | Description |
 |---------------------------------------|--------------------------|-----------------|----------------------|--------------------------------|-------------|
-| `sidecar.vault.talend.org/inject`     | M           |    N/A          |                      | "true" / "on" / "yes" / "y"  | Ask for sidecar injection to get secrets from Vault    |
+| `sidecar.vault.talend.org/inject`     | M           |    N/A          |                      | "true" / "on" / "yes" / "y"  | Ask for injection to get secrets from Vault    |
+| `sidecar.vault.talend.org/vault-image` | O          |    N/A          | "<`injectconfig.vault.image.path` Helm value>:<`injectconfig.vault.image.tag` Helm value>"  | Any image with Vault installed | The image to be injected in your pod |
 | `sidecar.vault.talend.org/auth`       | O           |    N/A          | "kubernetes"   | "kubernetes" / "approle" | Vault Auth Method to use. **Static secrets only supports "kubernetes" authentication method** |
 | `sidecar.vault.talend.org/mode`       | O           |    N/A          | "secrets"      | "secrets" / "proxy" / "job" / Comma-separated values (eg "secrets,proxy") | Enable provided mode(s). **Note: `secrets` mode will be enabled if you only set `job` mode**   |
 | `sidecar.vault.talend.org/notify`     | O           |    secrets   | ""   | Comma-separated strings  | List of commands to notify application/service of secrets change, one per secrets path. **Usage context: dynamic secrets only** |

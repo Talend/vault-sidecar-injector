@@ -1,6 +1,6 @@
 # Vault Sidecar Injector vs HashiCorp Vault Agent Injector - Features Comparison
 
-*March 2020, [Post by Alain Saint-Sever, Principal Cloud Software Architect (@alstsever)](https://twitter.com/alstsever)*
+*March 2020 (with [updates](#changes-since-comparison)), [Post by Alain Saint-Sever, Principal Cloud Software Architect (@alstsever)](https://twitter.com/alstsever)*
 
 - [Vault Sidecar Injector vs HashiCorp Vault Agent Injector - Features Comparison](#vault-sidecar-injector-vs-hashicorp-vault-agent-injector---features-comparison)
   - [Intro](#intro)
@@ -10,6 +10,7 @@
     - [HashiCorp Vault Agent Injector installation](#hashicorp-vault-agent-injector-installation)
   - [Test Workloads](#test-workloads)
   - [Features Comparison](#features-comparison)
+  - [Changes since comparison](#changes-since-comparison)
 
 ## Intro
 
@@ -135,12 +136,12 @@ Features comparison `Vault Sidecar Injector` vs `HashiCorp Vault Agent Injector`
 | Custom Vault Agent config | **Not possible** | By providing K8S ConfigMap with custom Vault Agent config + using annotation to load config *(`vault.hashicorp.com/agent-configmap`)* |
 | Vault AppRole Auth support | At pod level *(using annotation)* | By providing K8S ConfigMap with custom Vault Agent config + using annotation to load config *(`vault.hashicorp.com/agent-configmap`)* |
 | Secrets volume mount path |  Any path associated to the `secrets` Volume   | Cannot be changed *(set to `/vault/secrets`)* |
-| Shared secrets volume| Injection of In-memory Volume **only** if not defined. VolumeMount is not injected if not defined ***(1)*** | Injection of both In-memory Volume and VolumeMount. **Failure** if `vault-secrets` Volume already defined |
+| Shared secrets volume| Injection of In-memory Volume **only** if not defined. VolumeMount is not injected if not defined ***([1](#changes-since-comparison))*** | Injection of both In-memory Volume and VolumeMount. **Failure** if `vault-secrets` Volume already defined |
 | Resources (CPU, mem) for injected container(s) | At webhook level *(helm chart values)* | At pod level *(default values or custom via annotations)* |
 | Resources (CPU, mem) for webhook | Using Helm chart values | Using Helm chart values |
 | Vault server to use | At webhook level *(helm chart value)* | Both at webhook *(helm chart value)* and pod levels *(via annotation)* |
 | Vault Agent's check of Vault's TLS cert | At webhook level *(helm chart value)* | At pod level *(using annotation)* |
-|Vault Agent image|               At webhook level *(helm chart value)*    |    Both at webhook *(helm chart value)* and pod levels *(via annotation)* |
+|Vault Agent image|               At webhook level *(helm chart value)* ***([2](#changes-since-comparison))***    |    Both at webhook *(helm chart value)* and pod levels *(via annotation)* |
 
 Most of the differences are less the result of technical choice than philosophical ones: the Vault Sidecar Injector is more "user friendly" in this regard by easily giving access to Vault proxy mode or other technical features through a simple annotation, where the same capabilities on HashiCorp's injector will require the user to provide a complete Vault Agent config wrapped into a Kubernetes ConfigMap. This distinct approach can also be seen with Vault Sidecar Injector's modes that completely relieve the user from knowing whether he needs an init container or a sidecar or both of them to handle a use case. On the other end, with the HashiCorp's injector, the user has control over the injected content and this "complexity" allows for greater flexibility.
 
@@ -148,8 +149,8 @@ Most of the differences are less the result of technical choice than philosophic
 
 Future Vault Sidecar Injector releases will continue focusing on a feature-oriented, non-technical path to make injector usage as seamless as possible. Results from this comparison test show that there is room for some improvements on volume management that will be taking care of soon. Stay tuned !
 
-<hr>
+## Changes since comparison
 
-**Changes since comparison:**
-
-> *(1), June 2020: as of Vault Sidecar Injector release 7.0.0, volumeMount is also injected if not defined*
+> ***(1)**, June 2020: as of Vault Sidecar Injector release 7.0.0, volumeMount is also injected if not defined*
+>
+> ***(2)**, February 2021: as of Vault Sidecar Injector release 7.1.0, you can also select the image to inject at pod level (using an annotation)*
