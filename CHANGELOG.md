@@ -1,12 +1,12 @@
 # Changelog for Vault Sidecar Injector
 
-## Release v7.1.0 - 2021-02-XX
+## Release v7.1.0 - TO_BE_RELEASED
 
 A new `sidecar.vault.talend.org/vault-image` annotation has been added to override the default injected image. Refer to the [samples](samples) for a working example.
 
 **Added**
 
-- [VSI #42](https://github.com/Talend/vault-sidecar-injector/pull/42) - New annotation to allow injection of custom Vault image
+- [VSI #43](https://github.com/Talend/vault-sidecar-injector/pull/43) - New annotation to allow injection of custom Vault image
 
 ## Release v7.0.2 - 2020-11-09
 
