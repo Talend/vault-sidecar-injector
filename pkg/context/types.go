@@ -1,4 +1,4 @@
-// Copyright © 2019-2020 Talend - www.talend.com
+// Copyright © 2019-2021 Talend - www.talend.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package context
 // InjectionContext : struct to carry computed placeholders' values and context info for current injection
 type InjectionContext struct {
 	K8sDefaultSATokenVolumeName    string
+	VaultImage                     string
 	VaultInjectorSATokenVolumeName string
 	VaultAuthMethod                string
 	VaultRole                      string

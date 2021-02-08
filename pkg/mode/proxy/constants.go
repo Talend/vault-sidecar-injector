@@ -14,14 +14,16 @@
 
 package proxy
 
+import "talend/vault-sidecar-injector/pkg/config"
+
 const (
 	//--- Vault Sidecar Injector modes annotation keys (without prefix)
 	vaultInjectorAnnotationProxyPortKey = "proxy-port" // Optional. Port assigned to local Vault proxy.
 )
 
 const (
-	proxyContainerName    = "tvsi-vault-agent" // Name of our proxy container to inject
-	vaultProxyDefaultPort = "8200"             // Default port to access local Vault proxy
+	proxyContainerName    = config.VaultAgentContainerName // Name of our proxy container to inject
+	vaultProxyDefaultPort = "8200"                         // Default port to access local Vault proxy
 )
 
 const (

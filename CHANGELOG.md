@@ -6,7 +6,7 @@ A new `sidecar.vault.talend.org/vault-image` annotation has been added to overri
 
 **Added**
 
-- [VSI #42](https://github.com/Talend/vault-sidecar-injector/pull/42) - New annotation to select a different image to inject
+- [VSI #42](https://github.com/Talend/vault-sidecar-injector/pull/42) - New annotation to allow injection of custom Vault image
 
 ## Release v7.0.2 - 2020-11-09
 

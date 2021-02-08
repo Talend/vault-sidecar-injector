@@ -1,4 +1,4 @@
-// Copyright © 2019-2020 Talend - www.talend.com
+// Copyright © 2019-2021 Talend - www.talend.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import (
 	"strconv"
 	"strings"
 
+	"talend/vault-sidecar-injector/pkg/config"
 	ctx "talend/vault-sidecar-injector/pkg/context"
 	m "talend/vault-sidecar-injector/pkg/mode"
 	"talend/vault-sidecar-injector/pkg/mode/job"
@@ -84,6 +85,7 @@ func (vaultInjector *VaultInjector) computeContext(podContainers []corev1.Contai
 
 	klog.Infof("Modes status: %+v", modesStatus)
 
+	vaultImage := annotations[vaultInjector.VaultInjectorAnnotationsFQ[ctx.VaultInjectorAnnotationVaultImageKey]]
 	vaultAuthMethod := strings.ToLower(annotations[vaultInjector.VaultInjectorAnnotationsFQ[ctx.VaultInjectorAnnotationAuthMethodKey]])
 	vaultRole := annotations[vaultInjector.VaultInjectorAnnotationsFQ[ctx.VaultInjectorAnnotationRoleKey]]
 	vaultSATokenPath := annotations[vaultInjector.VaultInjectorAnnotationsFQ[ctx.VaultInjectorAnnotationSATokenKey]]
@@ -149,6 +151,7 @@ func (vaultInjector *VaultInjector) computeContext(podContainers []corev1.Contai
 
 	return &ctx.InjectionContext{
 		K8sDefaultSATokenVolumeName:    k8sSaSecretsVolName,
+		VaultImage:                     vaultImage,
 		VaultInjectorSATokenVolumeName: vaultInjectorSaSecretsVolName,
 		VaultAuthMethod:                vaultAuthMethod,
 		VaultRole:                      vaultRole,
@@ -240,6 +243,13 @@ func (vaultInjector *VaultInjector) addContainer(podContainers []corev1.Containe
 				container.VolumeMounts[volMountIdx].Name = context.K8sDefaultSATokenVolumeName
 			case vaultInjectorSATokenVolMountPath:
 				container.VolumeMounts[volMountIdx].Name = context.VaultInjectorSATokenVolumeName
+			}
+		}
+
+		// Check if custom Vault image is provided and, if so, update image for relevant containers
+		if context.VaultImage != "" {
+			if (container.Name == config.VaultAgentInitContainerName) || (container.Name == config.VaultAgentContainerName) {
+				container.Image = context.VaultImage
 			}
 		}
 
