@@ -1,4 +1,4 @@
-// Copyright © 2019-2020 Talend - www.talend.com
+// Copyright © 2019-2021 Talend - www.talend.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
 
 package secrets
 
+import "talend/vault-sidecar-injector/pkg/config"
+
 const (
 	//--- Vault Sidecar Injector modes annotation keys (without prefix)
 	vaultInjectorAnnotationSecretsPathKey            = "secrets-path"             // Optional. Full path, e.g.: "secret/<some value>", "aws/creds/<some role>", ... Several values separated by ','.
@@ -26,13 +28,13 @@ const (
 )
 
 const (
-	secretsContainerName               = "tvsi-vault-agent"      // Name of our secrets container to inject
-	secretsInitContainerName           = "tvsi-vault-agent-init" // Name of our secrets init container to inject
-	secretsEnvInitContainerName        = "tvsi-env-init"         // Name of our env process init container to inject
-	templateAppSvcDefaultDestination   = "secrets.properties"    // Default secrets destination
-	vaultDefaultSecretsEnginePath      = "secret"                // Default path for Vault K/V Secrets Engine if no 'secrets-path' annotation
-	secretsAnnotationSeparator         = ","                     // Generic separator for secrets annotations' values
-	secretsAnnotationTemplateSeparator = "---"                   // Separator for secrets templates annotation's values
+	secretsContainerName               = config.VaultAgentContainerName     // Name of our secrets container to inject
+	secretsInitContainerName           = config.VaultAgentInitContainerName // Name of our secrets init container to inject
+	secretsEnvInitContainerName        = config.VSIEnvInitContainerName     // Name of our env process init container to inject
+	templateAppSvcDefaultDestination   = "secrets.properties"               // Default secrets destination
+	vaultDefaultSecretsEnginePath      = "secret"                           // Default path for Vault K/V Secrets Engine if no 'secrets-path' annotation
+	secretsAnnotationSeparator         = ","                                // Generic separator for secrets annotations' values
+	secretsAnnotationTemplateSeparator = "---"                              // Separator for secrets templates annotation's values
 )
 
 const (

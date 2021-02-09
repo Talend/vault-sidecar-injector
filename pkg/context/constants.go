@@ -1,4 +1,4 @@
-// Copyright © 2019-2020 Talend - www.talend.com
+// Copyright © 2019-2021 Talend - www.talend.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,12 +17,13 @@ package context
 const (
 	//--- Vault Sidecar Injector annotation keys (without prefix)
 	// Input annotations (set on incoming manifest)
-	VaultInjectorAnnotationInjectKey     = "inject"   // Mandatory
-	VaultInjectorAnnotationAuthMethodKey = "auth"     // Optional. Vault Auth Method to use: kubernetes (default) or approle
-	VaultInjectorAnnotationModeKey       = "mode"     // Optional. Comma-separated list of mode(s) to enable.
-	VaultInjectorAnnotationRoleKey       = "role"     // Optional. To explicitly provide Vault role to use
-	VaultInjectorAnnotationSATokenKey    = "sa-token" // Optional. Full path to service account token used for Vault Kubernetes authentication
-	VaultInjectorAnnotationWorkloadKey   = "workload" // Optional and deprecated. If set to "job", supplementary container and signaling mechanism will also be injected to properly handle k8s job
+	VaultInjectorAnnotationInjectKey     = "inject"      // Mandatory
+	VaultInjectorAnnotationVaultImageKey = "vault-image" // Optional. Image to inject
+	VaultInjectorAnnotationAuthMethodKey = "auth"        // Optional. Vault Auth Method to use: kubernetes (default) or approle
+	VaultInjectorAnnotationModeKey       = "mode"        // Optional. Comma-separated list of mode(s) to enable.
+	VaultInjectorAnnotationRoleKey       = "role"        // Optional. To explicitly provide Vault role to use
+	VaultInjectorAnnotationSATokenKey    = "sa-token"    // Optional. Full path to service account token used for Vault Kubernetes authentication
+	VaultInjectorAnnotationWorkloadKey   = "workload"    // Optional and deprecated. If set to "job", supplementary container and signaling mechanism will also be injected to properly handle k8s job
 	// Output annotation (set by VSI webhook)
 	VaultInjectorAnnotationStatusKey = "status" // Not to be set by requesting pods: set by the Webhook Admission Controller if injection ok
 )

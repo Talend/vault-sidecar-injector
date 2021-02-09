@@ -1,4 +1,4 @@
-// Copyright © 2019-2020 Talend - www.talend.com
+// Copyright © 2019-2021 Talend - www.talend.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ type VaultInjector struct {
 // Supported annotations (modes' annotations will be appended to this array)
 var vaultInjectorAnnotationKeys = []string{
 	ctx.VaultInjectorAnnotationInjectKey,
+	ctx.VaultInjectorAnnotationVaultImageKey,
 	ctx.VaultInjectorAnnotationAuthMethodKey,
 	ctx.VaultInjectorAnnotationModeKey,
 	ctx.VaultInjectorAnnotationRoleKey,

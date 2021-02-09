@@ -1,4 +1,4 @@
-// Copyright © 2019-2020 Talend - www.talend.com
+// Copyright © 2019-2021 Talend - www.talend.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,14 +14,16 @@
 
 package proxy
 
+import "talend/vault-sidecar-injector/pkg/config"
+
 const (
 	//--- Vault Sidecar Injector modes annotation keys (without prefix)
 	vaultInjectorAnnotationProxyPortKey = "proxy-port" // Optional. Port assigned to local Vault proxy.
 )
 
 const (
-	proxyContainerName    = "tvsi-vault-agent" // Name of our proxy container to inject
-	vaultProxyDefaultPort = "8200"             // Default port to access local Vault proxy
+	proxyContainerName    = config.VaultAgentContainerName // Name of our proxy container to inject
+	vaultProxyDefaultPort = "8200"                         // Default port to access local Vault proxy
 )
 
 const (

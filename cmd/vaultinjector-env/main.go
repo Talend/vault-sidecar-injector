@@ -1,4 +1,4 @@
-// Copyright © 2019-2020 Talend - www.talend.com
+// Copyright © 2019-2021 Talend - www.talend.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -47,8 +47,8 @@ func init() {
 
 // Program accepts following env vars:
 //
-// VSI_ENV_LOG_JSON				true/false (default)			Log as JSON
-// VSI_ENV_LOG_LEVEL			0 to 6 (default: 3 fo warning)	Log level
+// VSI_ENV_LOG_JSON				true/false (default)	Log as JSON
+// VSI_ENV_LOG_LEVEL			0 to 6 (default: 3)		Log level (3 for warning, 6 to trace everything)
 //
 func main() {
 	var entrypointCmd []string
@@ -103,7 +103,7 @@ func main() {
 	// Replace current process with original one, providing env vars (including new ones from fetched secrets)
 	err = syscall.Exec(binary, entrypointCmd, env)
 	if err != nil {
-		log.Panicln("failed to exec process", entrypointCmd, err.Error())
+		log.Fatalln("failed to exec process", entrypointCmd, err.Error())
 	}
 }
 
