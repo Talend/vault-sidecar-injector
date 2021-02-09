@@ -36,7 +36,7 @@ Using HashiCorp's Vault Helm chart:
 ```bash
 git clone https://github.com/hashicorp/vault-helm.git
 cd vault-helm
-git checkout v0.7.0
+git checkout v0.9.1
 helm install vault . --set injector.enabled=false --set server.dev.enabled=true --set ui.enabled=true --set ui.serviceType="NodePort"
 ```
 

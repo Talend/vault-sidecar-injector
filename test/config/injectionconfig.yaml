@@ -1,6 +1,6 @@
 initContainers:
   - name: tvsi-vault-agent-init
-    image: vault:1.5.4
+    image: vault:1.6.2
     imagePullPolicy: Always
     env:
       - name: SKIP_SETCAP
@@ -106,7 +106,7 @@ containers:
         mountPath: /var/run/secrets/kubernetes.io/serviceaccount
         readOnly: true
   - name: tvsi-vault-agent
-    image: vault:1.5.4
+    image: vault:1.6.2
     imagePullPolicy: Always
     env:
       - name: SKIP_SETCAP
