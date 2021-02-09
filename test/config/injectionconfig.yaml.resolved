@@ -116,7 +116,7 @@ containers:
   - name: VSI_VAULT_AUTH_METHOD
     value: kubernetes
   - name: VSI_VAULT_ROLE
-  image: vault:1.5.4
+  image: vault:1.6.2
   imagePullPolicy: Always
   lifecycle:
     preStop:
@@ -173,7 +173,7 @@ initContainers:
     value: https://vault:8200
   - name: VSI_SECRETS_TEMPLATES_PLACEHOLDER
   - name: VSI_VAULT_ROLE
-  image: vault:1.5.4
+  image: vault:1.6.2
   imagePullPolicy: Always
   name: tvsi-vault-agent-init
   resources: {}

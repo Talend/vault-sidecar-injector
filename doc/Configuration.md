@@ -21,7 +21,7 @@ The following table lists the configurable parameters of the `Vault Sidecar Inje
 | injectconfig.jobbabysitter.resources.requests.memory | Job babysitter sidecar memory resource requests | 20Mi |
 | injectconfig.vault.image.path  | Image path  | vault |
 | injectconfig.vault.image.pullPolicy    | Pull policy for image: IfNotPresent or Always  | Always   |
-| injectconfig.vault.image.tag  | Image tag | 1.5.4 |
+| injectconfig.vault.image.tag  | Image tag | 1.6.2 |
 | injectconfig.vault.log.format                    | Vault log format: standard, json    | json    |
 | injectconfig.vault.log.level                    | Vault log level: trace, debug, info, warn, err    | info    |
 | injectconfig.vault.resources.limits.cpu | Vault sidecar CPU resource limits | 50m |

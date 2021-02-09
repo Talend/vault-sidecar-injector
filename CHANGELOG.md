@@ -2,7 +2,13 @@
 
 ## Release v7.1.0 - TO_BE_RELEASED
 
-A new `sidecar.vault.talend.org/vault-image` annotation has been added to override the default injected image. Refer to the [samples](samples) for a working example.
+A new `sidecar.vault.talend.org/vault-image` annotation has been added to override the default injected image. Refer to the [samples](samples) for a [working example](samples/app-dep-10-secrets_custom_image_notify.yaml).
+
+The default Vault image has been bumped to version `1.6.2`.
+
+**Changed**
+
+- [VSI #44](https://github.com/Talend/vault-sidecar-injector/pull/44) - Update HashiCorp Vault image to 1.6.2
 
 **Added**
 
