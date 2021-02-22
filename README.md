@@ -1,8 +1,10 @@
 
 # Vault Sidecar Injector
 
+[![License](https://img.shields.io/github/license/Talend/vault-sidecar-injector?style=for-the-badge)](https://github.com/Talend/vault-sidecar-injector/LICENSE)
 [![GitHub All Releases](https://img.shields.io/github/downloads/Talend/vault-sidecar-injector/total?style=for-the-badge)](https://github.com/Talend/vault-sidecar-injector/releases)
 [![Docker Pulls](https://img.shields.io/docker/pulls/talend/vault-sidecar-injector?style=for-the-badge)](https://hub.docker.com/r/talend/vault-sidecar-injector)
+[![Latest release](https://img.shields.io/github/v/release/Talend/vault-sidecar-injector?style=for-the-badge)](https://github.com/Talend/vault-sidecar-injector/releases)
 
 `Vault Sidecar Injector` allows to dynamically inject HashiCorp Vault Agent as either an init or a sidecar container, along with configuration and volumes, in any matching pod manifest **to seamlessly fetch secrets from Vault**. Pods willing to benefit from this feature just have to add some custom annotations to ask for the injection **at deployment time**.
 
