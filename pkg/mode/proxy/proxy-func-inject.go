@@ -1,4 +1,4 @@
-// Copyright © 2019-2020 Talend - www.talend.com
+// Copyright © 2019-2021 Talend - www.talend.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@ package proxy
 
 import (
 	ctx "talend/vault-sidecar-injector/pkg/context"
+	m "talend/vault-sidecar-injector/pkg/mode"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
@@ -24,12 +25,12 @@ import (
 func proxyModeInject(containerBasePath string, podContainers []corev1.Container, containerName string, env []corev1.EnvVar, context *ctx.InjectionContext) (bool, error) {
 	for _, cntName := range proxyContainerNames[containerBasePath] {
 		if cntName == containerName {
-			klog.Infof("[%s] Injecting container %s (path: %s)", VaultInjectorModeProxy, containerName, containerBasePath)
+			klog.Infof("[%s] Injecting container %s (path: %s)", m.VaultInjectorModeProxy, containerName, containerBasePath)
 
 			// Resolve proxy env vars
 			for envIdx := range env {
 				if env[envIdx].Name == vaultProxyConfigPlaceholderEnv {
-					env[envIdx].Value = context.ModesConfig[VaultInjectorModeProxy].GetTemplate()
+					env[envIdx].Value = context.ModesConfig[m.VaultInjectorModeProxy].GetTemplate()
 				}
 			}
 

@@ -1,4 +1,4 @@
-// Copyright © 2019-2020 Talend - www.talend.com
+// Copyright © 2019-2021 Talend - www.talend.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ func init() {
 	// Register mode
 	m.RegisterMode(
 		m.VaultInjectorModeInfo{
-			Key:               VaultInjectorModeSecrets,
+			Key:               m.VaultInjectorModeSecrets,
 			DefaultMode:       true, // Secrets will be enabled if no mode explicitly set via mode annotation in manifest
 			EnableDefaultMode: false,
 			Annotations: []string{

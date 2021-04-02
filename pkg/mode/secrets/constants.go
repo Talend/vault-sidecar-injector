@@ -58,11 +58,6 @@ const (
 )
 
 const (
-	//--- Vault Sidecar Injector supported modes
-	VaultInjectorModeSecrets = "secrets" // Enable fetching of secrets from Vault store
-)
-
-const (
 	//--- Vault Sidecar Injector secrets type
 	vaultInjectorSecretsTypeDynamic = "dynamic"
 	vaultInjectorSecretsTypeStatic  = "static"

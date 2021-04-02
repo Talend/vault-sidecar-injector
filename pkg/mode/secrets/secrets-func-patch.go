@@ -1,4 +1,4 @@
-// Copyright © 2019-2020 Talend - www.talend.com
+// Copyright © 2019-2021 Talend - www.talend.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import (
 	"strings"
 	cfg "talend/vault-sidecar-injector/pkg/config"
 	ctx "talend/vault-sidecar-injector/pkg/context"
-	"talend/vault-sidecar-injector/pkg/mode/job"
+	m "talend/vault-sidecar-injector/pkg/mode"
 
 	corev1 "k8s.io/api/core/v1"
 
@@ -32,13 +32,13 @@ import (
 func secretsModePatch(config *cfg.VSIConfig, podSpec corev1.PodSpec, annotations map[string]string, context *ctx.InjectionContext) (patch []ctx.PatchOperation, err error) {
 	var patchHooks, patchCmd []ctx.PatchOperation
 
-	if !isSecretsStatic(context) { // Only for dynamic secrets
+	if !IsSecretsStatic(context) { // Only for dynamic secrets
 		// Add lifecycle hooks to requesting pod's container(s) if needed
 		if patchHooks, err = addLifecycleHooks(config, podSpec.Containers, annotations, context); err == nil {
 			patch = append(patch, patchHooks...)
 		}
 	} else {
-		if isSecretsInjectionEnv(context) { // Look if injection method is set to 'env'
+		if IsSecretsInjectionEnv(context) { // Look if injection method is set to 'env'
 			// Patch containers' commands to invoke 'vaultinjector-env' process first to add env vars from secrets
 			if patchCmd, err = patchCommand(podSpec.Containers); err == nil {
 				patch = append(patch, patchCmd...)
@@ -70,7 +70,7 @@ func patchCommand(podContainers []corev1.Container) (patch []ctx.PatchOperation,
 			})
 		} else {
 			err = fmt.Errorf("No explicit command found for container %s", podCnt.Name)
-			klog.Errorf("[%s] %s", VaultInjectorModeSecrets, err.Error())
+			klog.Errorf("[%s] %s", m.VaultInjectorModeSecrets, err.Error())
 			return
 		}
 	}
@@ -84,16 +84,16 @@ func addLifecycleHooks(config *cfg.VSIConfig, podContainers []corev1.Container, 
 		return
 	case "y", "yes", "true", "on":
 		// Check if job mode is enabled: this annotation should not be used then
-		if context.ModesStatus[job.VaultInjectorModeJob] {
-			err = fmt.Errorf("Submitted pod uses unsupported combination of '%s' annotation with '%s' mode", config.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationLifecycleHookKey], job.VaultInjectorModeJob)
-			klog.Errorf("[%s] %s", VaultInjectorModeSecrets, err.Error())
+		if context.ModesStatus[m.VaultInjectorModeJob] {
+			err = fmt.Errorf("Submitted pod uses unsupported combination of '%s' annotation with '%s' mode", config.VaultInjectorAnnotationsFQ[vaultInjectorAnnotationLifecycleHookKey], m.VaultInjectorModeJob)
+			klog.Errorf("[%s] %s", m.VaultInjectorModeSecrets, err.Error())
 			return
 		}
 
 		if config.PodslifecycleHooks.PostStart != nil {
 			if config.PodslifecycleHooks.PostStart.Exec == nil {
 				err = errors.New("Unsupported lifecycle hook. Only support Exec type")
-				klog.Errorf("[%s] %s", VaultInjectorModeSecrets, err.Error())
+				klog.Errorf("[%s] %s", m.VaultInjectorModeSecrets, err.Error())
 				return
 			}
 
@@ -117,7 +117,7 @@ func addLifecycleHooks(config *cfg.VSIConfig, podContainers []corev1.Container, 
 
 				if podCnt.Lifecycle != nil {
 					if podCnt.Lifecycle.PostStart != nil {
-						klog.Warningf("[%s] Replacing existing postStart hook for container %s", VaultInjectorModeSecrets, podCnt.Name)
+						klog.Warningf("[%s] Replacing existing postStart hook for container %s", m.VaultInjectorModeSecrets, podCnt.Name)
 					}
 
 					podCnt.Lifecycle.PostStart = postStartHook

@@ -1,4 +1,4 @@
-// Copyright © 2019-2020 Talend - www.talend.com
+// Copyright © 2019-2021 Talend - www.talend.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ func init() {
 	// Register mode
 	m.RegisterMode(
 		m.VaultInjectorModeInfo{
-			Key:                 VaultInjectorModeJob,
+			Key:                 m.VaultInjectorModeJob,
 			DefaultMode:         false,
 			EnableDefaultMode:   true, // Default mode will also be enabled if job is **the only mode on** (as it does not make sense to have only this mode)
 			InjectContainerFunc: jobModeInject,

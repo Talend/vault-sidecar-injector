@@ -113,7 +113,7 @@ Depending on the modes you decide to enable and whether you opt for static or dy
     <td align="center">X</td><td/><td/><td/><td align="center" bgcolor="grey">X</td><td bgcolor="grey"/>
   </tr>
   <tr>
-    <td align="center">X</td><td/><td/><td align="center">X<b><i>¹</i></b></td><td align="center" bgcolor="grey">X (secrets)</td><td align="center" bgcolor="grey">X (job)</td>
+    <td align="center">X</td><td/><td/><td align="center">X<b><i>¹</i></b></td><td align="center" bgcolor="grey">X (secrets)</td><td align="center" bgcolor="grey"/>
   </tr>
   <tr>
     <td/><td align="center">X</td><td/><td/><td bgcolor="grey"/><td align="center" bgcolor="grey">X</td>
@@ -141,6 +141,6 @@ Depending on the modes you decide to enable and whether you opt for static or dy
   </tr>
 </table>
 
-> **[1]** *on job mode:* if you only set mode annotation's value to "job", `secrets` mode will be enabled automatically and configured to handle dynamic secrets (unless you set `sidecar.vault.talend.org/secrets-type` to "static" but note that in this situation, there is no need, although we do not prevent it, to enable job mode as no Vault Agent will be injected as sidecar).
+> **[1]** *on job mode:* if you only set mode annotation's value to "job", `secrets` mode will be enabled automatically and configured to handle dynamic secrets (unless you set `sidecar.vault.talend.org/secrets-type` to "static" but note that in this situation, there is no need, although we do not prevent it, to enable job mode explicitly as no sidecar will be injected).
 
-> **[2]** *on number of injected sidecars:* for Kubernetes **Deployment** workloads, **only one sidecar container** is added to your pod to handle dynamic secrets and/or proxy. For Kubernetes **Job** workloads, **two sidecars** are injected to achieve the same tasks.
+> **[2]** *on number of injected sidecars:* for Kubernetes **Deployment** workloads, **only one sidecar container** is added to your pod to handle dynamic secrets and/or proxy. For Kubernetes **Job** workloads, **two sidecars** are injected to achieve the same tasks (or 0 in case you only enable job mode with static secrets).

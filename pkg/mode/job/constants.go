@@ -25,8 +25,3 @@ const (
 	jobContainerNameEnv = "VSI_JOB_CNT_NAME" // Env var for name of the app job's container
 	jobWorkloadEnv      = "VSI_JOB_WORKLOAD" // Env var set to "true" if submitted workload is a k8s job
 )
-
-const (
-	//--- Vault Sidecar Injector supported modes
-	VaultInjectorModeJob = "job" // Enable handling of Kubernetes Job
-)

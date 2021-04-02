@@ -1,4 +1,4 @@
-// Copyright © 2019-2020 Talend - www.talend.com
+// Copyright © 2019-2021 Talend - www.talend.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package secrets
 import (
 	"errors"
 	ctx "talend/vault-sidecar-injector/pkg/context"
+	m "talend/vault-sidecar-injector/pkg/mode"
 
 	corev1 "k8s.io/api/core/v1"
 
@@ -36,21 +37,21 @@ func getSecretsModeConfig(config ctx.ModeConfig) (*secretsModeConfig, error) {
 		return nil, err
 	}
 
-	err := errors.New("Null mode config")
-	klog.Error(err.Error())
+	err := errors.New("Secrets mode config is null")
+	klog.Warning(err.Error())
 	return nil, err
 }
 
-func isSecretsStatic(context *ctx.InjectionContext) bool {
-	if secretsModeCfg, err := getSecretsModeConfig(context.ModesConfig[VaultInjectorModeSecrets]); err == nil {
+func IsSecretsStatic(context *ctx.InjectionContext) bool {
+	if secretsModeCfg, err := getSecretsModeConfig(context.ModesConfig[m.VaultInjectorModeSecrets]); err == nil {
 		return secretsModeCfg.secretsType == vaultInjectorSecretsTypeStatic
 	}
 
 	return false
 }
 
-func isSecretsInjectionEnv(context *ctx.InjectionContext) bool {
-	if secretsModeCfg, err := getSecretsModeConfig(context.ModesConfig[VaultInjectorModeSecrets]); err == nil {
+func IsSecretsInjectionEnv(context *ctx.InjectionContext) bool {
+	if secretsModeCfg, err := getSecretsModeConfig(context.ModesConfig[m.VaultInjectorModeSecrets]); err == nil {
 		return secretsModeCfg.secretsInjectionMethod == vaultInjectorSecretsInjectionMethodEnv
 	}
 

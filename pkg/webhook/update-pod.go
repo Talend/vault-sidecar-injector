@@ -23,7 +23,6 @@ import (
 	"talend/vault-sidecar-injector/pkg/config"
 	ctx "talend/vault-sidecar-injector/pkg/context"
 	m "talend/vault-sidecar-injector/pkg/mode"
-	"talend/vault-sidecar-injector/pkg/mode/job"
 	"talend/vault-sidecar-injector/pkg/mode/secrets"
 
 	corev1 "k8s.io/api/core/v1"
@@ -78,9 +77,9 @@ func (vaultInjector *VaultInjector) computeContext(podContainers []corev1.Contai
 	m.GetModesStatus(strings.Split(annotations[vaultInjector.VaultInjectorAnnotationsFQ[ctx.VaultInjectorAnnotationModeKey]], ","), modesStatus)
 
 	// !!! This annotation is deprecated !!! Enable job mode if used
-	if annotations[vaultInjector.VaultInjectorAnnotationsFQ[ctx.VaultInjectorAnnotationWorkloadKey]] == job.VaultInjectorModeJob {
+	if annotations[vaultInjector.VaultInjectorAnnotationsFQ[ctx.VaultInjectorAnnotationWorkloadKey]] == m.VaultInjectorModeJob {
 		klog.Warningf("Annotation '%s' is deprecated but still supported. Use '%s' instead", vaultInjector.VaultInjectorAnnotationsFQ[ctx.VaultInjectorAnnotationWorkloadKey], vaultInjector.VaultInjectorAnnotationsFQ[ctx.VaultInjectorAnnotationModeKey])
-		modesStatus[job.VaultInjectorModeJob] = true
+		modesStatus[m.VaultInjectorModeJob] = true
 	}
 
 	klog.Infof("Modes status: %+v", modesStatus)

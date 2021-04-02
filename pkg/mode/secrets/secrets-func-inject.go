@@ -1,4 +1,4 @@
-// Copyright © 2019-2020 Talend - www.talend.com
+// Copyright © 2019-2021 Talend - www.talend.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@ package secrets
 
 import (
 	ctx "talend/vault-sidecar-injector/pkg/context"
+	m "talend/vault-sidecar-injector/pkg/mode"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
@@ -25,20 +26,20 @@ func secretsModeInject(containerBasePath string, podContainers []corev1.Containe
 	for _, cntName := range secretsContainerNames[containerBasePath] {
 		if cntName == containerName {
 			// Look type of secrets: inject init container only for static secrets
-			if (isSecretsStatic(context) && (containerBasePath == ctx.JsonPathInitContainers)) ||
-				(!isSecretsStatic(context) && (containerBasePath == ctx.JsonPathContainers)) {
+			if (IsSecretsStatic(context) && (containerBasePath == ctx.JsonPathInitContainers)) ||
+				(!IsSecretsStatic(context) && (containerBasePath == ctx.JsonPathContainers)) {
 
-				if (cntName == secretsEnvInitContainerName) && !isSecretsInjectionEnv(context) {
+				if (cntName == secretsEnvInitContainerName) && !IsSecretsInjectionEnv(context) {
 					// Do not inject env init container if injection method is not 'env'
 					return false, nil
 				}
 
-				klog.Infof("[%s] Injecting container %s (path: %s)", VaultInjectorModeSecrets, containerName, containerBasePath)
+				klog.Infof("[%s] Injecting container %s (path: %s)", m.VaultInjectorModeSecrets, containerName, containerBasePath)
 
 				// Resolve secrets env vars
 				for envIdx := range env {
 					if env[envIdx].Name == secretsTemplatesPlaceholderEnv {
-						env[envIdx].Value = context.ModesConfig[VaultInjectorModeSecrets].GetTemplate()
+						env[envIdx].Value = context.ModesConfig[m.VaultInjectorModeSecrets].GetTemplate()
 					}
 				}
 
