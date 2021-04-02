@@ -12,26 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package proxy
+package mode
 
-import (
-	m "talend/vault-sidecar-injector/pkg/mode"
+const (
+	//--- Vault Sidecar Injector supported modes
+	VaultInjectorModeSecrets = "secrets" // Enable fetching of secrets from Vault store
+	VaultInjectorModeProxy   = "proxy"   // Enable local Vault proxy
+	VaultInjectorModeJob     = "job"     // Enable handling of Kubernetes Job
 )
-
-func init() {
-	// Register mode
-	m.RegisterMode(
-		m.VaultInjectorModeInfo{
-			Key:                  m.VaultInjectorModeProxy,
-			DefaultMode:          false,
-			EnableDefaultMode:    false,
-			Annotations:          []string{vaultInjectorAnnotationProxyPortKey},
-			ComputeTemplatesFunc: proxyModeCompute,
-			InjectContainerFunc:  proxyModeInject,
-		},
-	)
-}
-
-func (proxyModeCfg *proxyModeConfig) GetTemplate() string {
-	return proxyModeCfg.template
-}

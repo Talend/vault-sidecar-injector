@@ -35,8 +35,3 @@ const (
 	//--- Vault Agent env vars related to modes
 	vaultProxyConfigPlaceholderEnv = "VSI_PROXY_CONFIG_PLACEHOLDER"
 )
-
-const (
-	//--- Vault Sidecar Injector supported modes
-	VaultInjectorModeProxy = "proxy" // Enable local Vault proxy
-)

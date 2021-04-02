@@ -1,4 +1,4 @@
-// Copyright © 2019-2020 Talend - www.talend.com
+// Copyright © 2019-2021 Talend - www.talend.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@ package job
 import (
 	"errors"
 	ctx "talend/vault-sidecar-injector/pkg/context"
+	m "talend/vault-sidecar-injector/pkg/mode"
+	"talend/vault-sidecar-injector/pkg/mode/secrets"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
@@ -25,13 +27,21 @@ import (
 func jobModeInject(containerBasePath string, podContainers []corev1.Container, containerName string, env []corev1.EnvVar, context *ctx.InjectionContext) (bool, error) {
 	if (containerBasePath == ctx.JsonPathContainers) && (len(podContainers) != 1) {
 		err := errors.New("Submitted pod should contain only one container")
-		klog.Errorf("[%s] %s", VaultInjectorModeJob, err.Error())
+		klog.Errorf("[%s] %s", m.VaultInjectorModeJob, err.Error())
 		return false, err
+	}
+
+	// If static secrets and job (+ secrets as it'll be enabled also) are the only enabled modes then do not inject job containers as sidecars (no need for job babysitter nor Vault Agent)
+	if (containerBasePath == ctx.JsonPathContainers) &&
+		m.IsEnabledModes(context.ModesStatus, []string{m.VaultInjectorModeSecrets, m.VaultInjectorModeJob}) &&
+		secrets.IsSecretsStatic(context) {
+		klog.Infof("[%s] Static secrets in use and only enabled modes are '%s' and '%s': skip injecting job container %s (path: %s)", m.VaultInjectorModeJob, m.VaultInjectorModeJob, m.VaultInjectorModeSecrets, containerName, containerBasePath)
+		return false, nil
 	}
 
 	for _, cntName := range jobContainerNames[containerBasePath] {
 		if cntName == containerName {
-			klog.Infof("[%s] Injecting container %s (path: %s)", VaultInjectorModeJob, containerName, containerBasePath)
+			klog.Infof("[%s] Injecting container %s (path: %s)", m.VaultInjectorModeJob, containerName, containerBasePath)
 
 			// Resolve job env vars
 			for envIdx := range env {

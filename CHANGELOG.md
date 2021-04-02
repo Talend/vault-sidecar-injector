@@ -1,5 +1,11 @@
 # Changelog for Vault Sidecar Injector
 
+## Release v7.1.1 - 2021-04-02
+
+**Fixed**
+
+- [VSI #45](https://github.com/Talend/vault-sidecar-injector/pull/45) - Do not inject sidecars if only job and secrets modes are enabled and secrets type is "static"
+
 ## Release v7.1.0 - 2021-02-09
 
 A new `sidecar.vault.talend.org/vault-image` annotation has been added to override the default injected image. Refer to the [samples](samples) for a [working example](samples/app-dep-10-secrets_custom_image_notify.yaml).

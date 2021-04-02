@@ -1,4 +1,4 @@
-// Copyright © 2019-2020 Talend - www.talend.com
+// Copyright © 2019-2021 Talend - www.talend.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package mode
 import (
 	"os"
 
+	"github.com/stretchr/testify/assert"
 	"k8s.io/klog"
 )
 
@@ -77,4 +78,22 @@ func GetModesStatus(requestedModes []string, modes map[string]bool) {
 	} else { // If no mode(s) provided then only enable default mode
 		modes[defaultModeKey] = true
 	}
+}
+
+// Use assert.ElementsMatch for comparing slices, but with a bool result.
+type dummyt struct{}
+
+func (t dummyt) Errorf(string, ...interface{}) {}
+
+func IsEnabledModes(modesStatus map[string]bool, modesToCheck []string) bool {
+	var enabledModes []string
+
+	for mode, enabled := range modesStatus {
+		if enabled {
+			enabledModes = append(enabledModes, mode)
+		}
+	}
+
+	// Allow to check for equality on slices without order. See https://stackoverflow.com/a/66062073
+	return assert.ElementsMatch(dummyt{}, enabledModes, modesToCheck)
 }
