@@ -4,7 +4,7 @@
 
 **Changed**
 
-- [VSI #48](https://github.com/Talend/vault-sidecar-injector/pull/48) - Minor chart updates
+- [VSI #48](https://github.com/Talend/vault-sidecar-injector/pull/48) - Minor chart updates (adjust CPU & memory for injected containers, add checks during chart install)
 
 ## Release v7.1.1 - 2021-04-02
 
