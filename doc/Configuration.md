@@ -15,18 +15,18 @@ The following table lists the configurable parameters of the `Vault Sidecar Inje
 | injectconfig.jobbabysitter.image.path   | Image path | everpeace/curl-jq |
 | injectconfig.jobbabysitter.image.pullPolicy | Pull policy for image: IfNotPresent or Always | Always |
 | injectconfig.jobbabysitter.image.tag   | Image tag  | latest |
-| injectconfig.jobbabysitter.resources.limits.cpu | Job babysitter sidecar CPU resource limits | 70m |
+| injectconfig.jobbabysitter.resources.limits.cpu | Job babysitter sidecar CPU resource limits | 120m |
 | injectconfig.jobbabysitter.resources.limits.memory | Job babysitter sidecar memory resource limits | 25Mi |
-| injectconfig.jobbabysitter.resources.requests.cpu | Job babysitter sidecar CPU resource requests | 55m |
+| injectconfig.jobbabysitter.resources.requests.cpu | Job babysitter sidecar CPU resource requests | 100m |
 | injectconfig.jobbabysitter.resources.requests.memory | Job babysitter sidecar memory resource requests | 20Mi |
 | injectconfig.vault.image.path  | Image path  | vault |
 | injectconfig.vault.image.pullPolicy    | Pull policy for image: IfNotPresent or Always  | Always   |
 | injectconfig.vault.image.tag  | Image tag | 1.6.2 |
 | injectconfig.vault.log.format                    | Vault log format: standard, json    | json    |
 | injectconfig.vault.log.level                    | Vault log level: trace, debug, info, warn, err    | info    |
-| injectconfig.vault.resources.limits.cpu | Vault sidecar CPU resource limits | 80m |
+| injectconfig.vault.resources.limits.cpu | Vault sidecar CPU resource limits | 200m |
 | injectconfig.vault.resources.limits.memory | Vault sidecar memory resource limits | 80Mi |
-| injectconfig.vault.resources.requests.cpu | Vault sidecar CPU resource requests | 70m |
+| injectconfig.vault.resources.requests.cpu | Vault sidecar CPU resource requests | 160m |
 | injectconfig.vault.resources.requests.memory | Vault sidecar memory resource requests | 65Mi |
 | mutatingwebhook.annotations.appLabelKey | Annotation for application's name. Annotation's value used as Vault role by default. | com.talend.application  |
 | mutatingwebhook.annotations.appServiceLabelKey | Annotation for service's name | com.talend.service  |
