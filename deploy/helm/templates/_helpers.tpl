@@ -49,6 +49,9 @@ namespaceSelector:
   matchLabels:
     vault-injection: {{ .Release.Namespace }}
 {{- end -}}
+{{- if and (eq .Values.mutatingwebhook.namespaceSelector.namespaced true) (eq .Values.mutatingwebhook.namespaceSelector.boolean true) -}}
+{{ fail "Cannot enable both mutatingwebhook.namespaceSelector.namespaced and mutatingwebhook.namespaceSelector.boolean values" }}
+{{- end -}}
 {{- end -}}
 
 {{/*

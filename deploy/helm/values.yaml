@@ -66,10 +66,10 @@ injectconfig:
       pullPolicy: Always # Pull policy for images: IfNotPresent or Always
     resources:
       limits:
-        cpu: 20m  # Job babysitter sidecar CPU resource limits
+        cpu: 120m  # Job babysitter sidecar CPU resource limits
         memory: 25Mi  # Job babysitter sidecar memory resource limits
       requests:
-        cpu: 15m  # Job babysitter sidecar CPU resource requests
+        cpu: 100m  # Job babysitter sidecar CPU resource requests
         memory: 20Mi  # Job babysitter sidecar memory resource requests
   vault:
     image:
@@ -81,11 +81,11 @@ injectconfig:
       format: json # Vault log format: standard, json
     resources:
       limits:
-        cpu: 50m  # Vault sidecar CPU resource limits
-        memory: 50Mi  # Vault sidecar memory resource limits
+        cpu: 200m  # Vault sidecar CPU resource limits
+        memory: 80Mi  # Vault sidecar memory resource limits
       requests:
-        cpu: 40m  # Vault sidecar CPU resource requests
-        memory: 35Mi  # Vault sidecar memory resource requests
+        cpu: 160m  # Vault sidecar CPU resource requests
+        memory: 65Mi  # Vault sidecar memory resource requests
 
 # ----------------------------------------------------------------------------
 # Define resources requests and limits

@@ -48,8 +48,8 @@ kubectl exec -it vault-0 -- vault status
 kubectl logs vault-0
 
 # Set up needed auth methods, secrets engines, policies, roles and secrets
-cd vault-sidecar-injector/deploy/vault
-./init-dev-vault-server.sh
+cd vault-sidecar-injector/test/vault
+./init-test-vault-server.sh
 ```
 </details>
 
