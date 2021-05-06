@@ -1,4 +1,4 @@
-apiVersion: admissionregistration.k8s.io/v1beta1
+apiVersion: {{ include "mutatingwebhookconfiguration.apiversion" . }}
 kind: MutatingWebhookConfiguration
 metadata:
   name: {{ include "talend-vault-sidecar-injector.fullname" . }}
@@ -16,5 +16,9 @@ webhooks:
         apiGroups: [""]
         apiVersions: ["v1"]
         resources: ["pods"]
+{{- if semverCompare ">=1.16" .Capabilities.KubeVersion.Version }}
+    admissionReviewVersions: ["v1", "v1beta1"]
+    sideEffects: None
+{{- end }}
     failurePolicy: {{ include "talend-vault-sidecar-injector.failurePolicy" .Values }}
 {{ include "talend-vault-sidecar-injector.namespaceSelector" . | indent 4 }}

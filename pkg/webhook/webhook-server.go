@@ -117,8 +117,8 @@ func (vaultInjector *VaultInjector) mutate(ar *v1beta1.AdmissionReview) *v1beta1
 		podNamespace = pod.Namespace
 	}
 
-	klog.Infof("AdmissionReview for GroupVersionKind=%+v, Namespace=%v Name=%v (%v) UID=%v patchOperation=%v UserInfo=%+v",
-		req.Kind, req.Namespace, req.Name, podName, req.UID, req.Operation, req.UserInfo)
+	klog.Infof("AdmissionReview %v for GroupVersionKind=%+v, Namespace=%v Name=%v (%v) UID=%v patchOperation=%v UserInfo=%+v",
+		ar.APIVersion, req.Kind, req.Namespace, req.Name, podName, req.UID, req.Operation, req.UserInfo)
 
 	// Determine whether to perform mutation
 	if !mutationRequired(ignoredNamespaces, vaultInjector.VaultInjectorAnnotationsFQ, &pod.ObjectMeta) {
