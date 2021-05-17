@@ -1,4 +1,4 @@
-// Copyright © 2019-2020 Talend - www.talend.com
+// Copyright © 2019-2021 Talend - www.talend.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,7 +27,9 @@ import (
 	ctx "talend/vault-sidecar-injector/pkg/context"
 	"testing"
 
-	"k8s.io/api/admission/v1beta1"
+	"k8s.io/apimachinery/pkg/util/uuid"
+
+	admv1 "k8s.io/api/admission/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -45,14 +47,16 @@ var clientDeserializer = scheme.Codecs.UniversalDeserializer()
 
 type testResource struct {
 	manifest        string
+	name            string
+	namespace       string
 	podTemplateSpec *corev1.PodTemplateSpec
 }
 
-type assertFunc func(*v1beta1.AdmissionResponse)
+type assertFunc func(*admv1.AdmissionResponse)
 
 func TestWebhookServerOK(t *testing.T) {
 	err := mutateWorkloads("../../test/workloads/ok/*.yaml",
-		func(resp *v1beta1.AdmissionResponse) {
+		func(resp *admv1.AdmissionResponse) {
 			assert.Condition(t, func() bool {
 				// Handle injection cases *and* also pod submitted without `inject: "true"` annotation
 				if (resp.Allowed && resp.Patch != nil && resp.Result == nil) || (resp.Allowed && resp.Patch == nil && resp.Result == nil) {
@@ -79,7 +83,7 @@ func TestWebhookServerOK(t *testing.T) {
 
 func TestWebhookServerKO(t *testing.T) {
 	err := mutateWorkloads("../../test/workloads/ko/*.yaml",
-		func(resp *v1beta1.AdmissionResponse) {
+		func(resp *admv1.AdmissionResponse) {
 			assert.Condition(t, func() bool {
 				// Handle error cases
 				if !resp.Allowed && resp.Patch == nil && resp.Result != nil {
@@ -157,7 +161,7 @@ func createVaultInjector() (*VaultInjector, error) {
 	return New(vsiCfg, nil), nil
 }
 
-func (tr *testResource) load() (*v1beta1.AdmissionReview, error) {
+func (tr *testResource) load() (*admv1.AdmissionReview, error) {
 	data, err := ioutil.ReadFile(tr.manifest)
 	if err != nil {
 		return nil, err
@@ -171,8 +175,12 @@ func (tr *testResource) load() (*v1beta1.AdmissionReview, error) {
 	switch resource := obj.(type) {
 	// Beware: despite content being the same, golang does not support 'fallthrough' keyword in type switch (see https://stackoverflow.com/questions/11531264/why-isnt-fallthrough-allowed-in-a-type-switch)
 	case *appsv1.Deployment: // here 'resource' type is now *appsv1.Deployment
+		tr.name = resource.Name
+		tr.namespace = resource.Namespace
 		tr.podTemplateSpec = &resource.Spec.Template
 	case *batchv1.Job: // here 'resource' type is now *batchv1.Job
+		tr.name = resource.Name
+		tr.namespace = resource.Namespace
 		tr.podTemplateSpec = &resource.Spec.Template
 	default:
 		return nil, errors.New("Worload not supported")
@@ -207,26 +215,30 @@ func (tr *testResource) addSATokenVolume() {
 	tr.podTemplateSpec.Spec.Volumes = append(tr.podTemplateSpec.Spec.Volumes, saTokenVolume)
 }
 
-func (tr *testResource) createAdmissionReview() (*v1beta1.AdmissionReview, error) {
+func (tr *testResource) createAdmissionReview() (*admv1.AdmissionReview, error) {
 	rawPod, err := json.Marshal(tr.podTemplateSpec)
 	if err != nil {
 		return nil, err
 	}
 
-	return &v1beta1.AdmissionReview{
-		Request: &v1beta1.AdmissionRequest{
-			Kind: metav1.GroupVersionKind{
-				Version: "v1",
-				Kind:    "Pod",
-			},
-			Namespace: tr.podTemplateSpec.GetNamespace(),
-			Operation: v1beta1.Create,
-			UserInfo: authenticationv1.UserInfo{
-				Username: "vault-sidecar-injector",
-			},
-			Object: runtime.RawExtension{
-				Raw: rawPod,
-			},
+	ar := admv1.AdmissionReview{}
+	ar.SetGroupVersionKind(admv1.SchemeGroupVersion.WithKind("AdmissionReview"))
+	ar.Request = &admv1.AdmissionRequest{
+		UID: uuid.NewUUID(),
+		Kind: metav1.GroupVersionKind{
+			Version: "v1",
+			Kind:    "Pod",
 		},
-	}, nil
+		Name:      tr.name,
+		Namespace: tr.namespace,
+		Operation: admv1.Create,
+		UserInfo: authenticationv1.UserInfo{
+			Username: "vault-sidecar-injector",
+		},
+		Object: runtime.RawExtension{
+			Raw: rawPod,
+		},
+	}
+
+	return &ar, nil
 }

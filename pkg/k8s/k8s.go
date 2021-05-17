@@ -117,17 +117,30 @@ func (k8sctl *K8SClient) PatchWebhookConfiguration(cacertfile string) error {
 		return err
 	}
 
+	webhookPatch := []byte(fmt.Sprintf(
+		`[{
+			"op": "add",
+			"path": "/webhooks/0/clientConfig/caBundle",
+			"value": %q
+		}]`, base64.StdEncoding.EncodeToString(caPEM)))
+
 	// Patch MutatingWebhookConfiguration resource with CA (should be base64-encoded PEM-encoded)
-	_, err = k8sctl.AdmissionregistrationV1beta1().MutatingWebhookConfigurations().Patch(
-		k8sctl.WebhookCfgName, types.JSONPatchType, []byte(fmt.Sprintf(
-			`[{
-				"op": "add",
-				"path": "/webhooks/0/clientConfig/caBundle",
-				"value": %q
-			}]`, base64.StdEncoding.EncodeToString(caPEM))))
-	if err != nil {
-		klog.Errorf("Error patching MutatingWebhookConfiguration's caBundle: %s", err)
-		return err
+	// v1 support
+	if _, err = k8sctl.AdmissionregistrationV1().MutatingWebhookConfigurations().Get(k8sctl.WebhookCfgName, metav1.GetOptions{}); err == nil {
+		klog.Infof("Patching MutatingWebhookConfiguration v1 resource %v", k8sctl.WebhookCfgName)
+		if _, err = k8sctl.AdmissionregistrationV1().MutatingWebhookConfigurations().Patch(k8sctl.WebhookCfgName, types.JSONPatchType, webhookPatch); err != nil {
+			klog.Errorf("Error patching MutatingWebhookConfiguration's caBundle: %s", err)
+			return err
+		}
+	}
+
+	// v1beta1 support
+	if _, err = k8sctl.AdmissionregistrationV1beta1().MutatingWebhookConfigurations().Get(k8sctl.WebhookCfgName, metav1.GetOptions{}); err == nil {
+		klog.Infof("Patching MutatingWebhookConfiguration v1beta1 resource %v", k8sctl.WebhookCfgName)
+		if _, err = k8sctl.AdmissionregistrationV1beta1().MutatingWebhookConfigurations().Patch(k8sctl.WebhookCfgName, types.JSONPatchType, webhookPatch); err != nil {
+			klog.Errorf("Error patching MutatingWebhookConfiguration's caBundle: %s", err)
+			return err
+		}
 	}
 
 	return nil

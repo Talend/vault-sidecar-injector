@@ -1,4 +1,4 @@
-// Copyright © 2019-2020 Talend - www.talend.com
+// Copyright © 2019-2021 Talend - www.talend.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,7 +23,8 @@ import (
 	ctx "talend/vault-sidecar-injector/pkg/context"
 	m "talend/vault-sidecar-injector/pkg/mode"
 
-	"k8s.io/api/admission/v1beta1"
+	admv1 "k8s.io/api/admission/v1"
+	admv1beta1 "k8s.io/api/admission/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -82,19 +83,15 @@ func (vaultInjector *VaultInjector) createPatch(pod *corev1.Pod, annotations map
 }
 
 // Main mutation process
-func (vaultInjector *VaultInjector) mutate(ar *v1beta1.AdmissionReview) *v1beta1.AdmissionResponse {
-	req := ar.Request
+func (vaultInjector *VaultInjector) mutate(ar *admv1.AdmissionReview) *admv1.AdmissionResponse {
 	var pod corev1.Pod
-	var podName string
-	var podNamespace string
+	var podName, podNamespace string
 
-	if klog.V(5) { // enabled by providing '-v=5' at least
-		klog.Infof("Request=%+v", req)
-	}
+	req := ar.Request
 
 	if err := json.Unmarshal(req.Object.Raw, &pod); err != nil {
 		klog.Errorf("Could not unmarshal raw object: %v", err)
-		return &v1beta1.AdmissionResponse{
+		return &admv1.AdmissionResponse{
 			Result: &metav1.Status{
 				Message: err.Error(),
 			},
@@ -117,13 +114,13 @@ func (vaultInjector *VaultInjector) mutate(ar *v1beta1.AdmissionReview) *v1beta1
 		podNamespace = pod.Namespace
 	}
 
-	klog.Infof("AdmissionReview %v for GroupVersionKind=%+v, Namespace=%v Name=%v (%v) UID=%v patchOperation=%v UserInfo=%+v",
-		ar.APIVersion, req.Kind, req.Namespace, req.Name, podName, req.UID, req.Operation, req.UserInfo)
+	klog.Infof("AdmissionReview '%v' for '%+v', Namespace=%v Name='%v (%s/%s)' UID=%v patchOperation=%v",
+		ar.GroupVersionKind(), req.Kind, req.Namespace, req.Name, podNamespace, podName, req.UID, req.Operation)
 
 	// Determine whether to perform mutation
 	if !mutationRequired(ignoredNamespaces, vaultInjector.VaultInjectorAnnotationsFQ, &pod.ObjectMeta) {
 		klog.Infof("Skipping mutation for %s/%s due to policy check", podNamespace, podName)
-		return &v1beta1.AdmissionResponse{
+		return &admv1.AdmissionResponse{
 			Allowed: true,
 		}
 	}
@@ -131,7 +128,7 @@ func (vaultInjector *VaultInjector) mutate(ar *v1beta1.AdmissionReview) *v1beta1
 	annotations := map[string]string{vaultInjector.VaultInjectorAnnotationsFQ[ctx.VaultInjectorAnnotationStatusKey]: ctx.VaultInjectorStatusInjected}
 	patchBytes, err := vaultInjector.createPatch(&pod, annotations)
 	if err != nil {
-		return &v1beta1.AdmissionResponse{
+		return &admv1.AdmissionResponse{
 			Allowed: false,
 			Result: &metav1.Status{
 				Message: err.Error(),
@@ -140,11 +137,11 @@ func (vaultInjector *VaultInjector) mutate(ar *v1beta1.AdmissionReview) *v1beta1
 	}
 
 	klog.Infof("AdmissionResponse: patch=%v\n", string(patchBytes))
-	return &v1beta1.AdmissionResponse{
+	return &admv1.AdmissionResponse{
 		Allowed: true,
 		Patch:   patchBytes,
-		PatchType: func() *v1beta1.PatchType {
-			pt := v1beta1.PatchTypeJSONPatch
+		PatchType: func() *admv1.PatchType {
+			pt := admv1.PatchTypeJSONPatch
 			return &pt
 		}(),
 	}
@@ -152,55 +149,94 @@ func (vaultInjector *VaultInjector) mutate(ar *v1beta1.AdmissionReview) *v1beta1
 
 // Serve method for webhook server
 func (vaultInjector *VaultInjector) Serve(w http.ResponseWriter, r *http.Request) {
-	var body []byte
+	var body, response []byte
+	var returnedAR interface{}
+
+	if klog.V(5) { // enabled by providing '-v=5' at least
+		klog.Infof("HTTP Request=%+v", r)
+	}
+
 	if r.Body != nil {
 		if data, err := ioutil.ReadAll(r.Body); err == nil {
 			body = data
 		}
 	}
+
 	if len(body) == 0 {
-		klog.Error("empty body")
-		http.Error(w, "empty body", http.StatusBadRequest)
+		klog.Error("Empty body")
+		http.Error(w, "Empty body", http.StatusBadRequest)
 		return
 	}
 
-	// Verify the content type is accurate
 	contentType := r.Header.Get("Content-Type")
 	if contentType != "application/json" {
 		klog.Errorf("Content-Type=%s, expect application/json", contentType)
-		http.Error(w, "invalid Content-Type, expect `application/json`", http.StatusUnsupportedMediaType)
+		http.Error(w, "Invalid Content-Type, expect `application/json`", http.StatusUnsupportedMediaType)
 		return
 	}
 
-	var admissionResponse *v1beta1.AdmissionResponse
-	ar := v1beta1.AdmissionReview{}
-	if _, _, err := deserializer.Decode(body, nil, &ar); err != nil {
+	rawAR, gvk, err := deserializer.Decode(body, nil, nil)
+	if err != nil {
 		klog.Errorf("Can't decode body: %v", err)
-		admissionResponse = &v1beta1.AdmissionResponse{
-			Result: &metav1.Status{
-				Message: err.Error(),
-			},
+		http.Error(w, fmt.Sprintf("Cannot decode body: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	// Webhook can currently receive either v1 or v1beta1 AdmissionReview objects.
+	// v1 is the default, internal version in use by VSI (v1beta1 support will be removed).
+	// If v1beta1 is received, it will be converted into v1 and back to v1beta1 in response
+	// (as spec states response should use same version as request)
+	arVersion := admv1.SchemeGroupVersion
+	ar, isV1 := rawAR.(*admv1.AdmissionReview)
+	if !isV1 {
+		arVersion = admv1beta1.SchemeGroupVersion
+		arv1beta1, isv1beta1 := rawAR.(*admv1beta1.AdmissionReview)
+		if !isv1beta1 {
+			klog.Errorf("Unsupported AdmissionReview version %v", gvk.Version)
+			http.Error(w, fmt.Sprintf("Unsupported AdmissionReview version %v", gvk.Version), http.StatusBadRequest)
+			return
 		}
+
+		if klog.V(5) { // enabled by providing '-v=5' at least
+			klog.Infof("Received AdmissionReview '%v' Request=%+v", arv1beta1.GroupVersionKind(), arv1beta1.Request)
+		}
+
+		// Convert v1beta1 to v1
+		ar = &admv1.AdmissionReview{}
+		Convert_v1beta1_AdmissionReview_To_admission_AdmissionReview(arv1beta1, ar)
 	} else {
-		admissionResponse = vaultInjector.mutate(&ar)
-	}
-
-	admissionReview := v1beta1.AdmissionReview{}
-	if admissionResponse != nil {
-		admissionReview.Response = admissionResponse
-		if ar.Request != nil {
-			admissionReview.Response.UID = ar.Request.UID
+		if klog.V(5) { // enabled by providing '-v=5' at least
+			klog.Infof("Received AdmissionReview '%v' Request=%+v", ar.GroupVersionKind(), ar.Request)
 		}
 	}
 
-	resp, err := json.Marshal(admissionReview)
+	ar.Response = vaultInjector.mutate(ar)
+	returnedAR = ar
+
+	// If v1 received
+	if arVersion.Version == admv1.SchemeGroupVersion.Version {
+		if klog.V(5) { // enabled by providing '-v=5' at least
+			klog.Infof("Returned AdmissionReview '%v' Response=%+v", ar.GroupVersionKind(), ar.Response)
+		}
+	} else { // If v1beta1 received: convert v1 to v1beta1
+		arv1beta1 := &admv1beta1.AdmissionReview{}
+		Convert_admission_AdmissionReview_To_v1beta1_AdmissionReview(ar, arv1beta1)
+		returnedAR = arv1beta1
+
+		if klog.V(5) { // enabled by providing '-v=5' at least
+			klog.Infof("Returned AdmissionReview '%v' Response=%+v", arv1beta1.GroupVersionKind(), arv1beta1.Response)
+		}
+	}
+
+	response, err = json.Marshal(returnedAR)
 	if err != nil {
 		klog.Errorf("Can't encode response: %v", err)
-		http.Error(w, fmt.Sprintf("could not encode response: %v", err), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Cannot encode response: %v", err), http.StatusInternalServerError)
 	}
-	klog.Infof("Ready to write reponse ...")
-	if _, err := w.Write(resp); err != nil {
+
+	klog.Infof("Write reponse ...")
+	if _, err := w.Write(response); err != nil {
 		klog.Errorf("Can't write response: %v", err)
-		http.Error(w, fmt.Sprintf("could not write response: %v", err), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Cannot write response: %v", err), http.StatusInternalServerError)
 	}
 }
