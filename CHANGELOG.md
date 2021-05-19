@@ -1,6 +1,6 @@
 # Changelog for Vault Sidecar Injector
 
-## Release v7.2.0 - 2021-05-XX
+## Release v7.2.0 - 2021-05-19
 
 This release comes with support for `admission.k8s.io/v1` AdmissionReview and `admissionregistration.k8s.io/v1` MutatingWebhookConfiguration on Kubernetes 1.16+. As a result, Vault Sidecar Injector now handles both v1 and v1beta1 versions of those resources.
 
