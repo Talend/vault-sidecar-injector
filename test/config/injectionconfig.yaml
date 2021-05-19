@@ -95,7 +95,7 @@ containers:
             touch /opt/talend/tvsi/vault-sidecars-signal-terminate
             exit 0
           fi
-          sleep 5
+          sleep 2
         done
     volumeMounts:
       # Mount path used by injected sidecars to share data
@@ -191,7 +191,7 @@ containers:
               vault token revoke -self;
               exit 0
             fi
-            sleep 5
+            sleep 2
           done
         else
           docker-entrypoint.sh agent -config=vault-agent-config.hcl -log-level=info
