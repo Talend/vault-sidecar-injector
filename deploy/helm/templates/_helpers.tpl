@@ -108,3 +108,14 @@ Add Vault flag to skip verification of TLS certificates
 -tls-skip-verify
 {{- end -}}
 {{- end -}}
+
+{{/*
+Return the appropriate apiVersion for MutatingWebhookConfiguration
+*/}}
+{{- define "mutatingwebhookconfiguration.apiversion" -}}
+{{- if semverCompare ">=1.16" .Capabilities.KubeVersion.Version -}}
+"admissionregistration.k8s.io/v1"
+{{- else -}}
+"admissionregistration.k8s.io/v1beta1"
+{{- end -}}
+{{- end -}}

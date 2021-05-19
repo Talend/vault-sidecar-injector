@@ -1,4 +1,4 @@
-// Copyright © 2019-2020 Talend - www.talend.com
+// Copyright © 2019-2021 Talend - www.talend.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,89 +15,20 @@
 package webhook
 
 import (
-	"encoding/json"
-	"errors"
 	"flag"
-	"fmt"
-	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
 	"os"
-	"path/filepath"
 	"strconv"
-	cfg "talend/vault-sidecar-injector/pkg/config"
-	ctx "talend/vault-sidecar-injector/pkg/context"
+	"strings"
 	"testing"
 
-	"k8s.io/api/admission/v1beta1"
-	appsv1 "k8s.io/api/apps/v1"
-	authenticationv1 "k8s.io/api/authentication/v1"
-	batchv1 "k8s.io/api/batch/v1"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/klog"
-
-	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
+	"k8s.io/apimachinery/pkg/util/uuid"
+	"k8s.io/klog"
 )
 
-var clientDeserializer = scheme.Codecs.UniversalDeserializer()
-
-type testResource struct {
-	manifest        string
-	podTemplateSpec *corev1.PodTemplateSpec
-}
-
-type assertFunc func(*v1beta1.AdmissionResponse)
-
-func TestWebhookServerOK(t *testing.T) {
-	err := mutateWorkloads("../../test/workloads/ok/*.yaml",
-		func(resp *v1beta1.AdmissionResponse) {
-			assert.Condition(t, func() bool {
-				// Handle injection cases *and* also pod submitted without `inject: "true"` annotation
-				if (resp.Allowed && resp.Patch != nil && resp.Result == nil) || (resp.Allowed && resp.Patch == nil && resp.Result == nil) {
-					return true
-				}
-
-				return false
-			}, "Inconsistent AdmissionResponse")
-
-			if resp.Patch != nil {
-				var patch []ctx.PatchOperation
-				if err := yaml.Unmarshal(resp.Patch, &patch); err != nil {
-					t.Errorf("JSON Patch unmarshal error \"%s\"", err)
-				}
-
-				klog.Infof("JSON Patch=%+v", patch)
-			}
-		})
-
-	if err != nil {
-		t.Fatalf("%s", err)
-	}
-}
-
-func TestWebhookServerKO(t *testing.T) {
-	err := mutateWorkloads("../../test/workloads/ko/*.yaml",
-		func(resp *v1beta1.AdmissionResponse) {
-			assert.Condition(t, func() bool {
-				// Handle error cases
-				if !resp.Allowed && resp.Patch == nil && resp.Result != nil {
-					return true
-				}
-
-				return false
-			}, "Inconsistent AdmissionResponse")
-
-			klog.Infof("Result=%+v", resp.Result)
-		})
-
-	if err != nil {
-		t.Fatalf("%s", err)
-	}
-}
-
-func mutateWorkloads(manifestsPattern string, test assertFunc) error {
+func TestWebhookServer(t *testing.T) {
 	verbose, _ := strconv.ParseBool(os.Getenv("VERBOSE"))
 	if verbose {
 		// Set Klog verbosity level to have detailed logs from our webhook (where we use level 5+ to log such info)
@@ -107,126 +38,107 @@ func mutateWorkloads(manifestsPattern string, test assertFunc) error {
 	}
 
 	// Create webhook instance
-	vaultInjector, err := createVaultInjector()
+	vaultInjector, err := createTestVaultInjector()
 	if err != nil {
-		return fmt.Errorf("Loading error: %s", err)
+		t.Fatalf("Loading error: %s", err)
 	}
 
-	// Get all test workloads
-	workloads, err := filepath.Glob(manifestsPattern)
-	if err != nil {
-		return fmt.Errorf("Fail listing files: %s", err)
-	}
-
-	// Loop on all test workloads: mutate and display JSON Patch structure
-	for _, workloadManifest := range workloads {
-		klog.Info("================================================================================================")
-		klog.Infof("Loading workload %s", workloadManifest)
-
-		ar, err := (&testResource{manifest: workloadManifest}).load()
-		if err != nil {
-			return fmt.Errorf("Error creating AR: %s", err)
-		}
-
-		// Mutate pod and test result
-		test(vaultInjector.mutate(ar))
-	}
-
-	return nil
-}
-
-func createVaultInjector() (*VaultInjector, error) {
-	vsiCfg, err := cfg.Load(
-		cfg.WhSvrParameters{
-			Port: 0, MetricsPort: 0,
-			CACertFile: "", CertFile: "", KeyFile: "",
-			WebhookCfgName:      "",
-			AnnotationKeyPrefix: "sidecar.vault.talend.org", AppLabelKey: "com.talend.application", AppServiceLabelKey: "com.talend.service",
-			InjectionCfgFile:      "../../test/config/injectionconfig.yaml",
-			ProxyCfgFile:          "../../test/config/proxyconfig.hcl",
-			TemplateBlockFile:     "../../test/config/tmplblock.hcl",
-			TemplateDefaultFile:   "../../test/config/tmpldefault.tmpl",
-			PodLifecycleHooksFile: "../../test/config/podlifecyclehooks.yaml",
+	tables := []struct {
+		name                   string
+		admissionReviewVersion string
+		vaultInjection         bool
+		statusCode             int
+	}{
+		{
+			name:                   "AdmissionReview v1, no injection",
+			admissionReviewVersion: "v1",
+			vaultInjection:         false,
+			statusCode:             http.StatusOK,
 		},
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create webhook instance
-	return New(vsiCfg, nil), nil
-}
-
-func (tr *testResource) load() (*v1beta1.AdmissionReview, error) {
-	data, err := ioutil.ReadFile(tr.manifest)
-	if err != nil {
-		return nil, err
-	}
-
-	obj, _, err := clientDeserializer.Decode(data, nil, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	switch resource := obj.(type) {
-	// Beware: despite content being the same, golang does not support 'fallthrough' keyword in type switch (see https://stackoverflow.com/questions/11531264/why-isnt-fallthrough-allowed-in-a-type-switch)
-	case *appsv1.Deployment: // here 'resource' type is now *appsv1.Deployment
-		tr.podTemplateSpec = &resource.Spec.Template
-	case *batchv1.Job: // here 'resource' type is now *batchv1.Job
-		tr.podTemplateSpec = &resource.Spec.Template
-	default:
-		return nil, errors.New("Worload not supported")
-	}
-
-	tr.addSATokenVolume()
-	return tr.createAdmissionReview()
-}
-
-func (tr *testResource) addSATokenVolume() {
-	// We expect to find serviceaccount token volume. It is dynamically added to the pod by the Service Account Admission Controller.
-	// Add it manually here to pass internal check.
-	saTokenVolumeMount := corev1.VolumeMount{
-		Name:      "default-token-1234",
-		ReadOnly:  true,
-		MountPath: k8sDefaultSATokenVolMountPath,
-	}
-
-	saTokenVolume := corev1.Volume{
-		Name: "default-token-1234",
-		VolumeSource: corev1.VolumeSource{
-			Secret: &corev1.SecretVolumeSource{
-				SecretName: "default-token",
-			},
+		{
+			name:                   "AdmissionReview v1",
+			admissionReviewVersion: "v1",
+			vaultInjection:         true,
+			statusCode:             http.StatusOK,
+		},
+		{
+			name:                   "AdmissionReview v1beta1",
+			admissionReviewVersion: "v1beta1",
+			vaultInjection:         true,
+			statusCode:             http.StatusOK,
+		},
+		{
+			name:                   "AdmissionReview v1beta2",
+			admissionReviewVersion: "v1beta2",
+			vaultInjection:         true,
+			statusCode:             http.StatusBadRequest,
 		},
 	}
 
-	if len(tr.podTemplateSpec.Spec.Containers) > 0 {
-		tr.podTemplateSpec.Spec.Containers[0].VolumeMounts = append(tr.podTemplateSpec.Spec.Containers[0].VolumeMounts, saTokenVolumeMount)
+	for _, table := range tables {
+		t.Run(table.name, func(t *testing.T) {
+			uid := string(uuid.NewUUID())
+			request := httptest.NewRequest(http.MethodPost, "/mutate", strings.NewReader(`{
+				"kind":"AdmissionReview",
+				"apiVersion":"admission.k8s.io/`+table.admissionReviewVersion+`",
+				"request":{
+				  "uid":"`+uid+`",
+				  "kind":{
+					"group":"",
+					"version":"v1",
+					"kind":"Pod"
+				  },
+				  "namespace":"default",
+				  "operation":"CREATE",
+				  "object":{
+					"apiVersion":"v1",
+					"kind":"Pod",
+					"metadata":{
+						"annotations":{
+							"sidecar.vault.talend.org/inject": "`+strconv.FormatBool(table.vaultInjection)+`"
+						},
+						"labels":{
+							"com.talend.application": "test",
+							"com.talend.service": "test-app-svc"
+						}
+					},
+					"spec":{
+						"containers":[
+							{
+								"name": "testcontainer",
+								"image": "myfakeimage:1.0.0",
+								"volumeMounts":[
+									{
+										"name": "default-token-1234",
+										"mountPath" : "/var/run/secrets/kubernetes.io/serviceaccount"
+									}
+								]
+							}
+						]
+					}
+				  }
+				}
+			  }`))
+			request.Header.Add("Content-Type", "application/json")
+			responseRecorder := httptest.NewRecorder()
+
+			vaultInjector.Serve(responseRecorder, request)
+
+			if klog.V(5) {
+				klog.Infof("HTTP Response=%+v", responseRecorder)
+			}
+
+			assert.Equal(t, responseRecorder.Code, table.statusCode)
+			assert.Condition(t, func() bool {
+				if responseRecorder.Code == http.StatusOK {
+					return strings.Contains(responseRecorder.Body.String(),
+						`"kind":"AdmissionReview","apiVersion":"admission.k8s.io/`+table.admissionReviewVersion+`"`) &&
+						strings.Contains(responseRecorder.Body.String(),
+							`"response":{"uid":"`+uid+`"`)
+				} else {
+					return true // HTTP error: return true to skip this test
+				}
+			}, "AdmissionReview version must match received version and admission response UID must match admission request UID")
+		})
 	}
-
-	tr.podTemplateSpec.Spec.Volumes = append(tr.podTemplateSpec.Spec.Volumes, saTokenVolume)
-}
-
-func (tr *testResource) createAdmissionReview() (*v1beta1.AdmissionReview, error) {
-	rawPod, err := json.Marshal(tr.podTemplateSpec)
-	if err != nil {
-		return nil, err
-	}
-
-	return &v1beta1.AdmissionReview{
-		Request: &v1beta1.AdmissionRequest{
-			Kind: metav1.GroupVersionKind{
-				Version: "v1",
-				Kind:    "Pod",
-			},
-			Namespace: tr.podTemplateSpec.GetNamespace(),
-			Operation: v1beta1.Create,
-			UserInfo: authenticationv1.UserInfo{
-				Username: "vault-sidecar-injector",
-			},
-			Object: runtime.RawExtension{
-				Raw: rawPod,
-			},
-		},
-	}, nil
 }

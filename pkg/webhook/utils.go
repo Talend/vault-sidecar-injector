@@ -1,4 +1,4 @@
-// Copyright © 2019-2020 Talend - www.talend.com
+// Copyright © 2019-2021 Talend - www.talend.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,8 +20,10 @@ import (
 
 	ctx "talend/vault-sidecar-injector/pkg/context"
 
-	"k8s.io/api/admission/v1beta1"
-	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
+	admv1 "k8s.io/api/admission/v1"
+	admv1beta1 "k8s.io/api/admission/v1beta1"
+	admregv1 "k8s.io/api/admissionregistration/v1beta1"
+	admregv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
@@ -29,8 +31,14 @@ import (
 
 func init() {
 	must(corev1.AddToScheme(runtimeScheme))
-	must(v1beta1.AddToScheme(runtimeScheme))
-	must(admissionregistrationv1beta1.AddToScheme(runtimeScheme))
+
+	// admission v1
+	must(admv1.AddToScheme(runtimeScheme))
+	must(admregv1.AddToScheme(runtimeScheme))
+
+	// admission v1beta1
+	must(admv1beta1.AddToScheme(runtimeScheme))
+	must(admregv1beta1.AddToScheme(runtimeScheme))
 }
 
 func must(err error) {

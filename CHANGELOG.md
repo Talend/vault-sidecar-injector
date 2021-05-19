@@ -1,11 +1,19 @@
 # Changelog for Vault Sidecar Injector
 
-## Release v7.1.2 - 2021-XX-XX
+## Release v7.2.0 - 2021-05-XX
+
+This release comes with support for `admission.k8s.io/v1` AdmissionReview and `admissionregistration.k8s.io/v1` MutatingWebhookConfiguration on Kubernetes 1.16+. As a result, Vault Sidecar Injector now handles both v1 and v1beta1 versions of those resources.
+
+*Note that `admission.k8s.io/v1beta1` AdmissionReview and `admissionregistration.k8s.io/v1beta1` MutatingWebhookConfiguration should not be supported (nor available) anymore on Kubernetes 1.22+*
 
 **Changed**
 
 - [VSI #48](https://github.com/Talend/vault-sidecar-injector/pull/48) - Minor chart updates (adjust CPU & memory for injected containers, add checks during chart install)
 - [VSI #51](https://github.com/Talend/vault-sidecar-injector/pull/51) - Update base image to CentOS 7.9.2009
+
+**Added**
+
+- [VSI #49](https://github.com/Talend/vault-sidecar-injector/pull/49) - Add support for `admission.k8s.io/v1` AdmissionReview and `admissionregistration.k8s.io/v1` MutatingWebhookConfiguration (in addition to v1beta1)
 
 ## Release v7.1.1 - 2021-04-02
 

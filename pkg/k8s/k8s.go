@@ -1,4 +1,4 @@
-// Copyright © 2019-2020 Talend - www.talend.com
+// Copyright © 2019-2021 Talend - www.talend.com
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -71,6 +71,12 @@ func (k8sctl *K8SClient) CreateCertSecret(ca, cert, key []byte) error {
 	// Other way to get current namespace:
 	//ns, err := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
 
+	// If secret already exists: log a warning before deleting it
+	if _, err := k8sctl.CoreV1().Secrets(strings.TrimSpace(string(ns))).Get(k8sctl.WebhookSecretName, metav1.GetOptions{}); err == nil {
+		klog.Warning("Webhook secret already exists: will be deleted then created again from new generated certificate")
+		k8sctl.DeleteCertSecret()
+	}
+
 	// Create Secret in same namespace as webhook
 	_, err := k8sctl.CoreV1().Secrets(strings.TrimSpace(string(ns))).Create(secret)
 	if err != nil {
@@ -111,17 +117,28 @@ func (k8sctl *K8SClient) PatchWebhookConfiguration(cacertfile string) error {
 		return err
 	}
 
+	webhookPatch := []byte(fmt.Sprintf(
+		`[{
+			"op": "add",
+			"path": "/webhooks/0/clientConfig/caBundle",
+			"value": %q
+		}]`, base64.StdEncoding.EncodeToString(caPEM)))
+
 	// Patch MutatingWebhookConfiguration resource with CA (should be base64-encoded PEM-encoded)
-	_, err = k8sctl.AdmissionregistrationV1beta1().MutatingWebhookConfigurations().Patch(
-		k8sctl.WebhookCfgName, types.JSONPatchType, []byte(fmt.Sprintf(
-			`[{
-				"op": "add",
-				"path": "/webhooks/0/clientConfig/caBundle",
-				"value": %q
-			}]`, base64.StdEncoding.EncodeToString(caPEM))))
-	if err != nil {
-		klog.Errorf("Error patching MutatingWebhookConfiguration's caBundle: %s", err)
-		return err
+	if _, err = k8sctl.AdmissionregistrationV1().MutatingWebhookConfigurations().Get(k8sctl.WebhookCfgName, metav1.GetOptions{}); err == nil {
+		// v1 support
+		klog.Infof("Patching MutatingWebhookConfiguration v1 resource %v", k8sctl.WebhookCfgName)
+		if _, err = k8sctl.AdmissionregistrationV1().MutatingWebhookConfigurations().Patch(k8sctl.WebhookCfgName, types.JSONPatchType, webhookPatch); err != nil {
+			klog.Errorf("Error patching MutatingWebhookConfiguration's caBundle: %s", err)
+			return err
+		}
+	} else {
+		// v1beta1 support
+		klog.Infof("Patching MutatingWebhookConfiguration v1beta1 resource %v", k8sctl.WebhookCfgName)
+		if _, err = k8sctl.AdmissionregistrationV1beta1().MutatingWebhookConfigurations().Patch(k8sctl.WebhookCfgName, types.JSONPatchType, webhookPatch); err != nil {
+			klog.Errorf("Error patching MutatingWebhookConfiguration's caBundle: %s", err)
+			return err
+		}
 	}
 
 	return nil
