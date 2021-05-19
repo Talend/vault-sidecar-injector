@@ -3,7 +3,7 @@ FROM golang:1.14.4 AS buildTVSI
 COPY . /vaultsidecarinjector
 RUN cd /vaultsidecarinjector && make build OFFLINE=true
 
-FROM centos:7.8.2003
+FROM centos:7.9.2009
 
 USER root
 
@@ -13,9 +13,9 @@ ENV TALEND_USER=talend
 ENV TALEND_USERGROUP=$TALEND_USER
 ENV TALEND_UID=61000
 
-# Update CentOS (only with security patches)
+# Update CentOS (note that --security flag does not work on CentOS: https://www.caseylabs.com/centos-automatic-security-updates-do-not-work/)
 RUN set -x \
-    && yum -y update --security \
+    && yum -y update \
     && yum clean all \
     && rm -rf /var/cache/yum
 

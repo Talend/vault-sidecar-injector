@@ -9,6 +9,7 @@ This release comes with support for `admission.k8s.io/v1` AdmissionReview and `a
 **Changed**
 
 - [VSI #48](https://github.com/Talend/vault-sidecar-injector/pull/48) - Minor chart updates (adjust CPU & memory for injected containers, add checks during chart install)
+- [VSI #51](https://github.com/Talend/vault-sidecar-injector/pull/51) - Update base image to CentOS 7.9.2009
 
 **Added**
 
