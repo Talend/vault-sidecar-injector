@@ -46,21 +46,31 @@ func TestWebhookServer(t *testing.T) {
 	tables := []struct {
 		name                   string
 		admissionReviewVersion string
+		vaultInjection         bool
 		statusCode             int
 	}{
 		{
+			name:                   "AdmissionReview v1, no injection",
+			admissionReviewVersion: "v1",
+			vaultInjection:         false,
+			statusCode:             http.StatusOK,
+		},
+		{
 			name:                   "AdmissionReview v1",
 			admissionReviewVersion: "v1",
+			vaultInjection:         true,
 			statusCode:             http.StatusOK,
 		},
 		{
 			name:                   "AdmissionReview v1beta1",
 			admissionReviewVersion: "v1beta1",
+			vaultInjection:         true,
 			statusCode:             http.StatusOK,
 		},
 		{
 			name:                   "AdmissionReview v1beta2",
 			admissionReviewVersion: "v1beta2",
+			vaultInjection:         true,
 			statusCode:             http.StatusBadRequest,
 		},
 	}
@@ -81,7 +91,31 @@ func TestWebhookServer(t *testing.T) {
 				  "namespace":"default",
 				  "operation":"CREATE",
 				  "object":{
-					"replica":1
+					"apiVersion":"v1",
+					"kind":"Pod",
+					"metadata":{
+						"annotations":{
+							"sidecar.vault.talend.org/inject": "`+strconv.FormatBool(table.vaultInjection)+`"
+						},
+						"labels":{
+							"com.talend.application": "test",
+							"com.talend.service": "test-app-svc"
+						}
+					},
+					"spec":{
+						"containers":[
+							{
+								"name": "testcontainer",
+								"image": "myfakeimage:1.0.0",
+								"volumeMounts":[
+									{
+										"name": "default-token-1234",
+										"mountPath" : "/var/run/secrets/kubernetes.io/serviceaccount"
+									}
+								]
+							}
+						]
+					}
 				  }
 				}
 			  }`))

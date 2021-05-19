@@ -8,7 +8,7 @@ ENV TALEND_USER=talend
 ENV TALEND_USERGROUP=$TALEND_USER
 ENV TALEND_UID=61000
 
-# Update CentOS (note that --security flag does not work on CentOS: https://www.caseylabs.com/centos-automatic-security-updates-do-not-work/)
+# Update CentOS (note that --security flag does not work on CentOS: https://forums.centos.org/viewtopic.php?t=59369)
 RUN set -x \
     && yum -y update \
     && yum clean all \
