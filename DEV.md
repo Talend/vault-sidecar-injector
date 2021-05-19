@@ -2,18 +2,18 @@
 
 To interact with Kubernetes API, following Go modules and versions are in use:
 
-- k8s.io/api `kubernetes-1.12.5`
-- k8s.io/apimachinery `kubernetes-1.12.5`
-- k8s.io/client-go `kubernetes-1.12.5`
+- k8s.io/api `kubernetes-1.16.0`
+- k8s.io/apimachinery `kubernetes-1.16.0`
+- k8s.io/client-go `kubernetes-1.16.0`
 
 Those modules versions will be resolved when calling `go mod vendor` or `go get` and `go.mod` file will be updated with timestamp and commid id (which may be confusing and not practical at all to determine which kubernetes version we are actually using).
 
 E.g.
 
 ```sh
-$ go get k8s.io/apimachinery@kubernetes-1.12.5
-go: k8s.io/apimachinery kubernetes-1.12.5 => v0.0.0-20181128191346-49ce2735e507
-go: downloading k8s.io/apimachinery v0.0.0-20181128191346-49ce2735e507
+$ go get k8s.io/apimachinery@kubernetes-1.16.0
+go: k8s.io/apimachinery kubernetes-1.16.0 => v0.0.0-20190913080033-27d36303b655
+go: downloading k8s.io/apimachinery v0.0.0-20190913080033-27d36303b655
 ```
 
 > **Vault Sidecar Injector supports following [Kubernetes versions](README.md#kubernetes-compatibility)**
