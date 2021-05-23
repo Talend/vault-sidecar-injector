@@ -2,11 +2,10 @@
 
 ## Release v7.2.1 - 2021-05-XX
 
-Minor release to upgrade default Vault image (fix CVE-2021-32923, refer to HashiCorp Vault's [changelog](https://github.com/hashicorp/vault/blob/master/CHANGELOG.md#may-20th-2021-1)) and provide smaller Vault Sidecar Injector image.
+Minor release to provide smaller Vault Sidecar Injector image.
 
 **Changed**
 
-- [VSI #52](https://github.com/Talend/vault-sidecar-injector/pull/52) - Update HashiCorp Vault image to 1.6.5
 - [VSI #53](https://github.com/Talend/vault-sidecar-injector/pull/53) - Rework Dockerfile to reduce image size
 
 ## Release v7.2.0 - 2021-05-19
