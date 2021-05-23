@@ -3,7 +3,15 @@ FROM golang:1.14.4 AS buildTVSI
 COPY . /vaultsidecarinjector
 RUN cd /vaultsidecarinjector && make build OFFLINE=true
 
-FROM centos:7.9.2009
+FROM centos:7.9.2009 AS baseImage
+
+# Update CentOS (note that --security flag does not work on CentOS: https://forums.centos.org/viewtopic.php?t=59369)
+RUN set -x \
+    && yum -y update \
+    && yum clean all \
+    && rm -rf /var/cache/yum
+
+FROM scratch
 
 USER root
 
@@ -13,11 +21,7 @@ ENV TALEND_USER=talend
 ENV TALEND_USERGROUP=$TALEND_USER
 ENV TALEND_UID=61000
 
-# Update CentOS (note that --security flag does not work on CentOS: https://forums.centos.org/viewtopic.php?t=59369)
-RUN set -x \
-    && yum -y update \
-    && yum clean all \
-    && rm -rf /var/cache/yum
+COPY --from=baseImage / /
 
 # Create non-root user $TALEND_USER
 RUN set -x \
