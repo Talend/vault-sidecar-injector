@@ -3,7 +3,7 @@ name: Report
 about: Report Vault Sidecar Injector issue
 title: ''
 labels: ''
-assignees: asaintsever
+assignees: ''
 
 ---
 
