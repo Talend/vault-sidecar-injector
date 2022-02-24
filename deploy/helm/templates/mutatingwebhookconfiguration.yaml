@@ -16,7 +16,7 @@ webhooks:
         apiGroups: [""]
         apiVersions: ["v1"]
         resources: ["pods"]
-{{- if semverCompare ">=1.16" .Capabilities.KubeVersion.Version }}
+{{- if not (semverCompare "<1.16" .Capabilities.KubeVersion.Version) }}
     admissionReviewVersions: ["v1", "v1beta1"]
     sideEffects: None
 {{- end }}
