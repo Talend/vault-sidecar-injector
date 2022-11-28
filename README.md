@@ -1,3 +1,6 @@
+**WARNING** : This repository is now archived and no more maintained.
+You can find a similar implementation maintained by hashicorp [here](https://developer.hashicorp.com/vault/docs/platform/k8s/injector).
+
 
 # Vault Sidecar Injector
 
